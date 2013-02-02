@@ -1,15 +1,23 @@
 (ns instaparse.gll)
 
-; The trampoline structure contains a stack and a nodes
+; The trampoline structure contains the text to parse, a stack and a nodes
+; text is a string
 ; stack is an atom of a vector containing items implementing the Execute protocol.
 ; nodes is an atom containing a map from [index parser] pairs to Nodes
+; success contains a successful parse
+; failure contains the index of the furthest-along failure
 
-(defrecord Tramp [stack nodes])
-(defn make-tramp [] (Tramp. (atom []) (atom {})))
+(defrecord Tramp [text stack nodes success failure])
+(defn make-tramp [text] (Tramp. text (atom []) (atom {}) (atom nil) (atom 0)))
+  
+; A Success record contains the result and the index to continue from
+(defrecord Success [result index])
+(defn total-success? [tramp s]
+  (= (count (:text tramp)) (:index s)))
 
 ; Task is the protocol used by items on the stack
 
-(defprotocol Task (execute [_]))
+(defprotocol Task (execute [_ tramp]))
 
 ; NotificationTask is one kind of thing that can live on the stack
 ; A NotificationTask is comprised of a Listener and a result to send to the listener. 
@@ -18,11 +26,13 @@
 
 (defrecord Notification [listener result]
   Task
-  (execute [_] (notify listener result)))
+  (execute [_ tramp] (notify listener result)))
 
 ; ParseTask is another thing that can live on the stack
 
-(defrecord ParseTask [parser index])
+(defrecord ParseTask [parser index]
+  Task
+  (execute [_ tramp] (-parse parser index tramp)))
 
 ; The trampoline's nodes field is map from [index parser] pairs to Nodes
 ; Nodes track the results of a given parser at a given index, and the listeners
@@ -32,8 +42,6 @@
 (defrecord Node [listeners results])
 (defn make-node [] (Node. (ref #{}) (ref #{})))
 
-
-
 ;; Trampoline helper functions
 
 (defn push-stack
@@ -41,15 +49,41 @@
   [tramp item]
   (swap! (:stack tramp) conj item)) 
 
+(defn node-get
+  "Gets node if already exists, otherwise creates one"
+  [tramp node-key]
+  (let [nodes (:nodes tramp)]
+    (if-let [node (@nodes node-key)]
+      node 
+      (swap! nodes assoc node-key (make-node)))))
+
 (defn push-result
-  "Pushes a result into the trampoline's nodes"
-  [tramp index parser result]
-  (let [node (node-get tramp [tramp index])
+  "Pushes a result into the trampoline's node.
+   Schedules notification to all existing listeners of result."
+  [tramp node-key result]
+  (let [node (node-get tramp node-key)
         results (:results node)]
-    (when (not (@results result))  ;result is not already in @results
+    (when (not (@results result))  ; when result is not already in @results
       (swap! results conj result)
       (doseq [listener @(:listeners node)]
-        (push-stack tramp (Notification. listener result))) 
+        (push-stack tramp (Notification. listener result)))))) 
+
+(defn push-listener
+  "Pushes a listener into the trampoline's node.
+   Schedules notification to listener of all existing results."
+  [tramp node-key listener]
+  (let [node (node-get tramp node-key)
+        listeners (:listeners node)]
+    (when (not (@listeners listener))  ; when listener is not already in listeners
+      (swap! listeners conj listener)
+      (doseq [result @(:results node)]
+        (push-stack tramp (Notification. listener result)))))) 
+
+(defn success [tramp index this string end]
+  (push-result tramp [index this] (Success. string end)))
+
+(defn fail [tramp index]  
+  (swap! (:fail tramp) (fn [i] (max i index)))) 
 
 ;; Stack helper functions
 
@@ -86,15 +120,16 @@
 
 (defprotocol Parser
    ;; parse a text starting at index
-  (-parse [this tramp text index]))
+  (-parse [this index tramp]))
 
 (defrecord Literal [string]
   Parser
-  (-parse [this tramp text index] 
-    (let [end (min (count text) (+ index (count string)))
+  (-parse [this index tramp]
+    (let [text (:text tramp)
+          end (min (count text) (+ index (count string)))
           head (subs index end)]      
       (if (= string head)
-        (success this tramp text index string end)
+        (success tramp index this string end)
         (fail tramp index)))))
 
 (defrecord Cat [parsers])
