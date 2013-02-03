@@ -1,4 +1,4 @@
-(ns instaparse.gll)
+(ns instaparse.recordless)
 ; Don't push onto stack things parsing tasks that have been previously pushed
 
 (defprotocol Parser
@@ -25,13 +25,11 @@
 (defprotocol Task (execute [_ tramp]))
 
 ; NotificationTask is one kind of thing that can live on the stack
-; A NotificationTask is comprised of a Listener and a result to send to the listener. 
-
-(defprotocol Listener (notify [listener result tramp]))
+; A NotificationTask is comprised of a listener and a result to send to the listener. 
 
 (defrecord Notification [listener result]
   Task
-  (execute [_ tramp] (notify listener result tramp)))
+  (execute [_ tramp] (listener result tramp)))
 
 ; ParseTask is another thing that can live on the stack
 
@@ -132,9 +130,8 @@
 ; The first kind is a NodeListener which simply listens for a completed parse result
 ; Takes the node-key of the parser which is awaiting this result.
 
-(defrecord NodeListener [node-key]
-  Listener
-  (notify [_ result tramp] (push-result tramp node-key result)))
+(defn NodeListener [node-key]
+  (fn [result tramp] (push-result tramp node-key result)))
 
 ; The second kind of listener is a CatListener which listens at each stage of the
 ; concatenation parser to carry on the next step.  Think of it as a parse continuation.
@@ -142,25 +139,22 @@
 ; before, and a list of parsers that remain.  Also, the node-key of the final node
 ; that needs to know the overall result of the cat parser.
 
-(defrecord CatListener [results-so-far parser-sequence node-key]
-  Listener
-  (notify [_ result tramp] 
+(defn CatListener [results-so-far parser-sequence node-key]
+  (fn [result tramp] 
     (let [{parsed-result :result continue-index :index} result
           new-results-so-far (conj results-so-far parsed-result)]
       (if (seq parser-sequence)
         (do (push-listener tramp [continue-index (first parser-sequence)]
-                           (CatListener. new-results-so-far (next parser-sequence) node-key))
+                           (CatListener new-results-so-far (next parser-sequence) node-key))
           (push-stack tramp (ParseTask. (first parser-sequence) continue-index)))
         (push-result tramp node-key (make-success new-results-so-far continue-index))))))
 
 ; The top level listener
 
 (def TopListener 
-  (reify
-    Listener
-    (notify [_ result tramp] 
-      (when (total-success? tramp result)
-        (swap! (:success tramp) conj result)))))
+  (fn [result tramp] 
+    (when (total-success? tramp result)
+      (swap! (:success tramp) conj result))))
 
 ;; Parsers
 
@@ -178,14 +172,14 @@
   (-parse [this index tramp]
     ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
     ; and with a final target of notifying this parser when the whole sequence is complete
-    (push-listener tramp [index (first parsers)] (CatListener. [] (next parsers) [index this]))
+    (push-listener tramp [index (first parsers)] (CatListener [] (next parsers) [index this]))
     (push-stack tramp (ParseTask. (first parsers) index))))
 
 (defrecord Alt [parsers]
   Parser
   (-parse [this index tramp]
     (doseq [parser parsers]
-      (push-listener tramp [index parser] (NodeListener. [index this]))
+      (push-listener tramp [index parser] (NodeListener [index this]))
       (push-stack tramp (ParseTask. parser index)))))
 
 (def Epsilon
