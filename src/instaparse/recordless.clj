@@ -3,6 +3,8 @@
 
 ;TODO
 ;Implement full-parser variants
+;Don't push same parsing task twice onto stack
+;Listener list doesn't need to be set
 ;Lazy-seq
 ;Regexps
 ;Reduce
@@ -28,6 +30,17 @@
       :epsilon (epsilon-parse index tramp)
       :end (end-parse index tramp))))
 
+(declare alt-full-parse cat-full-parse string-full-parse epsilon-full-parse 
+         end-full-parse non-terminal-full-parse)
+(defn -full-parse [parser index tramp]
+  (if (keyword? parser) (non-terminal-full-parse parser index tramp)
+    (case (:tag parser)
+      :alt (alt-full-parse parser index tramp)
+      :cat (cat-full-parse parser index tramp)
+      :string (string-full-parse parser index tramp)
+      :epsilon (epsilon-full-parse index tramp)
+      :end (end-full-parse index tramp))))
+
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
 ; grammar is a map from non-terminals to parsers
@@ -50,7 +63,8 @@
 ; who care about the result.
 ; Both results and listeners are expected to be refs of sets.
 
-(defn make-node [] {:listeners (atom #{}) :results (atom #{})})
+(defn make-node [] {:listeners (atom #{}) :full-listeners (atom #{}) 
+                    :results (atom #{}) :full-results (atom #{})})
 
 ;; Trampoline helper functions
 
@@ -80,15 +94,21 @@
 
 (defn push-result
   "Pushes a result into the trampoline's node.
-   Schedules notification to all existing listeners of result."
+   Categorizes as either result or full-result.
+   Schedules notification to all existing listeners of result
+   (Full listeners only get notified about full results)"
   [tramp node-key result]
   (let [node (node-get tramp node-key)
-        results (:results node)]
+        total? (total-success? tramp result)
+        results (if total? (:full-results node) (:results node))]
     (when (not (@results result))  ; when result is not already in @results
       (add! :push-result)
       (swap! results conj result)
       (doseq [listener @(:listeners node)]
-        (push-stack tramp #(listener result)))))) 
+        (push-stack tramp #(listener result)))
+      (when total?
+        (doseq [listener @(:full-listeners node)]
+          (push-stack tramp #(listener result))))))) 
 
 (defn push-listener
   "Pushes a listener into the trampoline's node.
@@ -100,6 +120,21 @@
       (add! :push-listener)
       (swap! listeners conj listener)
       (doseq [result @(:results node)]
+        (push-stack tramp #(listener result)))
+      (doseq [result @(:full-results node)]
+        (push-stack tramp #(listener result)))
+      true))) 
+
+(defn push-full-listener
+  "Pushes a listener into the trampoline's node.
+   Schedules notification to listener of all existing full results."
+  [tramp node-key listener]
+  (let [node (node-get tramp node-key)
+        listeners (:full-listeners node)]
+    (when (not (@listeners listener))  ; when listener is not already in listeners
+      (add! :push-full-listener)
+      (swap! listeners conj listener)
+      (doseq [result @(:full-results node)]
         (push-stack tramp #(listener result)))
       true))) 
 
@@ -165,12 +200,32 @@
           (push-stack tramp #(-parse (first parser-sequence) continue-index tramp)))
         (push-result tramp node-key (make-success new-results-so-far continue-index))))))
 
+(defn singleton? [s]
+  (and (seq s) (not (next s))))
+
+(defn CatFullListener [results-so-far parser-sequence node-key tramp]
+  (fn [result] 
+    (let [{parsed-result :result continue-index :index} result
+          new-results-so-far (conj results-so-far parsed-result)]
+      (cond
+        (singleton? parser-sequence)
+        (when (push-listener tramp [continue-index (first parser-sequence)]
+                           (CatFullListener new-results-so-far (next parser-sequence) node-key tramp))
+          (push-stack tramp #(-full-parse (first parser-sequence) continue-index tramp)))
+        
+        (seq parser-sequence)
+        (when (push-listener tramp [continue-index (first parser-sequence)]
+                           (CatFullListener new-results-so-far (next parser-sequence) node-key tramp))
+          (push-stack tramp #(-parse (first parser-sequence) continue-index tramp)))
+        
+        :else
+        (push-result tramp node-key (make-success new-results-so-far continue-index))))))
+
 ; The top level listener
 
 (defn TopListener [tramp] 
   (fn [result] 
-    (when (total-success? tramp result)
-      (swap! (:success tramp) conj result))))
+    (swap! (:success tramp) conj result)))
 
 ;; Parsers
 
@@ -184,12 +239,30 @@
       (success tramp [index this] string end)
       (fail tramp index))))
 
+(defn string-full-parse
+  [this index tramp]
+  (let [string (:string this)
+        text (:text tramp)
+        end (min (count text) (+ index (count string)))
+        head (subs text index end)]      
+    (if (and (= end (count text)) (= string head))
+      (success tramp [index this] string end)
+      (fail tramp index))))
+
 (defn cat-parse
   [this index tramp]
   (let [parsers (:parsers this)]
     ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
     ; and with a final target of notifying this parser when the whole sequence is complete
     (when (push-listener tramp [index (first parsers)] (CatListener [] (next parsers) [index this] tramp))
+      (push-stack tramp #(-parse (first parsers) index tramp)))))
+
+(defn cat-full-parse
+  [this index tramp]
+  (let [parsers (:parsers this)]
+    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
+    ; and with a final target of notifying this parser when the whole sequence is complete
+    (when (push-listener tramp [index (first parsers)] (CatFullListener [] (next parsers) [index this] tramp))
       (push-stack tramp #(-parse (first parsers) index tramp)))))
 
 (defn alt-parse
@@ -199,15 +272,33 @@
       (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
         (push-stack tramp #(-parse parser index tramp))))))
 
+(defn alt-full-parse
+  [this index tramp]
+  (let [parsers (:parsers this)]
+    (doseq [parser parsers]
+      (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
+        (push-stack tramp #(-full-parse parser index tramp))))))
+
 (defn non-terminal-parse
   [this index tramp]
   (let [parser (get-parser (:grammar tramp) this)]
     (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
       (push-stack tramp #(-parse parser index tramp)))))
 
+(defn non-terminal-full-parse
+  [this index tramp]
+  (let [parser (get-parser (:grammar tramp) this)]
+    (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
+      (push-stack tramp #(-full-parse parser index tramp)))))
+
 (def Epsilon {:tag :epsilon})
 (defn epsilon-parse
   [index tramp] (success tramp [index Epsilon] nil index))
+(defn epsilon-full-parse
+  [index tramp] 
+  (if (= index (count (:text tramp)))
+    (success tramp [index Epsilon] nil index)
+    (fail tramp index)))
 
 (def End {:tag :end})
 (defn end-parse
@@ -215,6 +306,7 @@
   (if (= index (count (:text tramp)))
     (success tramp [index End] nil index)
     (fail tramp index)))
+(def end-full-parse end-parse)
     
 (defn alt [& parsers] {:tag :alt :parsers parsers})
 (defn cat [& parsers] {:tag :cat :parsers parsers})
@@ -223,8 +315,8 @@
 (defn parse [grammar parser text]
   (clear!)
   (let [tramp (make-tramp grammar text)]
-    (push-listener tramp [0 parser] (TopListener tramp))
-    (push-stack tramp #(-parse parser 0 tramp))
+    (push-full-listener tramp [0 parser] (TopListener tramp))
+    (push-stack tramp #(-full-parse parser 0 tramp))
     (run tramp)
     (if @(:success tramp) @(:success tramp) @(:failure tramp))))
 
@@ -237,3 +329,10 @@
 (def grammar6 {:s (alt (cat (string "a") :s) (string "a"))})
 (def grammar7 {:s (alt (cat (string "a") :s) Epsilon)})
 (def grammar8 {:s (alt (cat (string "a") :s End) (string "a"))})
+(def grammar9 {:s (alt (cat (string "a") :s)
+                       (cat (string "b") :s)
+                       Epsilon)})
+(def grammar10 {:s (alt (cat :s (string "a") )
+                       (cat :s (string "b") )
+                       Epsilon)})
+(def grammar11 {:s (alt (cat :s (string "a")) (string "a"))})
