@@ -1,15 +1,25 @@
 (ns instaparse.recordless
   (:use clojure.pprint))
 
+;TODO
+;Implement full-parser variants
+;Lazy-seq
+;Regexps
+;Reduce
+;Kleene star and plus
+;First and followed sets
+;Error messages
+
+
 (defn get-parser [grammar p]
   (get grammar p p))
 
 (declare alt-parse cat-parse string-parse epsilon-parse end-parse non-terminal-parse)
-(defn uparse [grammar parser index tramp]
-  (if (keyword? parser) (non-terminal-parse grammar parser index tramp)
+(defn -parse [parser index tramp]
+  (if (keyword? parser) (non-terminal-parse parser index tramp)
     (case (:tag parser)
-      :alt (alt-parse grammar parser index tramp)
-      :cat (cat-parse grammar parser index tramp)
+      :alt (alt-parse parser index tramp)
+      :cat (cat-parse parser index tramp)
       :string (string-parse parser index tramp)
       :epsilon (epsilon-parse index tramp)
       :end (end-parse index tramp))))
@@ -21,8 +31,8 @@
 ; success contains a successful parse
 ; failure contains the index of the furthest-along failure
 
-(defrecord Tramp [text stack nodes success failure])
-(defn make-tramp [text] (Tramp. text (atom []) (atom {}) (atom nil) (atom 0)))
+(defrecord Tramp [grammar text stack nodes success failure])
+(defn make-tramp [grammar text] (Tramp. grammar text (atom []) (atom {}) (atom nil) (atom 0)))
   
 ; A Success record contains the result and the index to continue from
 (defn make-success [result index] {:result result :index index})
@@ -117,7 +127,7 @@
   (let [stack (:stack tramp)]
     (while (pos? (count @stack))
       (step stack)
-      (pprint stack)
+      ;(pprint stack)
       )))
 
 ;; Listeners
@@ -135,14 +145,14 @@
 ; before, and a list of parsers that remain.  Also, the node-key of the final node
 ; that needs to know the overall result of the cat parser.
 
-(defn CatListener [results-so-far parser-sequence node-key tramp grammar]
+(defn CatListener [results-so-far parser-sequence node-key tramp]
   (fn [result] 
     (let [{parsed-result :result continue-index :index} result
           new-results-so-far (conj results-so-far parsed-result)]
       (if (seq parser-sequence)
         (when (push-listener tramp [continue-index (first parser-sequence)]
-                           (CatListener new-results-so-far (next parser-sequence) node-key tramp grammar))
-          (push-stack tramp #(uparse grammar (first parser-sequence) continue-index tramp)))
+                           (CatListener new-results-so-far (next parser-sequence) node-key tramp))
+          (push-stack tramp #(-parse (first parser-sequence) continue-index tramp)))
         (push-result tramp node-key (make-success new-results-so-far continue-index))))))
 
 ; The top level listener
@@ -165,25 +175,25 @@
       (fail tramp index))))
 
 (defn cat-parse
-  [grammar this index tramp]
+  [this index tramp]
   (let [parsers (:parsers this)]
     ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
     ; and with a final target of notifying this parser when the whole sequence is complete
-    (when (push-listener tramp [index (first parsers)] (CatListener [] (next parsers) [index this] tramp grammar))
-      (push-stack tramp #(uparse grammar (first parsers) index tramp)))))
+    (when (push-listener tramp [index (first parsers)] (CatListener [] (next parsers) [index this] tramp))
+      (push-stack tramp #(-parse (first parsers) index tramp)))))
 
 (defn alt-parse
-  [grammar this index tramp]
+  [this index tramp]
   (let [parsers (:parsers this)]
     (doseq [parser parsers]
       (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
-        (push-stack tramp #(uparse grammar parser index tramp))))))
+        (push-stack tramp #(-parse parser index tramp))))))
 
 (defn non-terminal-parse
-  [grammar this index tramp]
-  (let [parser (get-parser grammar this)]
+  [this index tramp]
+  (let [parser (get-parser (:grammar tramp) this)]
     (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
-      (push-stack tramp #(uparse grammar parser index tramp)))))
+      (push-stack tramp #(-parse parser index tramp)))))
 
 (def Epsilon {:tag :epsilon})
 (defn epsilon-parse
@@ -196,19 +206,14 @@
     (success tramp [index End] nil index)
     (fail tramp index)))
     
-;(extend-type clojure.lang.Delay
-;  Parser
-;  (-parse [this index tramp]
-;    (-parse (deref this) index tramp)))
-
 (defn alt [& parsers] {:tag :alt :parsers parsers})
 (defn cat [& parsers] {:tag :cat :parsers parsers})
 (defn string [s] {:tag :string :string s})
 
 (defn parse [grammar parser text]
-  (let [tramp (make-tramp text)]
+  (let [tramp (make-tramp grammar text)]
     (push-listener tramp [0 parser] (TopListener tramp))
-    (push-stack tramp #(uparse grammar parser 0 tramp))
+    (push-stack tramp #(-parse parser 0 tramp))
     (run tramp)
     (if @(:success tramp) @(:success tramp) @(:failure tramp))))
 
