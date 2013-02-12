@@ -2,7 +2,7 @@
   (:use clojure.pprint))
 
 ;TODO
-;Implement full-parser variants
+;Left recursion doesn't work yet.
 ;Don't push same parsing task twice onto stack
 ;Listener list doesn't need to be set
 ;Lazy-seq
@@ -22,6 +22,7 @@
 
 (declare alt-parse cat-parse string-parse epsilon-parse end-parse non-terminal-parse)
 (defn -parse [parser index tramp]
+  (println "-parse" index parser)
   (if (keyword? parser) (non-terminal-parse parser index tramp)
     (case (:tag parser)
       :alt (alt-parse parser index tramp)
@@ -33,6 +34,7 @@
 (declare alt-full-parse cat-full-parse string-full-parse epsilon-full-parse 
          end-full-parse non-terminal-full-parse)
 (defn -full-parse [parser index tramp]
+  (println "-full-parse" index parser)
   (if (keyword? parser) (non-terminal-full-parse parser index tramp)
     (case (:tag parser)
       :alt (alt-full-parse parser index tramp)
@@ -81,6 +83,21 @@
   (add! :push-stack)
   (swap! (:stack tramp) conj item))
 
+(defn listener-exists?
+  "Tests whether node already has a listener"
+  [tramp node-key]
+  (let [nodes (:nodes tramp)]
+    (when-let [node (@nodes node-key)]
+      (seq @(:listeners node)))))
+
+(defn full-listener-exists?
+  "Tests whether node already has a full-listener"
+  [tramp node-key]
+  (let [nodes (:nodes tramp)]
+    (when-let [node (@nodes node-key)]
+      (or (seq @(:full-listeners node))
+          (seq @(:listeners node))))))
+
 (defn node-get
   "Gets node if already exists, otherwise creates one"
   [tramp node-key]
@@ -114,7 +131,8 @@
   "Pushes a listener into the trampoline's node.
    Schedules notification to listener of all existing results."
   [tramp node-key listener]
-  (let [node (node-get tramp node-key)
+  (let [listener-already-exists? (listener-exists? tramp node-key)
+        node (node-get tramp node-key)
         listeners (:listeners node)]
     (when (not (@listeners listener))  ; when listener is not already in listeners
       (add! :push-listener)
@@ -123,20 +141,21 @@
         (push-stack tramp #(listener result)))
       (doseq [result @(:full-results node)]
         (push-stack tramp #(listener result)))
-      true))) 
+      (not listener-already-exists?)))) 
 
 (defn push-full-listener
   "Pushes a listener into the trampoline's node.
    Schedules notification to listener of all existing full results."
   [tramp node-key listener]
-  (let [node (node-get tramp node-key)
+  (let [full-listener-already-exists? (full-listener-exists? tramp node-key)
+        node (node-get tramp node-key)
         listeners (:full-listeners node)]
     (when (not (@listeners listener))  ; when listener is not already in listeners
       (add! :push-full-listener)
       (swap! listeners conj listener)
       (doseq [result @(:full-results node)]
         (push-stack tramp #(listener result)))
-      true))) 
+      (not full-listener-already-exists?)))) 
 
 (defn success [tramp node-key result end]
   (push-result tramp node-key (make-success result end)))
@@ -172,7 +191,7 @@
   (let [stack (:stack tramp)]
     (while (pos? (count @stack))
       (step stack)
-      ;(pprint stack)
+      ;(pprint tramp)
       )))
 
 ;; Listeners
@@ -209,7 +228,7 @@
           new-results-so-far (conj results-so-far parsed-result)]
       (cond
         (singleton? parser-sequence)
-        (when (push-listener tramp [continue-index (first parser-sequence)]
+        (when (push-full-listener tramp [continue-index (first parser-sequence)]
                            (CatFullListener new-results-so-far (next parser-sequence) node-key tramp))
           (push-stack tramp #(-full-parse (first parser-sequence) continue-index tramp)))
         
@@ -318,7 +337,7 @@
     (push-full-listener tramp [0 parser] (TopListener tramp))
     (push-stack tramp #(-full-parse parser 0 tramp))
     (run tramp)
-    (if @(:success tramp) @(:success tramp) @(:failure tramp))))
+    [tramp (if @(:success tramp) @(:success tramp) @(:failure tramp))]))
 
 (def grammar1 {:s (alt (string "a") (string "aa") (string "aaa"))})
 (def grammar2 {:s (alt (string "a") (string "b"))})
