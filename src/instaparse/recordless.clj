@@ -11,6 +11,10 @@
 ;Error messages
 
 
+(def stats (atom {}))
+(defn add! [call] (swap! stats update-in [call] (fnil inc 0)))
+(defn clear! [] (reset! stats {}))
+
 (defn get-parser [grammar p]
   (get grammar p p))
 
@@ -60,6 +64,7 @@
 (defn push-stack
   "Pushes an item onto the trampoline's stack"
   [tramp item]
+  (add! :push-stack)
   (swap! (:stack tramp) conj item))
 
 (defn node-get
@@ -69,6 +74,7 @@
     (if-let [node (@nodes node-key)]
       node 
       (let [node (make-node)]
+        (add! :create-node)
         (swap! nodes assoc node-key node)
         node))))
 
@@ -79,6 +85,7 @@
   (let [node (node-get tramp node-key)
         results (:results node)]
     (when (not (@results result))  ; when result is not already in @results
+      (add! :push-result)
       (swap! results conj result)
       (doseq [listener @(:listeners node)]
         (push-stack tramp #(listener result)))))) 
@@ -90,6 +97,7 @@
   (let [node (node-get tramp node-key)
         listeners (:listeners node)]
     (when (not (@listeners listener))  ; when listener is not already in listeners
+      (add! :push-listener)
       (swap! listeners conj listener)
       (doseq [result @(:results node)]
         (push-stack tramp #(listener result)))
@@ -213,6 +221,7 @@
 (defn string [s] {:tag :string :string s})
 
 (defn parse [grammar parser text]
+  (clear!)
   (let [tramp (make-tramp grammar text)]
     (push-listener tramp [0 parser] (TopListener tramp))
     (push-stack tramp #(-parse parser 0 tramp))
