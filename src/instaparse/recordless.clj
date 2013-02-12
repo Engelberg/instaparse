@@ -24,7 +24,9 @@
       :epsilon (epsilon-parse index tramp)
       :end (end-parse index tramp))))
 
-; The trampoline structure contains the text to parse, a stack and a nodes
+; The trampoline structure contains the grammar, text to parse, a stack and a nodes
+; Also contains an atom to hold successes and one to hold index of failure point.
+; grammar is a map from non-terminals to parsers
 ; text is a string
 ; stack is an atom of a vector containing items implementing the Execute protocol.
 ; nodes is an atom containing a map from [index parser] pairs to Nodes
