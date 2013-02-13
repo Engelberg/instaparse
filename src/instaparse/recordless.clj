@@ -10,6 +10,7 @@
 ;Kleene star and plus
 ;First and followed sets
 ;Error messages
+;Concurrency
 
 
 (def stats (atom {}))
@@ -21,7 +22,7 @@
 
 (declare alt-parse cat-parse string-parse epsilon-parse end-parse non-terminal-parse)
 (defn -parse [parser index tramp]
-  (println "-parse" index parser)
+;  (println "-parse" index parser)
   (if (keyword? parser) (non-terminal-parse parser index tramp)
     (case (:tag parser)
       :alt (alt-parse parser index tramp)
@@ -33,7 +34,7 @@
 (declare alt-full-parse cat-full-parse string-full-parse epsilon-full-parse 
          end-full-parse non-terminal-full-parse)
 (defn -full-parse [parser index tramp]
-  (println "-full-parse" index parser)
+;  (println "-full-parse" index parser)
   (if (keyword? parser) (non-terminal-full-parse parser index tramp)
     (case (:tag parser)
       :alt (alt-full-parse parser index tramp)
@@ -62,9 +63,10 @@
 ; The trampoline's nodes field is map from [index parser] pairs to Nodes
 ; Nodes track the results of a given parser at a given index, and the listeners
 ; who care about the result.
-; Both results and listeners are expected to be refs of sets.
+; results are expected to be refs of sets.
+; listeners are refs of vectors.
 
-(defn make-node [] {:listeners (atom #{}) :full-listeners (atom #{}) 
+(defn make-node [] {:listeners (atom []) :full-listeners (atom []) 
                     :results (atom #{}) :full-results (atom #{})})
 
 ;; Trampoline helper functions
@@ -87,15 +89,15 @@
   [tramp node-key]
   (let [nodes (:nodes tramp)]
     (when-let [node (@nodes node-key)]
-      (seq @(:listeners node)))))
+      (pos? (count @(:listeners node))))))
 
 (defn full-listener-exists?
   "Tests whether node already has a full-listener"
   [tramp node-key]
   (let [nodes (:nodes tramp)]
     (when-let [node (@nodes node-key)]
-      (or (seq @(:full-listeners node))
-          (seq @(:listeners node))))))
+      (or (pos? (count @(:full-listeners node)))
+          (pos? (count @(:listeners node)))))))
 
 (defn node-get
   "Gets node if already exists, otherwise creates one"
@@ -133,14 +135,13 @@
   (let [listener-already-exists? (listener-exists? tramp node-key)
         node (node-get tramp node-key)
         listeners (:listeners node)]
-    (when (not (@listeners listener))  ; when listener is not already in listeners
-      (add! :push-listener)
-      (swap! listeners conj listener)
-      (doseq [result @(:results node)]
-        (push-stack tramp #(listener result)))
-      (doseq [result @(:full-results node)]
-        (push-stack tramp #(listener result)))
-      (not listener-already-exists?)))) 
+    (add! :push-listener)
+    (swap! listeners conj listener)
+    (doseq [result @(:results node)]
+      (push-stack tramp #(listener result)))
+    (doseq [result @(:full-results node)]
+      (push-stack tramp #(listener result)))
+    (not listener-already-exists?))) 
 
 (defn push-full-listener
   "Pushes a listener into the trampoline's node.
@@ -149,12 +150,11 @@
   (let [full-listener-already-exists? (full-listener-exists? tramp node-key)
         node (node-get tramp node-key)
         listeners (:full-listeners node)]
-    (when (not (@listeners listener))  ; when listener is not already in listeners
-      (add! :push-full-listener)
-      (swap! listeners conj listener)
-      (doseq [result @(:full-results node)]
-        (push-stack tramp #(listener result)))
-      (not full-listener-already-exists?)))) 
+    (add! :push-full-listener)
+    (swap! listeners conj listener)
+    (doseq [result @(:full-results node)]
+      (push-stack tramp #(listener result)))
+    (not full-listener-already-exists?))) 
 
 (defn success [tramp node-key result end]
   (push-result tramp node-key (make-success result end)))
@@ -239,7 +239,7 @@
         :else
         (push-result tramp node-key (make-success new-results-so-far continue-index))))))
 
-; The top level listener
+; The top level listener is the third and final kind of listener
 
 (defn TopListener [tramp] 
   (fn [result] 
@@ -334,7 +334,6 @@
 
 (defn string [s] {:tag :string :string s})
 
-
 ;; End-user parsing function
 
 (defn parse [grammar parser text]
@@ -361,3 +360,7 @@
                        (cat :s (string "b") )
                        Epsilon)})
 (def grammar11 {:s (alt (cat :s (string "a")) (string "a"))})
+(def grammar12 {:s (alt :a :a :a)
+                :a (alt (cat :s (string "a")) (string "a"))})
+(def grammar13 {:s :a
+                :a (alt (cat :s (string "a")) (string "a"))})
