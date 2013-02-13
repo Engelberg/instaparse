@@ -2,9 +2,8 @@
   (:use clojure.pprint))
 
 ;TODO
-;Left recursion doesn't work yet.
-;Don't push same parsing task twice onto stack
 ;Listener list doesn't need to be set
+; or maybe it should be set, but listeners shouldn't be functions
 ;Lazy-seq
 ;Regexps
 ;Reduce
@@ -327,8 +326,16 @@
     (fail tramp index)))
 (def end-full-parse end-parse)
     
-(defn alt [& parsers] {:tag :alt :parsers parsers})
-(defn cat [& parsers] {:tag :cat :parsers parsers})
+(defn alt [& parsers] 
+  (cond
+    (empty? parsers) Epsilon
+    (singleton? parsers) (first parsers)
+    :else {:tag :alt :parsers parsers}))
+(defn cat [& parsers]
+  (cond
+    (empty? parsers) Epsilon
+    (singleton? parsers) (first parsers) ; apply vector reduction
+    :else {:tag :cat :parsers parsers}))
 (defn string [s] {:tag :string :string s})
 
 (defn parse [grammar parser text]
