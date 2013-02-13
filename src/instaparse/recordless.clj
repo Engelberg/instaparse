@@ -326,17 +326,25 @@
     (fail tramp index)))
 (def end-full-parse end-parse)
     
+
+;; Ways to build parsers
+
 (defn alt [& parsers] 
   (cond
     (empty? parsers) Epsilon
     (singleton? parsers) (first parsers)
     :else {:tag :alt :parsers parsers}))
+
 (defn cat [& parsers]
   (cond
     (empty? parsers) Epsilon
     (singleton? parsers) (first parsers) ; apply vector reduction
     :else {:tag :cat :parsers parsers}))
+
 (defn string [s] {:tag :string :string s})
+
+
+;; End-user parsing function
 
 (defn parse [grammar parser text]
   (clear!)
