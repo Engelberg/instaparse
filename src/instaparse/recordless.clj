@@ -317,16 +317,7 @@
   (if (= index (count (:text tramp)))
     (success tramp [index Epsilon] nil index)
     (fail tramp index)))
-
-(def End {:tag :end})
-(defn end-parse
-  [index tramp] 
-  (if (= index (count (:text tramp)))
-    (success tramp [index End] nil index)
-    (fail tramp index)))
-(def end-full-parse end-parse)
     
-
 ;; Ways to build parsers
 
 (defn alt [& parsers] 
