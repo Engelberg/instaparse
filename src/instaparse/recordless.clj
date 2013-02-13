@@ -2,8 +2,6 @@
   (:use clojure.pprint))
 
 ;TODO
-;Listener list doesn't need to be set
-; or maybe it should be set, but listeners shouldn't be functions
 ;Lazy-seq
 ;Regexps
 ;Reduce
@@ -188,11 +186,18 @@
   "Executes the stack until exhausted"
   [tramp]
   (let [stack (:stack tramp)]
-    (while (pos? (count @stack))
-      (step stack)
-      ;(pprint tramp)
-      )))
-
+    (loop []
+      (cond
+        @(:success tramp)
+        (lazy-seq (cons (:result @(:success tramp))
+                        (do (reset! (:success tramp) nil)
+                          (run tramp))))
+        
+        (pos? (count @stack))
+        (do (step stack) (recur))
+        
+        :else nil))))
+    
 ;; Listeners
 
 ; There are three kinds of listeners that receive notifications
@@ -243,7 +248,7 @@
 
 (defn TopListener [tramp] 
   (fn [result] 
-    (swap! (:success tramp) conj result)))
+    (reset! (:success tramp) result)))
 
 ;; Parsers
 
@@ -341,8 +346,9 @@
   (let [tramp (make-tramp grammar text)]
     (push-full-listener tramp [0 parser] (TopListener tramp))
     (push-stack tramp #(-full-parse parser 0 tramp))
-    (run tramp)
-    [tramp (if @(:success tramp) @(:success tramp) @(:failure tramp))]))
+    (if-let [all-parses (run tramp)]
+      all-parses 
+      @(:failure tramp))))
 
 (def grammar1 {:s (alt (string "a") (string "aa") (string "aaa"))})
 (def grammar2 {:s (alt (string "a") (string "b"))})
@@ -364,3 +370,6 @@
                 :a (alt (cat :s (string "a")) (string "a"))})
 (def grammar13 {:s :a
                 :a (alt (cat :s (string "a")) (string "a"))})
+(def amb-grammar {:s (alt (string "b") 
+                          (cat :s :s)
+                          (cat :s :s :s))})
