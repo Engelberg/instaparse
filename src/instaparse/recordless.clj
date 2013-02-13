@@ -2,10 +2,11 @@
   (:use clojure.pprint))
 
 ;TODO
-;Lazy-seq
+;Turn keyword into non-terminal map
 ;Regexps
 ;Reduce
-;Kleene star and plus
+;Kleene star and plus and ?
+;I/O
 ;First and followed sets
 ;Error messages
 ;Concurrency
@@ -21,25 +22,25 @@
 (declare alt-parse cat-parse string-parse epsilon-parse end-parse non-terminal-parse)
 (defn -parse [parser index tramp]
 ;  (println "-parse" index parser)
-  (if (keyword? parser) (non-terminal-parse parser index tramp)
-    (case (:tag parser)
-      :alt (alt-parse parser index tramp)
-      :cat (cat-parse parser index tramp)
-      :string (string-parse parser index tramp)
-      :epsilon (epsilon-parse index tramp)
-      :end (end-parse index tramp))))
+  (case (:tag parser)
+    :nt (non-terminal-parse parser index tramp)
+    :alt (alt-parse parser index tramp)
+    :cat (cat-parse parser index tramp)
+    :string (string-parse parser index tramp)
+    :epsilon (epsilon-parse index tramp)
+    :end (end-parse index tramp)))
 
 (declare alt-full-parse cat-full-parse string-full-parse epsilon-full-parse 
          end-full-parse non-terminal-full-parse)
 (defn -full-parse [parser index tramp]
 ;  (println "-full-parse" index parser)
-  (if (keyword? parser) (non-terminal-full-parse parser index tramp)
-    (case (:tag parser)
-      :alt (alt-full-parse parser index tramp)
-      :cat (cat-full-parse parser index tramp)
-      :string (string-full-parse parser index tramp)
-      :epsilon (epsilon-full-parse index tramp)
-      :end (end-full-parse index tramp))))
+  (case (:tag parser)
+    :nt (non-terminal-full-parse parser index tramp)
+    :alt (alt-full-parse parser index tramp)
+    :cat (cat-full-parse parser index tramp)
+    :string (string-full-parse parser index tramp)
+    :epsilon (epsilon-full-parse index tramp)
+    :end (end-full-parse index tramp)))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
@@ -304,13 +305,13 @@
 
 (defn non-terminal-parse
   [this index tramp]
-  (let [parser (get-parser (:grammar tramp) this)]
+  (let [parser (get-parser (:grammar tramp) (:keyword this))]
     (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
       (push-stack tramp #(-parse parser index tramp)))))
 
 (defn non-terminal-full-parse
   [this index tramp]
-  (let [parser (get-parser (:grammar tramp) this)]
+  (let [parser (get-parser (:grammar tramp) (:keyword this))]
     (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
       (push-stack tramp #(-full-parse parser index tramp)))))
 
@@ -339,6 +340,8 @@
 
 (defn string [s] {:tag :string :string s})
 
+(defn nt [s] {:tag :nt :keyword s})
+
 ;; End-user parsing function
 
 (defn parse [grammar parser text]
@@ -352,24 +355,24 @@
 
 (def grammar1 {:s (alt (string "a") (string "aa") (string "aaa"))})
 (def grammar2 {:s (alt (string "a") (string "b"))})
-(def grammar3 {:s (alt (cat (string "a") :s) End)})
+(def grammar3 {:s (alt (cat (string "a") (nt :s)) End)})
 (def grammar4 {:y (string "b")
-               :x (cat (string "a") :y)})            
+               :x (cat (string "a") (nt :y))})            
 (def grammar5 {:s (cat (string "a") (string "b") (string "c"))})
-(def grammar6 {:s (alt (cat (string "a") :s) (string "a"))})
-(def grammar7 {:s (alt (cat (string "a") :s) Epsilon)})
-(def grammar8 {:s (alt (cat (string "a") :s End) (string "a"))})
-(def grammar9 {:s (alt (cat (string "a") :s)
-                       (cat (string "b") :s)
+(def grammar6 {:s (alt (cat (string "a") (nt :s)) (string "a"))})
+(def grammar7 {:s (alt (cat (string "a") (nt :s)) Epsilon)})
+(def grammar8 {:s (alt (cat (string "a") (nt :s) End) (string "a"))})
+(def grammar9 {:s (alt (cat (string "a") (nt :s))
+                       (cat (string "b") (nt :s))
                        Epsilon)})
-(def grammar10 {:s (alt (cat :s (string "a") )
-                       (cat :s (string "b") )
+(def grammar10 {:s (alt (cat (nt :s) (string "a") )
+                       (cat (nt :s) (string "b") )
                        Epsilon)})
-(def grammar11 {:s (alt (cat :s (string "a")) (string "a"))})
-(def grammar12 {:s (alt :a :a :a)
-                :a (alt (cat :s (string "a")) (string "a"))})
-(def grammar13 {:s :a
-                :a (alt (cat :s (string "a")) (string "a"))})
+(def grammar11 {:s (alt (cat (nt :s) (string "a")) (string "a"))})
+(def grammar12 {:s (alt (nt :a) (nt :a) (nt :a))
+                :a (alt (cat (nt :s) (string "a")) (string "a"))})
+(def grammar13 {:s (nt :a)
+                :a (alt (cat (nt :s) (string "a")) (string "a"))})
 (def amb-grammar {:s (alt (string "b") 
-                          (cat :s :s)
-                          (cat :s :s :s))})
+                          (cat (nt :s) (nt :s))
+                          (cat (nt :s) (nt :s) (nt :s)))})
