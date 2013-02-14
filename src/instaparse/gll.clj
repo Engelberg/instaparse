@@ -380,19 +380,19 @@
 (defn apply-reduction [f result]
   (if (flattenable? result) (apply f (nt-flatten result)) (f result)))
 
-(defn hiccup-nonterminal-reduction [key] 
+(defn hiccup-non-terminal-reduction [key] 
   (fn [& parse-result]
     ;(cons key parse-result)))
     (into [key] parse-result)))
 
-(defn enlive-nonterminal-reduction [key] 
+(defn enlive-non-terminal-reduction [key] 
   (fn [& parse-result]
     {:tag key, :content parse-result}))
 
-(def standard-nonterminal-reduction hiccup-nonterminal-reduction)
+(def standard-non-terminal-reduction hiccup-non-terminal-reduction)
 
 (defn nt [s] {:tag :nt :keyword s 
-              :red (standard-nonterminal-reduction s)})
+              :red (standard-non-terminal-reduction s)})
 
 ;; End-user parsing function
 
