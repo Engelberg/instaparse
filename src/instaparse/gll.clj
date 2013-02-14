@@ -3,7 +3,6 @@
 
 ;TODO
 ;Regexps
-;Reduce
 ;Kleene star and plus and ?
 ;I/O
 ;First and followed sets
@@ -108,6 +107,8 @@
         (swap! nodes assoc node-key node)
         node))))
 
+(declare apply-reduction)
+
 (defn push-result
   "Pushes a result into the trampoline's node.
    Categorizes as either result or full-result.
@@ -115,6 +116,12 @@
    (Full listeners only get notified about full results)"
   [tramp node-key result]
   (let [node (node-get tramp node-key)
+        ;; reduce result with reduction function if it exists
+        result (if-let [reduction-function ((node-key 1) :red)]
+                 (assoc result :result 
+                        (apply-reduction reduction-function
+                                         (:result result)))
+                 result)        
         total? (total-success? tramp result)
         results (if total? (:full-results node) (:results node))]
     (when (not (@results result))  ; when result is not already in @results
@@ -242,7 +249,7 @@
           (push-stack tramp #(-parse (first parser-sequence) continue-index tramp)))
         
         :else
-        (push-result tramp node-key (make-success new-results-so-far continue-index))))))
+        (push-result tramp node-key (make-success (make-flattenable new-results-so-far) continue-index))))))
 
 ; The top level listener is the third and final kind of listener
 
@@ -272,21 +279,26 @@
       (success tramp [index this] string end)
       (fail tramp index))))
 
-(defn cat-parse
-  [this index tramp]
-  (let [parsers (:parsers this)]
-    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
-    ; and with a final target of notifying this parser when the whole sequence is complete
-    (when (push-listener tramp [index (first parsers)] (CatListener [] (next parsers) [index this] tramp))
-      (push-stack tramp #(-parse (first parsers) index tramp)))))
-
-(defn cat-full-parse
-  [this index tramp]
-  (let [parsers (:parsers this)]
-    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
-    ; and with a final target of notifying this parser when the whole sequence is complete
-    (when (push-listener tramp [index (first parsers)] (CatFullListener [] (next parsers) [index this] tramp))
-      (push-stack tramp #(-parse (first parsers) index tramp)))))
+(declare make-flattenable)
+(let [empty-cat-result (make-flattenable [])]
+	(defn cat-parse
+	  [this index tramp]
+	  (let [parsers (:parsers this)]
+	    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
+	    ; and with a final target of notifying this parser when the whole sequence is complete
+	    (when (push-listener tramp [index (first parsers)] 
+                          (CatListener empty-cat-result (next parsers) [index this] tramp))
+	      (push-stack tramp #(-parse (first parsers) index tramp)))))
+	
+	(defn cat-full-parse
+	  [this index tramp]
+	  (let [parsers (:parsers this)]
+	    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
+	    ; and with a final target of notifying this parser when the whole sequence is complete
+	    (when (push-listener tramp [index (first parsers)] 
+                          (CatFullListener empty-cat-result (next parsers) [index this] tramp))
+	      (push-stack tramp #(-parse (first parsers) index tramp)))))
+ )
 
 (defn alt-parse
   [this index tramp]
@@ -325,6 +337,8 @@
     
 ;; Ways to build parsers
 
+(defn red [parser f] (assoc parser :red f))
+
 (defn alt [& parsers] 
   (cond
     (empty? parsers) Epsilon
@@ -339,7 +353,46 @@
 
 (defn string [s] {:tag :string :string s})
 
-(defn nt [s] {:tag :nt :keyword s})
+(defn make-flattenable [s]
+  (with-meta s {:flattenable? true}))
+
+(defn flattenable? [s]
+  (:flattenable? (meta s)))
+
+;(defn nt-flatten
+;  ([s] (nt-flatten s []))
+;  ([s v]
+;    (if (seq s)
+;      (let [fs (first s)]
+;        (if (flattenable? fs)
+;          (recur (next s) (into v (nt-flatten fs)))
+;          (recur (next s) (conj v fs))))
+;      v)))
+
+(defn nt-flatten [s]
+  (when (seq s)
+    (let [fs (first s)]
+      (cond 
+;        (nil? fs)         (recur (next s))
+        (flattenable? fs) (concat fs (nt-flatten (next s)))
+        :else             (lazy-seq (cons fs (nt-flatten (next s))))))))
+
+(defn apply-reduction [f result]
+  (if (flattenable? result) (apply f (nt-flatten result)) (f result)))
+
+(defn hiccup-nonterminal-reduction [key] 
+  (fn [& parse-result]
+    ;(cons key parse-result)))
+    (into [key] parse-result)))
+
+(defn enlive-nonterminal-reduction [key] 
+  (fn [& parse-result]
+    {:tag key, :content parse-result}))
+
+(def standard-nonterminal-reduction hiccup-nonterminal-reduction)
+
+(defn nt [s] {:tag :nt :keyword s 
+              :red (standard-nonterminal-reduction s)})
 
 ;; End-user parsing function
 
@@ -354,13 +407,13 @@
 
 (def grammar1 {:s (alt (string "a") (string "aa") (string "aaa"))})
 (def grammar2 {:s (alt (string "a") (string "b"))})
-(def grammar3 {:s (alt (cat (string "a") (nt :s)) End)})
+(def grammar3 {:s (alt (cat (string "a") (nt :s)) Epsilon)})
 (def grammar4 {:y (string "b")
                :x (cat (string "a") (nt :y))})            
 (def grammar5 {:s (cat (string "a") (string "b") (string "c"))})
 (def grammar6 {:s (alt (cat (string "a") (nt :s)) (string "a"))})
 (def grammar7 {:s (alt (cat (string "a") (nt :s)) Epsilon)})
-(def grammar8 {:s (alt (cat (string "a") (nt :s) End) (string "a"))})
+(def grammar8 {:s (alt (cat (string "a") (nt :s) Epsilon) (string "a"))})
 (def grammar9 {:s (alt (cat (string "a") (nt :s))
                        (cat (string "b") (nt :s))
                        Epsilon)})
