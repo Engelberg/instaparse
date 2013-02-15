@@ -5,6 +5,9 @@
 ;Regexps
 ;Kleene star and plus and ?
 ;I/O
+;    ENBF
+;    Special notation for suppressing from tree
+;    Special notation for making flattenable?
 ;First and followed sets
 ;Error messages
 ;Concurrency
@@ -359,16 +362,6 @@
 (defn flattenable? [s]
   (:flattenable? (meta s)))
 
-;(defn nt-flatten
-;  ([s] (nt-flatten s []))
-;  ([s v]
-;    (if (seq s)
-;      (let [fs (first s)]
-;        (if (flattenable? fs)
-;          (recur (next s) (into v (nt-flatten fs)))
-;          (recur (next s) (conj v fs))))
-;      v)))
-
 (defn nt-flatten [s]
   (when (seq s)
     (let [fs (first s)]
@@ -428,3 +421,11 @@
 (def amb-grammar {:s (alt (string "b") 
                           (cat (nt :s) (nt :s))
                           (cat (nt :s) (nt :s) (nt :s)))})
+(def paren-grammar {:s (alt (cat (string "(") (string ")"))
+                            (cat (string "(") (nt :s) (string ")"))
+                            (cat (nt :s) (nt :s)))})
+(def non-ll-grammar {:s (alt (nt :a) (nt :b))
+                      :a (alt (cat (string "a") (nt :a) (string "b"))
+                              Epsilon)
+                      :b (alt (cat (string "a") (nt :b) (string "bb"))
+                              Epsilon)})
