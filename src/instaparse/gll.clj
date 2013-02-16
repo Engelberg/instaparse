@@ -11,6 +11,7 @@
 ;First and followed sets
 ;Error messages
 ;Concurrency
+;Allow parsing of arbitrary sequences.
 
 
 (def stats (atom {}))
@@ -20,7 +21,8 @@
 (defn get-parser [grammar p]
   (get grammar p p))
 
-(declare alt-parse cat-parse string-parse epsilon-parse end-parse non-terminal-parse)
+(declare alt-parse cat-parse string-parse epsilon-parse non-terminal-parse
+         opt-parse plus-parse star-parse)
 (defn -parse [parser index tramp]
 ;  (println "-parse" index parser)
   (case (:tag parser)
@@ -29,10 +31,12 @@
     :cat (cat-parse parser index tramp)
     :string (string-parse parser index tramp)
     :epsilon (epsilon-parse index tramp)
-    :end (end-parse index tramp)))
+    :opt (opt-parse parser index tramp)
+    :plus (plus-parse parser index tramp)
+    :star (star-parse parser index tramp)))
 
 (declare alt-full-parse cat-full-parse string-full-parse epsilon-full-parse 
-         end-full-parse non-terminal-full-parse)
+         non-terminal-full-parse opt-full-parse plus-full-parse star-full-parse)
 (defn -full-parse [parser index tramp]
 ;  (println "-full-parse" index parser)
   (case (:tag parser)
@@ -41,7 +45,9 @@
     :cat (cat-full-parse parser index tramp)
     :string (string-full-parse parser index tramp)
     :epsilon (epsilon-full-parse index tramp)
-    :end (end-full-parse index tramp)))
+    :opt (opt-full-parse parser index tramp)
+    :plus (plus-full-parse parser index tramp)
+    :star (star-full-parse parser index tramp)))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
@@ -252,7 +258,7 @@
           (push-stack tramp #(-parse (first parser-sequence) continue-index tramp)))
         
         :else
-        (push-result tramp node-key (make-success (make-flattenable new-results-so-far) continue-index))))))
+        (push-result tramp node-key (make-success new-results-so-far continue-index))))))
 
 ; The top level listener is the third and final kind of listener
 
@@ -282,7 +288,9 @@
       (success tramp [index this] string end)
       (fail tramp index))))
 
-(declare make-flattenable)
+(defn make-flattenable [s]
+  (with-meta s {:flattenable? true}))
+
 (let [empty-cat-result (make-flattenable [])]
 	(defn cat-parse
 	  [this index tramp]
@@ -317,6 +325,32 @@
       (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
         (push-stack tramp #(-full-parse parser index tramp))))))
 
+(defn opt-parse
+  [this index tramp]
+  (let [parser (:parser this)]
+    (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
+      (push-stack tramp #(-parse parser index tramp)))
+    (success tramp [index this] nil index)))
+
+(defn opt-full-parse
+  [this index tramp]
+  (let [parser (:parser this)]
+    (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
+      (push-stack tramp #(-full-parse parser index tramp)))
+    (if (= index (count (:text tramp)))
+      (success tramp [index this] nil index)
+      (fail tramp index))))
+
+; Not quite right
+(defn plus-parse
+  [this index tramp]
+  (let [parser (:parser this)]
+    (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
+      (push-stack tramp #(-parse parser index tramp)))
+    (push-listener tramp [index parser] 
+                   (CatListener empty-cat-result [this] [index this] tramp))))
+    
+
 (defn non-terminal-parse
   [this index tramp]
   (let [parser (get-parser (:grammar tramp) (:keyword this))]
@@ -342,22 +376,33 @@
 
 (defn red [parser f] (assoc parser :red f))
 
+(defn opt [parser] 
+  (if (= parser Epsilon) Epsilon
+    {:tag :opt :parser parser}))
+
+(defn plus [parser]
+  (if (= parser Epsilon) Epsilon
+    {:tag :plus :parser parser}))
+
+(defn star [parser] 
+  (if (= parser Epsilon) Epsilon
+    {:tag :star :parser parser}))
+
 (defn alt [& parsers] 
   (cond
-    (empty? parsers) Epsilon
+    (every? (partial = Epsilon) parsers) Epsilon
     (singleton? parsers) (first parsers)
     :else {:tag :alt :parsers parsers}))
 
 (defn cat [& parsers]
   (cond
-    (empty? parsers) Epsilon
+    (every? (partial = Epsilon) parsers) Epsilon
     (singleton? parsers) (first parsers) ; apply vector reduction
     :else {:tag :cat :parsers parsers}))
 
-(defn string [s] {:tag :string :string s})
-
-(defn make-flattenable [s]
-  (with-meta s {:flattenable? true}))
+(defn string [s] 
+  (if (= s "") Epsilon
+    {:tag :string :string s}))
 
 (defn flattenable? [s]
   (:flattenable? (meta s)))
@@ -366,12 +411,13 @@
   (when (seq s)
     (let [fs (first s)]
       (cond 
-;        (nil? fs)         (recur (next s))
-        (flattenable? fs) (concat fs (nt-flatten (next s)))
+        (nil? fs)         (recur (next s))
+        (flattenable? fs) (concat (nt-flatten fs) (nt-flatten (next s)))
         :else             (lazy-seq (cons fs (nt-flatten (next s))))))))
 
 (defn apply-reduction [f result]
-  (if (flattenable? result) (apply f (nt-flatten result)) (f result)))
+  (apply f (nt-flatten (make-flattenable [result]))))
+  ;(if (flattenable? result) (apply f (nt-flatten result)) (f result)))
 
 (defn hiccup-non-terminal-reduction [key] 
   (fn [& parse-result]
@@ -382,16 +428,21 @@
   (fn [& parse-result]
     {:tag key, :content parse-result}))
 
+(defn raw-non-terminal-reduction [key] 
+  (fn [& parse-result]
+    parse-result))
+
 (def standard-non-terminal-reduction hiccup-non-terminal-reduction)
 
-(defn nt [s] {:tag :nt :keyword s 
+(defn nt [s] {:tag :nt :keyword s
               :red (standard-non-terminal-reduction s)})
 
 ;; End-user parsing function
 
 (defn parse [grammar parser text]
   (clear!)
-  (let [tramp (make-tramp grammar text)]
+  (let [tramp (make-tramp grammar text)
+        parser (nt parser)]
     (push-full-listener tramp [0 parser] (TopListener tramp))
     (push-stack tramp #(-full-parse parser 0 tramp))
     (if-let [all-parses (run tramp)]
@@ -429,3 +480,5 @@
                               Epsilon)
                       :b (alt (cat (string "a") (nt :b) (string "bb"))
                               Epsilon)})
+(def grammar14 {:s (cat (opt (string "a")) (string "b"))})
+(def grammar15 {:s (cat (opt (string "a")) (opt (string "b")))})
