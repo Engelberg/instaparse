@@ -3,7 +3,6 @@
 
 ;TODO
 ;Regexps
-;Kleene star and plus and ?
 ;I/O
 ;    ENBF
 ;    Special notation for suppressing from tree
@@ -216,7 +215,7 @@
     
 ;; Listeners
 
-; There are three kinds of listeners that receive notifications
+; There are four kinds of listeners that receive notifications
 ; The first kind is a NodeListener which simply listens for a completed parse result
 ; Takes the node-key of the parser which is awaiting this result.
 
@@ -260,7 +259,33 @@
         :else
         (push-result tramp node-key (make-success new-results-so-far continue-index))))))
 
-; The top level listener is the third and final kind of listener
+; The third kind of listener is a PlusListener, which is a variation of
+; the CatListener but optimized for "one or more" parsers.
+
+(defn PlusListener [results-so-far parser prev-index node-key tramp]
+  (fn [result]
+    (let [{parsed-result :result continue-index :index} result]
+      (when (> continue-index prev-index)
+        (let [new-results-so-far (conj results-so-far parsed-result)]
+          (when (push-listener tramp [continue-index parser]
+                               (PlusListener new-results-so-far parser continue-index
+                                             node-key tramp))
+            (push-stack tramp #(-parse parser continue-index tramp)))
+          (push-result tramp node-key (make-success new-results-so-far continue-index)))))))
+
+(defn PlusFullListener [results-so-far parser prev-index node-key tramp]
+  (fn [result]
+    (let [{parsed-result :result continue-index :index} result]
+      (when (> continue-index prev-index)
+        (let [new-results-so-far (conj results-so-far parsed-result)]
+          (if (= continue-index (count (:text tramp)))
+            (push-result tramp node-key (make-success new-results-so-far continue-index))
+            (when (push-listener tramp [continue-index parser]
+                                 (PlusFullListener new-results-so-far parser node-key tramp))
+              (push-stack tramp #(-parse parser continue-index tramp)))))))))
+            
+
+; The top level listener is the final kind of listener
 
 (defn TopListener [tramp] 
   (fn [result] 
@@ -309,6 +334,42 @@
 	    (when (push-listener tramp [index (first parsers)] 
                           (CatFullListener empty-cat-result (next parsers) [index this] tramp))
 	      (push-stack tramp #(-parse (first parsers) index tramp)))))
+ 
+ (defn plus-parse
+	  [this index tramp]
+	  (let [parser (:parser this)]
+	    (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
+	      (push-stack tramp #(-parse parser index tramp)))
+	    (push-listener tramp [index parser] 
+	                   (PlusListener empty-cat-result parser index [index this] tramp))))
+ 
+ (defn plus-full-parse
+   [this index tramp]
+   (let [parser (:parser this)]
+     (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
+       (push-stack tramp #(-parse parser index tramp)))
+     (push-listener tramp [index parser]
+                    (PlusListener empty-cat-result parser index [index this] tramp))))
+ 
+ (defn star-parse
+	  [this index tramp]
+	  (let [parser (:parser this)]
+	    (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
+	      (push-stack tramp #(-parse parser index tramp)))
+	    (push-listener tramp [index parser] 
+	                   (PlusListener empty-cat-result parser index [index this] tramp))
+      (success tramp [index this] nil index)))
+
+ (defn star-full-parse
+   [this index tramp]
+   (let [parser (:parser this)]
+     (if (= index (count (:text tramp)))
+       (success tramp [index this] nil index)
+       (do
+         (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
+           (push-stack tramp #(-parse parser index tramp)))
+         (push-listener tramp [index parser]
+                        (PlusListener empty-cat-result parser index [index this] tramp))))))
  )
 
 (defn alt-parse
@@ -339,17 +400,7 @@
       (push-stack tramp #(-full-parse parser index tramp)))
     (if (= index (count (:text tramp)))
       (success tramp [index this] nil index)
-      (fail tramp index))))
-
-; Not quite right
-(defn plus-parse
-  [this index tramp]
-  (let [parser (:parser this)]
-    (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
-      (push-stack tramp #(-parse parser index tramp)))
-    (push-listener tramp [index parser] 
-                   (CatListener empty-cat-result [this] [index this] tramp))))
-    
+      (fail tramp index))))    
 
 (defn non-terminal-parse
   [this index tramp]
@@ -482,3 +533,23 @@
                               Epsilon)})
 (def grammar14 {:s (cat (opt (string "a")) (string "b"))})
 (def grammar15 {:s (cat (opt (string "a")) (opt (string "b")))})
+(def grammar16 {:s (plus (string "a"))})
+(def grammar17 {:s (cat (plus (string "a")) (string "b"))})
+(def grammar18 {:s (cat (plus (string "a")) (string "a"))})
+(def grammar19 {:s (cat (string "a") (plus (alt (string "b")
+                                                (string "c"))))})
+(def grammar20 {:s (cat (string "a") (plus (cat (string "b")
+                                                (string "c"))))})
+(def grammar21 {:s (cat (string "a") (plus (alt (string "b")
+                                                (string "c")))
+                        (string "b"))})
+(def grammar22 {:s (star (string "a"))})
+(def grammar23 {:s (cat (star (string "a")) (string "b"))})
+(def grammar24 {:s (cat (star (string "a")) (string "a"))})
+(def grammar25 {:s (cat (string "a") (star (alt (string "b")
+                                                (string "c"))))})
+(def grammar26 {:s (cat (string "a") (star (cat (string "b")
+                                                (string "c"))))})
+(def grammar27 {:s (cat (string "a") (star (alt (string "b")
+                                                (string "c")))
+                        (string "b"))})
