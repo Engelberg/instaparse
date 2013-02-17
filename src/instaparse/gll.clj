@@ -2,13 +2,13 @@
   (:use clojure.pprint clojure.repl))
 
 ;TODO
-;Regexps
 ;I/O
 ;    ENBF
 ;    Special notation for suppressing from tree
 ;    Special notation for making flattenable?
-;First and followed sets
 ;Error messages
+;Documentation
+;First and followed sets
 ;Concurrency
 ;Allow parsing of arbitrary sequences.
 
@@ -21,7 +21,7 @@
   (get grammar p p))
 
 (declare alt-parse cat-parse string-parse epsilon-parse non-terminal-parse
-         opt-parse plus-parse star-parse)
+         opt-parse plus-parse star-parse regexp-parse)
 (defn -parse [parser index tramp]
 ;  (println "-parse" index parser)
   (case (:tag parser)
@@ -32,10 +32,12 @@
     :epsilon (epsilon-parse index tramp)
     :opt (opt-parse parser index tramp)
     :plus (plus-parse parser index tramp)
-    :star (star-parse parser index tramp)))
+    :star (star-parse parser index tramp)
+    :regexp (regexp-parse parser index tramp)))
 
 (declare alt-full-parse cat-full-parse string-full-parse epsilon-full-parse 
-         non-terminal-full-parse opt-full-parse plus-full-parse star-full-parse)
+         non-terminal-full-parse opt-full-parse plus-full-parse star-full-parse
+         regexp-full-parse)
 (defn -full-parse [parser index tramp]
 ;  (println "-full-parse" index parser)
   (case (:tag parser)
@@ -46,7 +48,8 @@
     :epsilon (epsilon-full-parse index tramp)
     :opt (opt-full-parse parser index tramp)
     :plus (plus-full-parse parser index tramp)
-    :star (star-full-parse parser index tramp)))
+    :star (star-full-parse parser index tramp)
+    :regexp (regexp-full-parse parser index tramp)))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
@@ -313,6 +316,28 @@
       (success tramp [index this] string end)
       (fail tramp index))))
 
+(defn regexp-parse
+  [this index tramp]
+  (let [regexp (:regexp this)
+        text (:text tramp)
+        matches (re-seq regexp (subs text index))]
+    (if (seq matches)
+      (doseq [match matches]
+        (success tramp [index this] match (+ index (count match))))
+      (fail tramp index))))
+
+(defn regexp-full-parse
+  [this index tramp]
+  (let [regexp (:regexp this)
+        text (:text tramp)
+        matches (re-seq regexp (subs text index))
+        desired-length (- (count text) index)
+        filtered-matches (filter #(= (count %) desired-length) matches)]
+    (if-let [seq-filtered-matches (seq filtered-matches)]
+      (doseq [match seq-filtered-matches]
+        (success tramp [index this] match (count text)))
+      (fail tramp index))))
+        
 (defn make-flattenable [s]
   (with-meta s {:flattenable? true}))
 
@@ -455,6 +480,14 @@
   (if (= s "") Epsilon
     {:tag :string :string s}))
 
+(defn regexp [s] 
+  (if (= s "") Epsilon
+    {:tag :regexp :regexp (re-pattern (str \^ s))}))
+
+(defn nt [s] {:tag :nt :keyword s})
+
+;; Flattening and reductions
+
 (defn flattenable? [s]
   (:flattenable? (meta s)))
 
@@ -485,14 +518,17 @@
 
 (def standard-non-terminal-reduction hiccup-non-terminal-reduction)
 
-(defn nt [s] {:tag :nt :keyword s
-              :red (standard-non-terminal-reduction s)})
+(defn apply-standard-reductions [grammar]
+  (into {} (for [[k v] grammar]
+             (if (:red v) [k v]
+               [k (assoc v :red (standard-non-terminal-reduction k))]))))
 
 ;; End-user parsing function
 
 (defn parse [grammar parser text]
   (clear!)
-  (let [tramp (make-tramp grammar text)
+  (let [grammar (apply-standard-reductions grammar)
+        tramp (make-tramp grammar text)
         parser (nt parser)]
     (push-full-listener tramp [0 parser] (TopListener tramp))
     (push-stack tramp #(-full-parse parser 0 tramp))
@@ -553,3 +589,12 @@
 (def grammar27 {:s (cat (string "a") (star (alt (string "b")
                                                 (string "c")))
                         (string "b"))})
+(def grammar28 {:s (regexp "a[0-9]b+c")})
+(def grammar29 {:s (plus (opt (string "a")))})
+(def paren-grammar 
+  {:a (red (cat (string "(") (opt (nt :a)) (string ")"))
+           (fn ([_ _] ())
+             ([_ l _] (list l))))})
+(def grammar30 {:s (alt (nt :a) (nt :b))
+                :a (plus (cat (string "a") (string "b")))
+                :b (plus (cat (string "a") (string "b")))})
