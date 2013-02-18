@@ -598,3 +598,29 @@
 (def grammar30 {:s (alt (nt :a) (nt :b))
                 :a (plus (cat (string "a") (string "b")))
                 :b (plus (cat (string "a") (string "b")))})
+;equal: [zero one | one zero]   ;; equal number of "0"s and "1"s.
+;
+;zero: "0" equal | equal "0"    ;; has an extra "0" in it.
+;
+;one: "1" equal | equal "1"     ;; has an extra "1" in it.
+(def equal-zeros-ones {:equal (opt (alt (cat (nt :zero) (nt :one))
+                                        (cat (nt :one) (nt :zero))))
+                       :zero (alt (cat (string "0") (nt :equal))
+                                  (cat (nt :equal) (string "0")))
+                       :one (alt (cat (string "1") (nt :equal))
+                                 (cat (nt :equal) (string "1")))})
+(def grammar31 {:equal (alt (cat (string "0") (nt :equal) (string "1"))
+                            (cat (string "1") (nt :equal) (string "0"))
+                            (cat (nt :equal) (nt :equal))
+                            Epsilon)})
+(def grammar32 {:s (alt (string "0")
+                        (cat (nt :s) (nt :s))
+                        Epsilon)})
+;not working
+(def grammar33 {:s (alt (cat (nt :s) (nt :s))
+                        Epsilon)})
+(def grammar34 {:s (alt (nt :s) Epsilon)})
+;not working
+(def grammar35 {:s (opt (cat (nt :s) (nt :s)))})
+(def grammar36 {:s (cat (opt (nt :s)) (nt :s))})
+(def grammar37 {:s (cat (nt :s) (opt (nt :s)))})
