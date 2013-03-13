@@ -213,8 +213,8 @@
 
 (defn run
   "Executes the stack until exhausted"
-  ([tramp] (run tramp 0 1))
-  ([tramp current-generation next-generation]
+  ([tramp] (run tramp 0 0))
+  ([tramp current-generation stop-generation]
     (let [stack (:stack tramp)]
       (cond
         @(:success tramp)
@@ -224,8 +224,8 @@
                                (inc current-generation)))))
         
         (pos? (count @stack))
-        (if (< (val (peek @stack)) next-generation)
-          (recur tramp (step stack) next-generation)
+        (if (<= (val (peek @stack)) stop-generation)
+          (recur tramp (step stack) stop-generation)
           nil)
         
       :else nil))))
@@ -623,7 +623,6 @@
                                   (cat (nt :equal) (string "0")))
                        :one (alt (cat (string "1") (nt :equal))
                                  (cat (nt :equal) (string "1")))})
-;doesn't work
 (def grammar31 {:equal (alt (cat (string "0") (nt :equal) (string "1"))
                             (cat (string "1") (nt :equal) (string "0"))
                             (cat (nt :equal) (nt :equal))
