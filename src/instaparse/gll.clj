@@ -1,5 +1,6 @@
 (ns instaparse.gll
-  (:use clojure.pprint clojure.repl))
+  (:use clojure.pprint clojure.repl)
+  (:use clojure.data.priority-map))
 
 ;TODO
 ;I/O
@@ -60,8 +61,10 @@
 ; success contains a successful parse
 ; failure contains the index of the furthest-along failure
 
-(defrecord Tramp [grammar text stack nodes success failure])
-(defn make-tramp [grammar text] (Tramp. grammar text (atom []) (atom {}) (atom nil) (atom 0)))
+(defrecord Tramp [grammar text stack msg-cache nodes success failure])
+(defn make-tramp [grammar text] 
+  (Tramp. grammar text (atom (priority-map)) 
+          (atom {}) (atom {}) (atom nil) (atom 0)))
   
 ; A Success record contains the result and the index to continue from
 (defn make-success [result index] {:result result :index index})
@@ -79,18 +82,21 @@
 
 ;; Trampoline helper functions
 
-;(defn push-stack-cached
-;  "Pushes an item onto the trampoline's stack"
-;  [tramp item]
-;  (when (not (@(:prev-pushed tramp) item))
-;    (swap! (:stack tramp) conj item)
-;    (swap! (:prev-pushed tramp) conj item)))
-
 (defn push-stack
   "Pushes an item onto the trampoline's stack"
   [tramp item]
   (add! :push-stack)
-  (swap! (:stack tramp) conj item))
+  (swap! (:stack tramp) assoc item 0))
+
+(defn push-message
+  "Pushes onto stack a message to a given listener about a result"
+  [tramp listener result]
+  (let [cache (:msg-cache tramp)
+        i (:index result)
+        k [listener i]
+        c (get cache k 0)] 
+    (swap! (:stack tramp) assoc #(listener result) c)
+    (swap! (:msg-cache tramp) assoc k (inc c))))
 
 (defn listener-exists?
   "Tests whether node already has a listener"
@@ -139,10 +145,10 @@
       (add! :push-result)
       (swap! results conj result)
       (doseq [listener @(:listeners node)]
-        (push-stack tramp #(listener result)))
+        (push-message tramp listener result))
       (when total?
         (doseq [listener @(:full-listeners node)]
-          (push-stack tramp #(listener result))))))) 
+          (push-message tramp listener result)))))) 
 
 (defn push-listener
   "Pushes a listener into the trampoline's node.
@@ -154,9 +160,9 @@
     (add! :push-listener)
     (swap! listeners conj listener)
     (doseq [result @(:results node)]
-      (push-stack tramp #(listener result)))
+      (push-message tramp listener result))
     (doseq [result @(:full-results node)]
-      (push-stack tramp #(listener result)))
+      (push-message tramp listener result))
     (not listener-already-exists?))) 
 
 (defn push-full-listener
@@ -169,7 +175,7 @@
     (add! :push-full-listener)
     (swap! listeners conj listener)
     (doseq [result @(:full-results node)]
-      (push-stack tramp #(listener result)))
+      (push-message tramp listener result))
     (not full-listener-already-exists?))) 
 
 (defn success [tramp node-key result end]
@@ -196,7 +202,7 @@
 (defn step
   "Executes one thing on the stack (not threadsafe)"
   [stack]
-  (let [top (peek @stack)]
+  (let [top (first (peek @stack))]
     (swap! stack pop)
     (top)))
 
@@ -222,7 +228,7 @@
 ; The first kind is a NodeListener which simply listens for a completed parse result
 ; Takes the node-key of the parser which is awaiting this result.
 
-(defn NodeListener [node-key tramp]
+(defn NodeListener [node-key tramp]  
   (fn [result] (push-result tramp node-key result)))
 
 ; The second kind of listener is a CatListener which listens at each stage of the
@@ -609,10 +615,12 @@
                                   (cat (nt :equal) (string "0")))
                        :one (alt (cat (string "1") (nt :equal))
                                  (cat (nt :equal) (string "1")))})
+;doesn't work
 (def grammar31 {:equal (alt (cat (string "0") (nt :equal) (string "1"))
                             (cat (string "1") (nt :equal) (string "0"))
                             (cat (nt :equal) (nt :equal))
                             Epsilon)})
+;doesn't work on "0000"
 (def grammar32 {:s (alt (string "0")
                         (cat (nt :s) (nt :s))
                         Epsilon)})
