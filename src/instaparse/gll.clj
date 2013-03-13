@@ -204,29 +204,31 @@
 (defn step
   "Executes one thing on the stack (not threadsafe)"
   [stack]
-  (let [_ (when (not (zero? (val (peek @stack)))) (println (val (peek @stack))))
-        top (key (peek @stack))]
+  (let [;_ (when (not (zero? (val (peek @stack)))) (println (val (peek @stack))))
+        pair (peek @stack)
+        top (key pair)]
     (swap! stack pop)
-    (top)))
+    (top)
+    (val pair)))
 
 (defn run
   "Executes the stack until exhausted"
-  ([tramp] (run tramp nil))
-  ([tramp solution-exists]
+  ([tramp] (run tramp 0 1))
+  ([tramp current-generation next-generation]
     (let [stack (:stack tramp)]
-      (loop []
-        (cond
-          @(:success tramp)
-          (lazy-seq (cons (:result @(:success tramp))
-                          (do (reset! (:success tramp) nil)
-                            (run tramp nil))))
-          
-          (pos? (count @stack))
-          (if (or solution-exists (zero? (val (peek @stack))))
-            (do (step stack) (recur))
-            nil)
-          
-          :else nil)))))
+      (cond
+        @(:success tramp)
+        (lazy-seq (cons (:result @(:success tramp))
+                        (do (reset! (:success tramp) nil)
+                          (run tramp current-generation 
+                               (inc current-generation)))))
+        
+        (pos? (count @stack))
+        (if (< (val (peek @stack)) next-generation)
+          (recur tramp (step stack) next-generation)
+          nil)
+        
+      :else nil))))
     
 ;; Listeners
 
