@@ -94,9 +94,11 @@
   (let [cache (:msg-cache tramp)
         i (:index result)
         k [listener i]
-        c (get cache k 0)] 
+        c (get @cache k 0)]    
     (swap! (:stack tramp) assoc #(listener result) c)
-    (swap! (:msg-cache tramp) assoc k (inc c))))
+    (swap! cache assoc k (inc c))))
+    ;(println listener i c (get @cache k 0))))
+    ;(println (count @cache))))
 
 (defn listener-exists?
   "Tests whether node already has a listener"
@@ -202,25 +204,29 @@
 (defn step
   "Executes one thing on the stack (not threadsafe)"
   [stack]
-  (let [top (first (peek @stack))]
+  (let [_ (when (not (zero? (val (peek @stack)))) (println (val (peek @stack))))
+        top (key (peek @stack))]
     (swap! stack pop)
     (top)))
 
 (defn run
   "Executes the stack until exhausted"
-  [tramp]
-  (let [stack (:stack tramp)]
-    (loop []
-      (cond
-        @(:success tramp)
-        (lazy-seq (cons (:result @(:success tramp))
-                        (do (reset! (:success tramp) nil)
-                          (run tramp))))
-        
-        (pos? (count @stack))
-        (do (step stack) (recur))
-        
-        :else nil))))
+  ([tramp] (run tramp nil))
+  ([tramp solution-exists]
+    (let [stack (:stack tramp)]
+      (loop []
+        (cond
+          @(:success tramp)
+          (lazy-seq (cons (:result @(:success tramp))
+                          (do (reset! (:success tramp) nil)
+                            (run tramp nil))))
+          
+          (pos? (count @stack))
+          (if (or solution-exists (zero? (val (peek @stack))))
+            (do (step stack) (recur))
+            nil)
+          
+          :else nil)))))
     
 ;; Listeners
 
@@ -620,15 +626,13 @@
                             (cat (string "1") (nt :equal) (string "0"))
                             (cat (nt :equal) (nt :equal))
                             Epsilon)})
-;doesn't work on "0000"
 (def grammar32 {:s (alt (string "0")
                         (cat (nt :s) (nt :s))
                         Epsilon)})
-;not working
+
 (def grammar33 {:s (alt (cat (nt :s) (nt :s))
                         Epsilon)})
 (def grammar34 {:s (alt (nt :s) Epsilon)})
-;not working
 (def grammar35 {:s (opt (cat (nt :s) (nt :s)))})
 (def grammar36 {:s (cat (opt (nt :s)) (nt :s))})
 (def grammar37 {:s (cat (nt :s) (opt (nt :s)))})
