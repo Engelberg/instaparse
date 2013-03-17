@@ -333,11 +333,15 @@
       (success tramp [index this] string end)
       (fail tramp index))))
 
+(defn re-seq-no-submatches [regexp text]
+  (for [match (re-seq regexp text)]
+    (if (vector? match) (match 0) match)))
+
 (defn regexp-parse
   [this index tramp]
   (let [regexp (:regexp this)
         text (:text tramp)
-        matches (re-seq regexp (subs text index))]
+        matches (re-seq-no-submatches regexp (subs text index))]
     (if (seq matches)
       (doseq [match matches]
         (success tramp [index this] match (+ index (count match))))
@@ -347,7 +351,7 @@
   [this index tramp]
   (let [regexp (:regexp this)
         text (:text tramp)
-        matches (re-seq regexp (subs text index))
+        matches (re-seq-no-submatches regexp (subs text index))
         desired-length (- (count text) index)
         filtered-matches (filter #(= (count %) desired-length) matches)]
     (if-let [seq-filtered-matches (seq filtered-matches)]
@@ -640,3 +644,6 @@
 (def grammar35 {:s (opt (cat (nt :s) (nt :s)))})
 (def grammar36 {:s (cat (opt (nt :s)) (nt :s))})
 (def grammar37 {:s (cat (nt :s) (opt (nt :s)))})
+(def grammar38 {:s (regexp "a[0-9](bc)+")})
+(def q #"\\'|[^\']|\\\\")
+(def qq #"'(\\'|[^\']|\\\\)*'")
