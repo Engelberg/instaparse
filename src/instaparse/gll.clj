@@ -61,9 +61,9 @@
 ; success contains a successful parse
 ; failure contains the index of the furthest-along failure
 
-(defrecord Tramp [grammar text stack msg-cache nodes success failure])
+(defrecord Tramp [grammar text stack next-stack generation msg-cache nodes success failure])
 (defn make-tramp [grammar text] 
-  (Tramp. grammar text (atom (priority-map)) 
+  (Tramp. grammar text (atom []) (atom []) (atom 0)
           (atom {}) (atom {}) (atom nil) (atom 0)))
   
 ; A Success record contains the result and the index to continue from
@@ -86,7 +86,7 @@
   "Pushes an item onto the trampoline's stack"
   [tramp item]
   (add! :push-stack)
-  (swap! (:stack tramp) assoc item 0))
+  (swap! (:stack tramp) conj item))
 
 (defn push-message
   "Pushes onto stack a message to a given listener about a result"
@@ -95,7 +95,9 @@
         i (:index result)
         k [listener i]
         c (get @cache k 0)]    
-    (swap! (:stack tramp) assoc #(listener result) c)
+    (if (> c @(:generation tramp))
+      (swap! (:next-stack tramp) conj #(listener result))
+      (swap! (:stack tramp) conj #(listener result)))
     (swap! cache assoc k (inc c))))
     ;(println listener i c (get @cache k 0))))
     ;(println (count @cache))))
@@ -204,32 +206,34 @@
 (defn step
   "Executes one thing on the stack (not threadsafe)"
   [stack]
-  (let [;_ (when (not (zero? (val (peek @stack)))) (println (val (peek @stack))))
-        pair (peek @stack)
-        top (key pair)]
+  (let [top (peek @stack)]
     (swap! stack pop)
-    (top)
-    (val pair)))
+    (top)))
 
 (defn run
   "Executes the stack until exhausted"
-  ([tramp] (run tramp 0 0))
-  ([tramp current-generation stop-generation]
+  ([tramp] (run tramp nil))
+  ([tramp found-result?] 
     (let [stack (:stack tramp)]
+      ;_ (println found-result? (count @(:stack tramp)) (count @(:next-stack tramp)))
       (cond
         @(:success tramp)
         (lazy-seq (cons (:result @(:success tramp))
                         (do (reset! (:success tramp) nil)
-                          (run tramp current-generation 
-                               (inc current-generation)))))
+                          (run tramp true))))
         
         (pos? (count @stack))
-        (if (<= (val (peek @stack)) stop-generation)
-          (recur tramp (step stack) stop-generation)
-          nil)
+        (do (step stack) (recur tramp found-result?))
         
-      :else nil))))
-    
+        found-result?
+        (let [next-stack (:next-stack tramp)]
+          (reset! stack @next-stack) 
+          (reset! next-stack [])
+          (swap! (:generation tramp) inc)
+          (recur tramp nil))
+        
+        :else nil))))
+
 ;; Listeners
 
 ; There are four kinds of listeners that receive notifications
