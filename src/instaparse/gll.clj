@@ -3,7 +3,6 @@
   (:use clojure.data.priority-map))
 
 ;TODO
-;Try dual stack or PriorityBlockingQueue
 ;    ENBF
 ;    Special notation for suppressing from tree
 ;    Special notation for making flattenable?
@@ -641,7 +640,3 @@
 (def grammar35 {:s (opt (cat (nt :s) (nt :s)))})
 (def grammar36 {:s (cat (opt (nt :s)) (nt :s))})
 (def grammar37 {:s (cat (nt :s) (opt (nt :s)))})
-
-;; Need to beat this, would like to double the speed
-;; => (time (second (parse grammar3 :s (apply str (repeat 20000 "a")))))
-;; "Elapsed time: 3635.049985 msecs"
