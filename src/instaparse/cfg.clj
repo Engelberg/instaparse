@@ -15,6 +15,8 @@
 
 (def single-quoted-string "'(\\'|[^\\'])*'")
 (def single-quoted-regexp "#'(\\'|[^\\'])*'")
+(def double-quoted-string "\"(\\\"|[^\\\"])*\"")
+(def double-quoted-regexp "#\"(\\\"|[^\\\"])*\"")
 
 (def cfg {:rules (cat (hide (nt :opt-whitespace))
                       (plus (nt :rule)))
@@ -48,8 +50,12 @@
                        (hide (nt :opt-whitespace))
                        (nt :factor)
                        (hide (nt :opt-whitespace))))
-          :string (regexp single-quoted-string)
-          :regexp (regexp single-quoted-regexp)
+          :string (alt
+                    (regexp single-quoted-string)
+                    (regexp double-quoted-string))
+          :regexp (alt
+                    (regexp single-quoted-regexp)
+                    (regexp double-quoted-regexp))
           :factor (alt (nt :nt)
                        (nt :string)
                        (nt :regexp)                       
