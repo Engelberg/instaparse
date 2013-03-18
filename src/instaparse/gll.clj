@@ -3,8 +3,6 @@
 
 ;TODO
 ;    ENBF
-;    Special notation for suppressing from tree
-;    Special notation for hiding tag
 ;    &, !
 ;Error messages
 ;Documentation

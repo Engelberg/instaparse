@@ -15,14 +15,20 @@
                                (string ":=")
                                (string "::=")
                                (string "="))
-          :rule (cat (nt :nt) 
+          :rule (cat (alt (nt :nt)
+                          (nt :hide-nt))
                      opt-whitespace
                      (hide (nt :rule-separator))
                      opt-whitespace
                      (nt :alt)
                      (hide (alt (nt :opt-whitespace)
                                 (regexp "\\s*;\\s*"))))          
-          :nt (regexp "[^, \\r\\t\\n(){}\\[\\]+*?:=|'\"#]+")
+          :nt (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#]+")
+          :hide-nt (cat (hide (string "<"))
+                        opt-whitespace
+                        (nt :nt)
+                        opt-whitespace
+                        (hide (string ">")))                        
           :alt (cat (nt :cat)                           
                     (star
                       (cat
@@ -35,6 +41,11 @@
                       (nt :alt)
                       opt-whitespace
                       (hide (string ")")))
+          :hide (cat (hide (string "<"))
+                     opt-whitespace	
+                     (nt :alt)
+                     opt-whitespace
+                     (hide (string ">")))
           :cat (plus (cat
                        opt-whitespace
                        (nt :factor)
@@ -72,7 +83,8 @@
                                  (nt :opt)     
                                  (nt :star)
                                  (nt :plus)
-                                 (nt :paren)))})
+                                 (nt :paren)
+                                 (nt :hide)))})
 
 (def cfg1 "S = 'a'")
 (def cfg2 
@@ -92,3 +104,5 @@
   "S =(A | B)?")
 (def cfg7
   "S = A, B?, (C C)*, D+, E")
+(def cfg8
+  "<S> = <A B?> (C | D)")
