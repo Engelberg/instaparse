@@ -23,17 +23,15 @@
           :rule-separator (alt (string ":")
                                (string ":=")
                                (string "::=")
-                               (string "=")
-                               (string "->")
-                               (string "=>"))
+                               (string "="))
           :rule (cat (nt :nt) 
-                     (hide (nt :whitespace))
+                     (hide (nt :opt-whitespace))
                      (hide (nt :rule-separator))
-                     (hide (nt :whitespace))
+                     (hide (nt :opt-whitespace))
                      (nt :alt)
                      (hide (alt (nt :opt-whitespace)
                                 (regexp "\\s*;\\s*"))))          
-          :nt (regexp "(?!->)[^ \\r\\t\\n(){}\\[\\]+*?:=]+")
+          :nt (regexp "[^ \\r\\t\\n(){}\\[\\]+*?:=|'#]+")
           :alt (cat (nt :cat)                           
                     (star
                       (cat
@@ -57,15 +55,15 @@
                        (nt :regexp)                       
                        (nt :paren-alt))})
 
-(def cfg1 "S -> 'a'")
+(def cfg1 "S = 'a'")
 (def cfg2 
-  "S -> X
-   X -> Y
-   Y -> Z")
+  "S = X
+   X = Y
+   Y = Z")
 (def cfg3
-  "S -> X | Y
-   Y -> A Z
-   Z := 'a'")
+  "S = X | Y
+   Y = A Z
+   Z = 'a'")
 (def cfg4
-  "S -> A B | C
-   C -> (A | B) C")
+  "S := A B | C
+   C := (A | B) C")
