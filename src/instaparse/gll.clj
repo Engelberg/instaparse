@@ -1,6 +1,5 @@
 (ns instaparse.gll
-  (:use clojure.pprint clojure.repl)
-  (:use clojure.data.priority-map))
+  (:use clojure.pprint clojure.repl))
 
 ;TODO
 ;    ENBF
@@ -127,31 +126,36 @@
         (swap! nodes assoc node-key node)
         node))))
 
-(declare apply-reduction)
+(declare apply-reduction make-flattenable)
 
-(defn push-result
-  "Pushes a result into the trampoline's node.
-   Categorizes as either result or full-result.
-   Schedules notification to all existing listeners of result
-   (Full listeners only get notified about full results)"
-  [tramp node-key result]
-  (let [node (node-get tramp node-key)
-        ;; reduce result with reduction function if it exists
-        result (if-let [reduction-function ((node-key 1) :red)]
-                 (assoc result :result 
-                        (apply-reduction reduction-function
-                                         (:result result)))
-                 result)        
-        total? (total-success? tramp result)
-        results (if total? (:full-results node) (:results node))]
-    (when (not (@results result))  ; when result is not already in @results
-      (add! :push-result)
-      (swap! results conj result)
-      (doseq [listener @(:listeners node)]
-        (push-message tramp listener result))
-      (when total?
-        (doseq [listener @(:full-listeners node)]
-          (push-message tramp listener result)))))) 
+(let [empty-cat-result (make-flattenable [])]
+  (defn push-result
+    "Pushes a result into the trampoline's node.
+     Categorizes as either result or full-result.
+     Schedules notification to all existing listeners of result
+     (Full listeners only get notified about full results)"
+    [tramp node-key result]
+    (let [node (node-get tramp node-key)
+          parser (node-key 1)
+          ;; reduce result with reduction function if it exists
+          result (if-let [reduction-function (:red parser)]
+                   (assoc result :result 
+                          (apply-reduction reduction-function
+                                           (:result result)))
+                   result)              
+          result (if (:hide parser)
+                   (assoc result :result empty-cat-result)
+                   result)
+          total? (total-success? tramp result)
+          results (if total? (:full-results node) (:results node))]
+      (when (not (@results result))  ; when result is not already in @results
+        (add! :push-result)
+        (swap! results conj result)
+        (doseq [listener @(:listeners node)]
+          (push-message tramp listener result))
+        (when total?
+          (doseq [listener @(:full-listeners node)]
+            (push-message tramp listener result))))))) 
 
 (defn push-listener
   "Pushes a listener into the trampoline's node.
@@ -473,6 +477,8 @@
 
 (defn red [parser f] (assoc parser :red f))
 
+(defn hide [parser] (assoc parser :hide true))
+
 (defn opt [parser] 
   (if (= parser Epsilon) Epsilon
     {:tag :opt :parser parser}))
@@ -522,7 +528,6 @@
 
 (defn apply-reduction [f result]
   (apply f (nt-flatten (make-flattenable [result]))))
-  ;(if (flattenable? result) (apply f (nt-flatten result)) (f result)))
 
 (defn hiccup-non-terminal-reduction [key] 
   (fn [& parse-result]
@@ -645,5 +650,4 @@
 (def grammar36 {:s (cat (opt (nt :s)) (nt :s))})
 (def grammar37 {:s (cat (nt :s) (opt (nt :s)))})
 (def grammar38 {:s (regexp "a[0-9](bc)+")})
-(def q #"\\'|[^\']|\\\\")
-(def qq #"'(\\'|[^\']|\\\\)*'")
+(def grammar39 {:s (cat (string "0") (hide (string "1"))(string "2"))})
