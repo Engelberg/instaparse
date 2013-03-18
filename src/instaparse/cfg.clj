@@ -1,5 +1,6 @@
 (ns instaparse.cfg
-  (:use instaparse.gll))
+  (:use instaparse.gll)
+  (:use clojure.pprint clojure.repl))
 
 (def single-quoted-string "'(\\'|[^\\'])*'")
 (def single-quoted-regexp "#'(\\'|[^\\'])*'")

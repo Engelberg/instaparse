@@ -4,6 +4,6 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [org.clojure/data.priority-map "0.0.2"]]                      
+                 [criterium "0.3.1"]]                      
   :dev-dependencies [[lein-marginalia "0.7.1"]
-                     [criterium "0.3.0"]])
+                     [criterium "0.3.1"]])

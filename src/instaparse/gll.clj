@@ -73,8 +73,12 @@
 ; results are expected to be refs of sets.
 ; listeners are refs of vectors.
 
-(defn make-node [] {:listeners (atom []) :full-listeners (atom []) 
-                    :results (atom #{}) :full-results (atom #{})})
+(defrecord Node [listeners full-listeners results full-results])
+(defn make-node [] (Node. (atom []) (atom []) (atom #{}) (atom #{})))
+; Currently using records for Node.  Seems to run marginally faster.
+; Here's the way without records:
+;(defn make-node [] {:listeners (atom []) :full-listeners (atom []) 
+;                    :results (atom #{}) :full-results (atom #{})})
 
 ;; Trampoline helper functions
 
@@ -124,7 +128,10 @@
         (swap! nodes assoc node-key node)
         node))))
 
-(declare apply-reduction make-flattenable)
+(declare apply-reduction)
+
+(defn make-flattenable [s]
+  (with-meta s {:flattenable? true}))
 
 (let [empty-cat-result (make-flattenable [])]
   (defn push-result
@@ -361,9 +368,6 @@
         (success tramp [index this] match (count text)))
       (fail tramp index))))
         
-(defn make-flattenable [s]
-  (with-meta s {:flattenable? true}))
-
 (let [empty-cat-result (make-flattenable [])]
 	(defn cat-parse
 	  [this index tramp]
