@@ -32,8 +32,8 @@
                      (hide (nt :whitespace))
                      (nt :alt)
                      (hide (alt (nt :opt-whitespace)
-                                (regexp "\\s*;\\s*"))))                                                               
-          :nt (regexp "[^ \\r\\t\\n(){}\\[\\]]+")
+                                (regexp "\\s*;\\s*"))))          
+          :nt (regexp "(?!->)[^ \\r\\t\\n(){}\\[\\]+*?:=]+")
           :alt (cat (nt :cat)                           
                     (star
                       (cat
