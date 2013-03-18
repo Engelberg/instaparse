@@ -310,7 +310,7 @@
           (if (= continue-index (count (:text tramp)))
             (push-result tramp node-key (make-success new-results-so-far continue-index))
             (when (push-listener tramp [continue-index parser]
-                                 (PlusFullListener new-results-so-far parser node-key tramp))
+                                 (PlusFullListener new-results-so-far parser continue-index node-key tramp))
               (push-stack tramp #(-parse parser continue-index tramp)))))))))
             
 
@@ -401,7 +401,7 @@
      (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
        (push-stack tramp #(-parse parser index tramp)))
      (push-listener tramp [index parser]
-                    (PlusListener empty-cat-result parser index [index this] tramp))))
+                    (PlusFullListener empty-cat-result parser index [index this] tramp))))
  
  (defn star-parse
 	  [this index tramp]
@@ -421,7 +421,7 @@
          (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
            (push-stack tramp #(-parse parser index tramp)))
          (push-listener tramp [index parser]
-                        (PlusListener empty-cat-result parser index [index this] tramp))))))
+                        (PlusFullListener empty-cat-result parser index [index this] tramp))))))
  )
 
 (defn alt-parse
@@ -660,3 +660,4 @@
 (def grammar39 {:s (cat (string "0") (hide (string "1"))(string "2"))})
 (def grammar40 {:s (nt :aa)
                 :aa (hide-tag (alt Epsilon (cat (string "a") (nt :aa))))})
+(def grammar41 {:s (cat (string "b") (plus (string "a")))})
