@@ -54,10 +54,24 @@
                  (cat (nt :factor)
                       opt-whitespace
                       (hide (string "?"))))
+          :star (alt
+                  (cat (hide (string "{"))
+                       opt-whitespace
+                       (nt :alt)
+                       opt-whitespace
+                       (hide (string "}")))
+                  (cat (nt :factor)
+                       opt-whitespace
+                       (hide (string "*"))))
+          :plus (cat (nt :factor)
+                     opt-whitespace
+                     (hide (string "+")))
           :factor (red (alt (nt :nt)
                             (nt :string)
                             (nt :regexp)
-                            (nt :opt)                       
+                            (nt :opt)     
+                            (nt :star)
+                            (nt :plus)
                             (nt :paren))
                        identity)})
 
@@ -78,4 +92,4 @@
 (def cfg6
   "S =(A | B)?")
 (def cfg7
-  "S = A, B, C, D")
+  "S = A, B?, (C C)*, D+, E")

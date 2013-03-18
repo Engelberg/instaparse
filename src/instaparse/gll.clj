@@ -4,7 +4,7 @@
 ;TODO
 ;    ENBF
 ;    Special notation for suppressing from tree
-;    Special notation for making flattenable?
+;    Special notation for hiding tag
 ;Error messages
 ;Documentation
 ;First and followed sets
