@@ -5,9 +5,9 @@
 ;    ENBF
 ;    Special notation for suppressing from tree
 ;    Special notation for hiding tag
+;    &, !
 ;Error messages
 ;Documentation
-;First and followed sets
 ;Concurrency
 ;Allow parsing of arbitrary sequences.
 
@@ -138,14 +138,14 @@
     (let [node (node-get tramp node-key)
           parser (node-key 1)
           ;; reduce result with reduction function if it exists
+          result (if (:hide parser)
+                   (assoc result :result empty-cat-result)
+                   result)
           result (if-let [reduction-function (:red parser)]
                    (assoc result :result 
                           (apply-reduction reduction-function
                                            (:result result)))
                    result)              
-          result (if (:hide parser)
-                   (assoc result :result empty-cat-result)
-                   result)
           total? (total-success? tramp result)
           results (if total? (:full-results node) (:results node))]
       (when (not (@results result))  ; when result is not already in @results
@@ -538,9 +538,14 @@
   (fn [& parse-result]
     {:tag key, :content parse-result}))
 
-(defn raw-non-terminal-reduction [key] 
-  (fn [& parse-result]
-    parse-result))
+(let [empty-cat-result (make-flattenable [])]
+  (defn raw-non-terminal-reduction [& parse-result] 
+    (if parse-result
+      (make-flattenable parse-result)
+      (make-flattenable empty-cat-result)))) 
+
+(defn hide-tag [parser]
+  (red parser raw-non-terminal-reduction))
 
 (def standard-non-terminal-reduction hiccup-non-terminal-reduction)
 
@@ -651,3 +656,5 @@
 (def grammar37 {:s (cat (nt :s) (opt (nt :s)))})
 (def grammar38 {:s (regexp "a[0-9](bc)+")})
 (def grammar39 {:s (cat (string "0") (hide (string "1"))(string "2"))})
+(def grammar40 {:s (nt :aa)
+                :aa (hide-tag (alt Epsilon (cat (string "a") (nt :aa))))})

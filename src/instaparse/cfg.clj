@@ -66,14 +66,13 @@
           :plus (cat (nt :factor)
                      opt-whitespace
                      (hide (string "+")))
-          :factor (red (alt (nt :nt)
-                            (nt :string)
-                            (nt :regexp)
-                            (nt :opt)     
-                            (nt :star)
-                            (nt :plus)
-                            (nt :paren))
-                       identity)})
+          :factor (hide-tag (alt (nt :nt)
+                                 (nt :string)
+                                 (nt :regexp)
+                                 (nt :opt)     
+                                 (nt :star)
+                                 (nt :plus)
+                                 (nt :paren)))})
 
 (def cfg1 "S = 'a'")
 (def cfg2 
