@@ -390,26 +390,23 @@
  (defn plus-parse
 	  [this index tramp]
 	  (let [parser (:parser this)]
-	    (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
-	      (push-stack tramp #(-parse parser index tramp)))
-	    (push-listener tramp [index parser] 
-	                   (PlusListener empty-cat-result parser index [index this] tramp))))
+	    (when (push-listener tramp [index parser] 
+                          (PlusListener empty-cat-result parser index [index this] tramp))
+       (push-stack tramp #(-parse parser index tramp)))))
  
  (defn plus-full-parse
    [this index tramp]
    (let [parser (:parser this)]
-     (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
-       (push-stack tramp #(-parse parser index tramp)))
-     (push-listener tramp [index parser]
-                    (PlusFullListener empty-cat-result parser index [index this] tramp))))
+     (when (push-listener tramp [index parser] 
+                          (PlusFullListener empty-cat-result parser index [index this] tramp))
+       (push-stack tramp #(-parse parser index tramp)))))
  
  (defn star-parse
 	  [this index tramp]
 	  (let [parser (:parser this)]
-	    (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
-	      (push-stack tramp #(-parse parser index tramp)))
-	    (push-listener tramp [index parser] 
-	                   (PlusListener empty-cat-result parser index [index this] tramp))
+	    (when (push-listener tramp [index parser] 
+                          (PlusListener empty-cat-result parser index [index this] tramp))       
+       (push-stack tramp #(-parse parser index tramp)))
       (success tramp [index this] nil index)))
 
  (defn star-full-parse
@@ -418,10 +415,9 @@
      (if (= index (count (:text tramp)))
        (success tramp [index this] nil index)
        (do
-         (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
-           (push-stack tramp #(-parse parser index tramp)))
-         (push-listener tramp [index parser]
-                        (PlusFullListener empty-cat-result parser index [index this] tramp))))))
+         (when (push-listener tramp [index parser] 
+                              (PlusFullListener empty-cat-result parser index [index this] tramp))
+           (push-stack tramp #(-parse parser index tramp)))))))
  )
 
 (defn alt-parse
@@ -661,3 +657,5 @@
 (def grammar40 {:s (nt :aa)
                 :aa (hide-tag (alt Epsilon (cat (string "a") (nt :aa))))})
 (def grammar41 {:s (cat (string "b") (plus (string "a")))})
+(def grammar42 {:s (cat (string "b") (star (string "a")))})
+(def grammar43 {:s (cat (star (string "a")) (string "b"))})
