@@ -539,9 +539,10 @@
   (if (= s "") Epsilon
     {:tag :string :string s}))
 
-(defn regexp [s] 
-  (if (= s "") Epsilon
-    {:tag :regexp :regexp (re-pattern (str \^ s))}))
+(defn regexp [r]
+  (let [s (str \^ r)]
+    (if (= s "^") Epsilon
+      {:tag :regexp :regexp (re-pattern s)})))
 
 (defn nt [s] {:tag :nt :keyword s})
 
