@@ -141,6 +141,7 @@
    Schedules notification to all existing listeners of result
    (Full listeners only get notified about full results)"
   [tramp node-key result]
+  ;(println result)
   (let [node (node-get tramp node-key)
         parser (node-key 1)
         ;; reduce result with reduction function if it exists
@@ -191,8 +192,12 @@
       (push-message tramp listener result))
     (not full-listener-already-exists?))) 
 
-(defn success [tramp node-key result end]
-  (push-result tramp node-key (make-success result end)))
+;(defn success [tramp node-key result end]
+;  (push-result tramp node-key (make-success result end)))
+
+(defmacro success [tramp node-key result end]
+  `(push-result ~tramp ~node-key (make-success ~result ~end)))
+
 
 (defn fail [tramp index]  
   (swap! (:failure tramp) (fn [i] (max i index)))) 
@@ -266,7 +271,7 @@
         (when (push-listener tramp [continue-index (first parser-sequence)]
                            (CatListener new-results-so-far (next parser-sequence) node-key tramp))
           (push-stack tramp #(-parse (first parser-sequence) continue-index tramp)))
-        (push-result tramp node-key (make-success new-results-so-far continue-index))))))
+        (success tramp node-key new-results-so-far continue-index)))))
 
 (defn singleton? [s]
   (and (seq s) (not (next s))))
@@ -287,7 +292,7 @@
           (push-stack tramp #(-parse (first parser-sequence) continue-index tramp)))
         
         :else
-        (push-result tramp node-key (make-success new-results-so-far continue-index))))))
+        (success tramp node-key new-results-so-far continue-index)))))
 
 ; The third kind of listener is a PlusListener, which is a variation of
 ; the CatListener but optimized for "one or more" parsers.
@@ -301,7 +306,7 @@
                                (PlusListener new-results-so-far parser continue-index
                                              node-key tramp))
             (push-stack tramp #(-parse parser continue-index tramp)))
-          (push-result tramp node-key (make-success new-results-so-far continue-index)))))))
+          (success tramp node-key new-results-so-far continue-index))))))
 
 (defn PlusFullListener [results-so-far parser prev-index node-key tramp]
   (fn [result]
@@ -309,7 +314,7 @@
       (when (> continue-index prev-index)
         (let [new-results-so-far (conj results-so-far parsed-result)]
           (if (= continue-index (count (:text tramp)))
-            (push-result tramp node-key (make-success new-results-so-far continue-index))
+            (success tramp node-key new-results-so-far continue-index)
             (when (push-listener tramp [continue-index parser]
                                  (PlusFullListener new-results-so-far parser continue-index node-key tramp))
               (push-stack tramp #(-parse parser continue-index tramp)))))))))
