@@ -18,7 +18,7 @@
   (get grammar p p))
 
 (declare alt-parse cat-parse string-parse epsilon-parse non-terminal-parse
-         opt-parse plus-parse star-parse regexp-parse)
+         opt-parse plus-parse star-parse regexp-parse lookahead-parse)
 (defn -parse [parser index tramp]
 ;  (println "-parse" index parser)
   (case (:tag parser)
@@ -30,11 +30,12 @@
     :opt (opt-parse parser index tramp)
     :plus (plus-parse parser index tramp)
     :star (star-parse parser index tramp)
-    :regexp (regexp-parse parser index tramp)))
+    :regexp (regexp-parse parser index tramp)
+    :look (lookahead-parse parser index tramp)))
 
 (declare alt-full-parse cat-full-parse string-full-parse epsilon-full-parse 
          non-terminal-full-parse opt-full-parse plus-full-parse star-full-parse
-         regexp-full-parse)
+         regexp-full-parse lookahead-full-parse)
 (defn -full-parse [parser index tramp]
 ;  (println "-full-parse" index parser)
   (case (:tag parser)
@@ -46,7 +47,8 @@
     :opt (opt-full-parse parser index tramp)
     :plus (plus-full-parse parser index tramp)
     :star (star-full-parse parser index tramp)
-    :regexp (regexp-full-parse parser index tramp)))
+    :regexp (regexp-full-parse parser index tramp)
+    :look (lookahead-full-parse parser index tramp)))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
@@ -248,14 +250,20 @@
 
 ;; Listeners
 
-; There are four kinds of listeners that receive notifications
+; There are five kinds of listeners that receive notifications
 ; The first kind is a NodeListener which simply listens for a completed parse result
 ; Takes the node-key of the parser which is awaiting this result.
 
 (defn NodeListener [node-key tramp]  
   (fn [result] (push-result tramp node-key result)))
 
-; The second kind of listener is a CatListener which listens at each stage of the
+; The second kind of listener handles lookahead.
+(let [empty-cat-result (make-flattenable [])]
+  (defn LookListener [node-key tramp]
+    (fn [result]
+      (success tramp node-key empty-cat-result (node-key 0)))))     
+
+; The third kind of listener is a CatListener which listens at each stage of the
 ; concatenation parser to carry on the next step.  Think of it as a parse continuation.
 ; A CatListener needs to know the sequence of results for the parsers that have come
 ; before, and a list of parsers that remain.  Also, the node-key of the final node
@@ -292,7 +300,7 @@
         :else
         (success tramp node-key new-results-so-far continue-index)))))
 
-; The third kind of listener is a PlusListener, which is a variation of
+; The fourth kind of listener is a PlusListener, which is a variation of
 ; the CatListener but optimized for "one or more" parsers.
 
 (defn PlusListener [results-so-far parser prev-index node-key tramp]
@@ -466,6 +474,18 @@
     (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
       (push-stack tramp #(-full-parse parser index tramp)))))
 
+(defn lookahead-parse
+  [this index tramp]
+  (let [parser (:parser this)]
+    (when (push-listener tramp [index parser] (LookListener [index this] tramp))
+      (push-stack tramp #(-parse parser index tramp)))))
+
+(defn lookahead-full-parse
+  [this index tramp]
+  (if (= index (count (:text tramp)))
+    (lookahead-parse this index tramp)
+    (fail tramp index)))
+
 (def Epsilon {:tag :epsilon})
 (defn epsilon-parse
   [index tramp] (success tramp [index Epsilon] nil index))
@@ -514,6 +534,8 @@
     {:tag :regexp :regexp (re-pattern (str \^ s))}))
 
 (defn nt [s] {:tag :nt :keyword s})
+
+(defn look [parser] {:tag :look :parser parser}) 
 
 ;; Flattening and reductions
 
@@ -663,3 +685,10 @@
 (def grammar41 {:s (cat (string "b") (plus (string "a")))})
 (def grammar42 {:s (cat (string "b") (star (string "a")))})
 (def grammar43 {:s (cat (star (string "a")) (string "b"))})
+(def grammar44 {:s (cat (look (string "ab")) (nt :ab))
+                :ab (plus (alt (string "a") (string "b")))})
+(def grammar45 {:s (cat (nt :ab) (look (string "ab")))
+                :ab (plus (alt (string "a") (string "b")))})
+
+(def grammar46 {:s (cat (nt :ab) (look Epsilon))
+                :ab (plus (alt (string "a") (string "b")))})
