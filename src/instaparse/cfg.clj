@@ -24,7 +24,7 @@
                      (nt :alt)
                      (hide (alt (nt :opt-whitespace)
                                 (regexp "\\s*;\\s*"))))          
-          :nt (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&]+")
+          :nt (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!]+")
           :hide-nt (cat (hide (string "<"))
                         opt-whitespace
                         (nt :nt)
@@ -49,7 +49,7 @@
                      (hide (string ">")))
           :cat (plus (cat
                        opt-whitespace
-                       (alt (nt :factor) (nt :look))
+                       (alt (nt :factor) (nt :look) (nt :neg))
                        opt-whitespace))
           :string (alt
                     (regexp single-quoted-string)
@@ -81,6 +81,9 @@
           :look (cat (hide (string "&"))
                      opt-whitespace
                      (nt :factor))
+          :neg (cat (hide (string "!"))
+                    opt-whitespace
+                    (nt :factor))
           :factor (hide-tag (alt (nt :nt)
                                  (nt :string)
                                  (nt :regexp)
@@ -116,3 +119,7 @@
   "S = &B A")
 (def cfg11
   "S = &B+ A")
+(def cfg12
+  "S = !B A")
+(def cfg13
+  "S = !&B A")

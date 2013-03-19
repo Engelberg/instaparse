@@ -3,7 +3,7 @@
 
 ;TODO
 ;    ENBF
-;    &, !
+;    Switch to nil
 ;Error messages
 ;Documentation
 ;Concurrency
@@ -18,7 +18,8 @@
   (get grammar p p))
 
 (declare alt-parse cat-parse string-parse epsilon-parse non-terminal-parse
-         opt-parse plus-parse star-parse regexp-parse lookahead-parse)
+         opt-parse plus-parse star-parse regexp-parse lookahead-parse
+         negative-lookahead-parse)
 (defn -parse [parser index tramp]
 ;  (println "-parse" index parser)
   (case (:tag parser)
@@ -31,7 +32,8 @@
     :plus (plus-parse parser index tramp)
     :star (star-parse parser index tramp)
     :regexp (regexp-parse parser index tramp)
-    :look (lookahead-parse parser index tramp)))
+    :look (lookahead-parse parser index tramp)
+    :neg (negative-lookahead-parse parser index tramp)))
 
 (declare alt-full-parse cat-full-parse string-full-parse epsilon-full-parse 
          non-terminal-full-parse opt-full-parse plus-full-parse star-full-parse
@@ -48,7 +50,8 @@
     :plus (plus-full-parse parser index tramp)
     :star (star-full-parse parser index tramp)
     :regexp (regexp-full-parse parser index tramp)
-    :look (lookahead-full-parse parser index tramp)))
+    :look (lookahead-full-parse parser index tramp)
+    :neg (negative-lookahead-parse parser index tramp)))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
@@ -486,6 +489,16 @@
     (lookahead-parse this index tramp)
     (fail tramp index)))
 
+(declare negative-parse?)
+(defn negative-lookahead-parse
+  [this index tramp]
+  (let [parser (:parser this)
+        remaining-text (subs (:text tramp) index)]
+    (if (negative-parse? (:grammar tramp) parser remaining-text)
+      (success tramp [index this] nil index)
+      (fail tramp index))))
+        
+
 (def Epsilon {:tag :epsilon})
 (defn epsilon-parse
   [index tramp] (success tramp [index Epsilon] nil index))
@@ -536,6 +549,8 @@
 (defn nt [s] {:tag :nt :keyword s})
 
 (defn look [parser] {:tag :look :parser parser}) 
+
+(defn neg [parser] {:tag :neg :parser parser})
 
 ;; Flattening and reductions
 
@@ -590,6 +605,17 @@
     (if-let [all-parses (run tramp)]
       all-parses 
       @(:failure tramp))))
+
+;; Variation, but not for end-user
+
+(defn negative-parse? 
+  "takes pre-processed grammar and parser" 
+  [grammar parser text]  
+  (let [tramp (make-tramp grammar text)]
+    (push-listener tramp [0 parser] (TopListener tramp))
+    (push-stack tramp #(-parse parser 0 tramp))
+    (empty? (run tramp))))
+    
 
 (def grammar1 {:s (alt (string "a") (string "aa") (string "aaa"))})
 (def grammar2 {:s (alt (string "a") (string "b"))})
@@ -691,4 +717,10 @@
                 :ab (plus (alt (string "a") (string "b")))})
 
 (def grammar46 {:s (cat (nt :ab) (look Epsilon))
+                :ab (plus (alt (string "a") (string "b")))})
+(def grammar47 {:s (cat (neg (string "ab")) (nt :ab))
+                :ab (plus (alt (string "a") (string "b")))})
+(def grammar48 {:s (cat (nt :ab) (neg (string "ab")))
+                :ab (plus (alt (string "a") (string "b")))})
+(def grammar49 {:s (cat (nt :ab) (neg Epsilon))
                 :ab (plus (alt (string "a") (string "b")))})
