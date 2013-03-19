@@ -133,36 +133,34 @@
 (defn make-flattenable [s]
   (with-meta s {:flattenable? true}))
 
-(def ^:const empty-cat-result (make-flattenable []))
-
-(defn push-result
-  "Pushes a result into the trampoline's node.
-   Categorizes as either result or full-result.
-   Schedules notification to all existing listeners of result
-   (Full listeners only get notified about full results)"
-  [tramp node-key result]
-  ;(println result)
-  (let [node (node-get tramp node-key)
-        parser (node-key 1)
-        ;; reduce result with reduction function if it exists
-        result (if (:hide parser)
-                 (assoc result :result empty-cat-result)
-                 result)
-        result (if-let [reduction-function (:red parser)]
-                 (assoc result :result 
-                        (apply-reduction reduction-function
-                                         (:result result)))
-                 result)              
-        total? (total-success? tramp result)
-        results (if total? (:full-results node) (:results node))]
-    (when (not (@results result))  ; when result is not already in @results
-      (add! :push-result)
-      (swap! results conj result)
-      (doseq [listener @(:listeners node)]
-        (push-message tramp listener result))
-      (when total?
-        (doseq [listener @(:full-listeners node)]
-          (push-message tramp listener result)))))) 
+(let [empty-cat-result (make-flattenable [])]
+  (defn push-result
+    "Pushes a result into the trampoline's node.
+     Categorizes as either result or full-result.
+     Schedules notification to all existing listeners of result
+     (Full listeners only get notified about full results)"
+    [tramp node-key result]
+    (let [node (node-get tramp node-key)
+          parser (node-key 1)
+          ;; reduce result with reduction function if it exists
+          result (if (:hide parser)
+                   (assoc result :result empty-cat-result)
+                   result)
+          result (if-let [reduction-function (:red parser)]
+                   (assoc result :result 
+                          (apply-reduction reduction-function
+                                           (:result result)))
+                   result)              
+          total? (total-success? tramp result)
+          results (if total? (:full-results node) (:results node))]
+      (when (not (@results result))  ; when result is not already in @results
+        (add! :push-result)
+        (swap! results conj result)
+        (doseq [listener @(:listeners node)]
+          (push-message tramp listener result))
+        (when total?
+          (doseq [listener @(:full-listeners node)]
+            (push-message tramp listener result))))))) 
 
 (defn push-listener
   "Pushes a listener into the trampoline's node.
@@ -374,55 +372,57 @@
         (success tramp [index this] match (count text)))
       (fail tramp index))))
         
-(defn cat-parse
-  [this index tramp]
-  (let [parsers (:parsers this)]
-    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
-    ; and with a final target of notifying this parser when the whole sequence is complete
-    (when (push-listener tramp [index (first parsers)] 
-                         (CatListener empty-cat-result (next parsers) [index this] tramp))
-      (push-stack tramp #(-parse (first parsers) index tramp)))))
+(let [empty-cat-result (make-flattenable [])]
+	(defn cat-parse
+	  [this index tramp]
+	  (let [parsers (:parsers this)]
+	    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
+	    ; and with a final target of notifying this parser when the whole sequence is complete
+	    (when (push-listener tramp [index (first parsers)] 
+                          (CatListener empty-cat-result (next parsers) [index this] tramp))
+	      (push-stack tramp #(-parse (first parsers) index tramp)))))
+	
+	(defn cat-full-parse
+	  [this index tramp]
+	  (let [parsers (:parsers this)]
+	    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
+	    ; and with a final target of notifying this parser when the whole sequence is complete
+	    (when (push-listener tramp [index (first parsers)] 
+                          (CatFullListener empty-cat-result (next parsers) [index this] tramp))
+	      (push-stack tramp #(-parse (first parsers) index tramp)))))
+ 
+ (defn plus-parse
+	  [this index tramp]
+	  (let [parser (:parser this)]
+	    (when (push-listener tramp [index parser] 
+                          (PlusListener empty-cat-result parser index [index this] tramp))
+       (push-stack tramp #(-parse parser index tramp)))))
+ 
+ (defn plus-full-parse
+   [this index tramp]
+   (let [parser (:parser this)]
+     (when (push-listener tramp [index parser] 
+                          (PlusFullListener empty-cat-result parser index [index this] tramp))
+       (push-stack tramp #(-parse parser index tramp)))))
+ 
+ (defn star-parse
+	  [this index tramp]
+	  (let [parser (:parser this)]
+	    (when (push-listener tramp [index parser] 
+                          (PlusListener empty-cat-result parser index [index this] tramp))       
+       (push-stack tramp #(-parse parser index tramp)))
+      (success tramp [index this] nil index)))
 
-(defn cat-full-parse
-  [this index tramp]
-  (let [parsers (:parsers this)]
-    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
-    ; and with a final target of notifying this parser when the whole sequence is complete
-    (when (push-listener tramp [index (first parsers)] 
-                         (CatFullListener empty-cat-result (next parsers) [index this] tramp))
-      (push-stack tramp #(-parse (first parsers) index tramp)))))
-
-(defn plus-parse
-  [this index tramp]
-  (let [parser (:parser this)]
-    (when (push-listener tramp [index parser] 
-                         (PlusListener empty-cat-result parser index [index this] tramp))
-      (push-stack tramp #(-parse parser index tramp)))))
-
-(defn plus-full-parse
-  [this index tramp]
-  (let [parser (:parser this)]
-    (when (push-listener tramp [index parser] 
-                         (PlusFullListener empty-cat-result parser index [index this] tramp))
-      (push-stack tramp #(-parse parser index tramp)))))
-
-(defn star-parse
-  [this index tramp]
-  (let [parser (:parser this)]
-    (when (push-listener tramp [index parser] 
-                         (PlusListener empty-cat-result parser index [index this] tramp))       
-      (push-stack tramp #(-parse parser index tramp)))
-    (success tramp [index this] nil index)))
-
-(defn star-full-parse
-  [this index tramp]
-  (let [parser (:parser this)]
-    (if (= index (count (:text tramp)))
-      (success tramp [index this] nil index)
-      (do
-        (when (push-listener tramp [index parser] 
-                             (PlusFullListener empty-cat-result parser index [index this] tramp))
-          (push-stack tramp #(-parse parser index tramp)))))))
+ (defn star-full-parse
+   [this index tramp]
+   (let [parser (:parser this)]
+     (if (= index (count (:text tramp)))
+       (success tramp [index this] nil index)
+       (do
+         (when (push-listener tramp [index parser] 
+                              (PlusFullListener empty-cat-result parser index [index this] tramp))
+           (push-stack tramp #(-parse parser index tramp)))))))
+ )
 
 (defn alt-parse
   [this index tramp]
@@ -540,10 +540,11 @@
   (fn [& parse-result]
     {:tag key, :content parse-result}))
 
-(defn raw-non-terminal-reduction [& parse-result] 
-  (if parse-result
-    (make-flattenable parse-result)
-    (make-flattenable empty-cat-result))) 
+(let [empty-cat-result (make-flattenable [])]
+  (defn raw-non-terminal-reduction [& parse-result] 
+    (if parse-result
+      (make-flattenable parse-result)
+      (make-flattenable empty-cat-result)))) 
 
 (defn hide-tag [parser]
   (red parser raw-non-terminal-reduction))
