@@ -3,7 +3,6 @@
 
 ;TODO
 ;    ENBF
-;    Switch to nil
 ;Error messages
 ;Documentation
 ;Concurrency
@@ -138,34 +137,33 @@
 (defn make-flattenable [s]
   (with-meta s {:flattenable? true}))
 
-(let [empty-cat-result (make-flattenable [])]
-  (defn push-result
-    "Pushes a result into the trampoline's node.
-     Categorizes as either result or full-result.
-     Schedules notification to all existing listeners of result
-     (Full listeners only get notified about full results)"
-    [tramp node-key result]
-    (let [node (node-get tramp node-key)
-          parser (node-key 1)
-          ;; reduce result with reduction function if it exists
-          result (if (:hide parser)
-                   (assoc result :result empty-cat-result)
-                   result)
-          result (if-let [reduction-function (:red parser)]
-                   (assoc result :result 
-                          (apply-reduction reduction-function
-                                           (:result result)))
-                   result)              
-          total? (total-success? tramp result)
+(defn push-result
+  "Pushes a result into the trampoline's node.
+   Categorizes as either result or full-result.
+   Schedules notification to all existing listeners of result
+   (Full listeners only get notified about full results)"
+  [tramp node-key result]
+  (let [node (node-get tramp node-key)
+        parser (node-key 1)
+        ;; reduce result with reduction function if it exists
+        result (if (:hide parser)
+                 (assoc result :result nil)
+                 result)
+        result (if-let [reduction-function (:red parser)]
+                 (assoc result :result 
+                        (apply-reduction reduction-function
+                                         (:result result)))
+                 result)              
+        total? (total-success? tramp result)
           results (if total? (:full-results node) (:results node))]
-      (when (not (@results result))  ; when result is not already in @results
-        (add! :push-result)
-        (swap! results conj result)
-        (doseq [listener @(:listeners node)]
-          (push-message tramp listener result))
-        (when total?
-          (doseq [listener @(:full-listeners node)]
-            (push-message tramp listener result))))))) 
+    (when (not (@results result))  ; when result is not already in @results
+      (add! :push-result)
+      (swap! results conj result)
+      (doseq [listener @(:listeners node)]
+        (push-message tramp listener result))
+      (when total?
+        (doseq [listener @(:full-listeners node)]
+          (push-message tramp listener result)))))) 
 
 (defn push-listener
   "Pushes a listener into the trampoline's node.
@@ -261,10 +259,9 @@
   (fn [result] (push-result tramp node-key result)))
 
 ; The second kind of listener handles lookahead.
-(let [empty-cat-result (make-flattenable [])]
-  (defn LookListener [node-key tramp]
-    (fn [result]
-      (success tramp node-key empty-cat-result (node-key 0)))))     
+(defn LookListener [node-key tramp]
+  (fn [result]
+    (success tramp node-key nil (node-key 0))))     
 
 ; The third kind of listener is a CatListener which listens at each stage of the
 ; concatenation parser to carry on the next step.  Think of it as a parse continuation.
