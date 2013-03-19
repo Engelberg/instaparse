@@ -1,11 +1,17 @@
 (ns instaparse.cfg
   (:use instaparse.gll)
   (:use clojure.pprint clojure.repl))
+;
+;(def single-quoted-string "'(\\'|[^'])*'")
+;(def single-quoted-string "'([^']|(?<!\\\\)')*?'") 
+;(def single-quoted-string #"'[^\\]*?'")
+;(def single-quoted-string #"'([^\\']|\\\\|\\')*'")
+;(def single-quoted-string #"'([^']|\\')*'")
+(def single-quoted-string #"'(?:[^\\']|\\.)*'")
+(def single-quoted-regexp #"#'(?:[^\\']|\\.)*'")
+(def double-quoted-string #"\"(?:[^\\\"]|\\.)*\"")
+(def double-quoted-regexp #"#\"(?:[^\\\"]|\\.)*\"")
 
-(def single-quoted-string "'(\\'|[^\\'])*'")
-(def single-quoted-regexp "#'(\\'|[^\\'])*'")
-(def double-quoted-string "\"(\\\"|[^\\\"])*\"")
-(def double-quoted-regexp "#\"(\\\"|[^\\\"])*\"")
 (def opt-whitespace (hide (nt :opt-whitespace)))
 
 (def cfg {:rules (cat opt-whitespace
@@ -23,10 +29,10 @@
                      opt-whitespace
                      (nt :alt)
                      (hide (alt (nt :opt-whitespace)
-                                (regexp "\\s*;\\s*"))))          
+                                (regexp "\\s*[.;]\\s*"))))          
           :nt (cat
                 (neg (nt :epsilon))
-                (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!]+"))
+                (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;.]+"))
           :hide-nt (cat (hide (string "<"))
                         opt-whitespace
                         (nt :nt)
@@ -130,5 +136,7 @@
   "S = !B A")
 (def cfg13
   "S = !&B A")
-(def cfg14
-  "S = 'a' S | Epsilon")
+(def cfg15
+  "S = 'a' S | Epsilon;
+   C = 'b'.
+   D = A")
