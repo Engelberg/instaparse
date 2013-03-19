@@ -24,7 +24,9 @@
                      (nt :alt)
                      (hide (alt (nt :opt-whitespace)
                                 (regexp "\\s*;\\s*"))))          
-          :nt (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!]+")
+          :nt (cat
+                (neg (nt :epsilon))
+                (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!]+"))
           :hide-nt (cat (hide (string "<"))
                         opt-whitespace
                         (nt :nt)
@@ -84,6 +86,10 @@
           :neg (cat (hide (string "!"))
                     opt-whitespace
                     (nt :factor))
+          :epsilon (alt (string "Epsilon")
+                        (string "epsilon")
+                        (string "EPSILON")
+                        (string "\u03b5"))
           :factor (hide-tag (alt (nt :nt)
                                  (nt :string)
                                  (nt :regexp)
@@ -91,7 +97,8 @@
                                  (nt :star)
                                  (nt :plus)
                                  (nt :paren)
-                                 (nt :hide)))})
+                                 (nt :hide)
+                                 (nt :epsilon)))})
 
 (def cfg1 "S = 'a'")
 (def cfg2 
@@ -123,3 +130,5 @@
   "S = !B A")
 (def cfg13
   "S = !&B A")
+(def cfg14
+  "S = 'a' S | Epsilon")
