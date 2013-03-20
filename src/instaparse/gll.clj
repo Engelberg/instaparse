@@ -146,6 +146,7 @@
    Schedules notification to all existing listeners of result
    (Full listeners only get notified about full results)"
   [tramp node-key result]
+  ;(println (node-key 0) (node-key 1) (type (:result result)) result)
   (let [node (node-get tramp node-key)
         parser (node-key 1)
         ;; reduce result with reduction function if it exists
@@ -158,7 +159,7 @@
                                          (:result result)))
                  result)              
         total? (total-success? tramp result)
-          results (if total? (:full-results node) (:results node))]
+        results (if total? (:full-results node) (:results node))]
     (when (not (@results result))  ; when result is not already in @results
       (add! :push-result)
       (swap! results conj result)
@@ -310,6 +311,7 @@
   (fn [result]
     (let [{parsed-result :result continue-index :index} result]
       (when (> continue-index prev-index)
+        ;(println "PLUS" (type results-so-far))
         (let [new-results-so-far (conj results-so-far parsed-result)]
           (when (push-listener tramp [continue-index parser]
                                (PlusListener new-results-so-far parser continue-index
@@ -321,6 +323,7 @@
   (fn [result]
     (let [{parsed-result :result continue-index :index} result]
       (when (> continue-index prev-index)
+        ;(println "plusfull" (type parsed-result))
         (let [new-results-so-far (conj results-so-far parsed-result)]
           (if (= continue-index (count (:text tramp)))
             (success tramp node-key new-results-so-far continue-index)
