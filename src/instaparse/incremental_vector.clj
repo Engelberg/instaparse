@@ -8,14 +8,25 @@
   (hashCode [self] hashcode)
   (equals [self other]
     (and (instance? IncrementalVector other)
-         (= hashcode (.hashcode ^IncrementalVector other))
-         (= (count v) (count (.v ^IncrementalVector other)))
-         (.equiv v 
-           (.v ^IncrementalVector other))))
+         (== hashcode (.hashcode ^IncrementalVector other))
+         (== (count v) (count (.v ^IncrementalVector other)))
+         (= v (.v ^IncrementalVector other))))
+  clojure.lang.IHashEq
+  (hasheq [self] hashcode)
+  java.util.Collection
+  (iterator [self]
+    (.iterator v))
+  (size [self]
+    (count v))
   clojure.lang.IPersistentCollection
   (equiv [self other]
-    (.equals self other))  
-  (empty [self] EMPTY) 
+    (or 
+      (and (instance? IncrementalVector other)
+           (== hashcode (.hashcode ^IncrementalVector other))
+           (== (count v) (count (.v ^IncrementalVector other)))
+           (= v (.v ^IncrementalVector other)))
+      (= v other)))
+  (empty [self] (with-meta EMPTY (meta self))) 
   clojure.lang.Counted
   (count [self] (count v))
   clojure.lang.IPersistentVector

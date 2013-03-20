@@ -274,6 +274,10 @@
 ; that needs to know the overall result of the cat parser.
 
 (defn CatListener [results-so-far parser-sequence node-key tramp]
+;  (pprint {:tag :CatListener
+;           :results-so-far results-so-far
+;           :parser-sequence (map :tag parser-sequence)
+;           :node-key [(node-key 0) (:tag (node-key 1))]})
   (fn [result] 
     (let [{parsed-result :result continue-index :index} result
           new-results-so-far (conj results-so-far parsed-result)]
@@ -287,6 +291,10 @@
   (and (seq s) (not (next s))))
 
 (defn CatFullListener [results-so-far parser-sequence node-key tramp]
+;  (pprint {:tag :CatFullListener
+;           :results-so-far results-so-far
+;           :parser-sequence (map :tag parser-sequence)
+;           :node-key [(node-key 0) (:tag (node-key 1))]})
   (fn [result] 
     (let [{parsed-result :result continue-index :index} result
           new-results-so-far (conj results-so-far parsed-result)]
@@ -628,6 +636,7 @@
 (def grammar5 {:s (cat (string "a") (string "b") (string "c"))})
 (def grammar6 {:s (alt (cat (string "a") (nt :s)) (string "a"))})
 (def grammar7 {:s (alt (cat (string "a") (nt :s)) Epsilon)})
+; This next one is fairly slow
 (def grammar8 {:s (alt (cat (string "a") (nt :s) Epsilon) (string "a"))})
 (def grammar9 {:s (alt (cat (string "a") (nt :s))
                        (cat (string "b") (nt :s))
