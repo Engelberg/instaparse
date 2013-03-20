@@ -544,10 +544,10 @@
     :else {:tag :alt :parsers parsers}))
 
 (defn cat [& parsers]
-  (cond
-    (every? (partial = Epsilon) parsers) Epsilon
-    (singleton? parsers) (first parsers) ; apply vector reduction
-    :else {:tag :cat :parsers parsers}))
+  (if (every? (partial = Epsilon) parsers) Epsilon
+    (let [parsers (remove #{Epsilon} parsers)]
+      (if (singleton? parsers) (first parsers) ; apply vector reduction
+        {:tag :cat :parsers parsers}))))
 
 (defn string [s] 
   (if (= s "") Epsilon
@@ -706,6 +706,7 @@
                             (cat (string "1") (nt :equal) (string "0"))
                             (cat (nt :equal) (nt :equal))
                             Epsilon)})
+; Another slow one
 (def grammar32 {:s (alt (string "0")
                         (cat (nt :s) (nt :s))
                         Epsilon)})
