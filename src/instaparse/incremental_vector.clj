@@ -7,19 +7,11 @@
   (toString [self] (.toString v))
   (hashCode [self] hashcode)
   (equals [self other]
-    (or
-      (and (instance? IncrementalVector other)
-           (= hashcode (.hashcode ^IncrementalVector other))
-           (= (count v) (count (.v ^IncrementalVector other)))
-           (.equiv v 
-             (.v ^IncrementalVector other)))
-      (and (instance? clojure.lang.IPersistentCollection other)
-           (clojure.lang.Util/equiv other self))))
-  java.util.Collection
-  (iterator [self]
-    (.iterator v))
-  (size [self]
-    (count v))
+    (and (instance? IncrementalVector other)
+         (= hashcode (.hashcode ^IncrementalVector other))
+         (= (count v) (count (.v ^IncrementalVector other)))
+         (.equiv v 
+           (.v ^IncrementalVector other))))
   clojure.lang.IPersistentCollection
   (equiv [self other]
     (.equals self other))  
