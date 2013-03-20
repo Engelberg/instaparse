@@ -1,10 +1,13 @@
 (ns instaparse.gll
+  (:require [instaparse.incremental-vector :as iv])
   (:use clojure.pprint clojure.repl))
 
 ;TODO
 ;    ENBF
 ;Error messages
 ;Documentation
+;Move parse calls into listener creation for clarity
+;Incremental Hashing
 ;Concurrency
 ;Allow parsing of arbitrary sequences.
 
@@ -380,7 +383,7 @@
         (success tramp [index this] match (count text)))
       (fail tramp index))))
         
-(let [empty-cat-result (make-flattenable [])]
+(let [empty-cat-result (make-flattenable iv/EMPTY)]
 	(defn cat-parse
 	  [this index tramp]
 	  (let [parsers (:parsers this)]
@@ -575,11 +578,10 @@
   (fn [& parse-result]
     {:tag key, :content parse-result}))
 
-(let [empty-cat-result (make-flattenable [])]
-  (defn raw-non-terminal-reduction [& parse-result] 
-    (if parse-result
-      (make-flattenable parse-result)
-      (make-flattenable empty-cat-result)))) 
+(defn raw-non-terminal-reduction [& parse-result] 
+  (if parse-result
+    (make-flattenable parse-result)
+    nil)) 
 
 (defn hide-tag [parser]
   (red parser raw-non-terminal-reduction))
