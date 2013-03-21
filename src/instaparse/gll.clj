@@ -42,7 +42,7 @@
          non-terminal-full-parse opt-full-parse plus-full-parse star-full-parse
          regexp-full-parse lookahead-full-parse ordered-alt-full-parse)
 (defn -full-parse [parser index tramp]
-;  (println "-full-parse" index parser)
+  (println "-full-parse" index (:tag parser))
   (case (:tag parser)
     :nt (non-terminal-full-parse parser index tramp)
     :alt (alt-full-parse parser index tramp)
@@ -270,6 +270,12 @@
         (pos? (count @stack))
         (do (step stack) (recur tramp found-result?))
         
+        (pos? (count @(:failure-listeners tramp)))
+        (do (doseq [listener @(:failure-listeners tramp)]
+              (push-stack tramp listener))        
+          (reset! (:failure-listeners tramp) [])
+          (recur tramp found-result?))
+        
         found-result?
         (let [next-stack (:next-stack tramp)]
           (reset! stack @next-stack) 
@@ -278,13 +284,7 @@
           (doseq [listener @(:failure-listeners tramp)]
             (push-stack tramp listener))        
           (reset! (:failure-listeners tramp) [])
-          (recur tramp nil))
-
-        (pos? (count @(:failure-listeners tramp)))
-        (do (doseq [listener @(:failure-listeners tramp)]
-              (push-stack tramp listener))        
-          (reset! (:failure-listeners tramp) [])
-          (recur tramp found-result?))
+          (recur tramp nil))        
       
         :else nil))))
 
@@ -495,7 +495,7 @@
       (push-negative-listener 
         tramp       
         #(when (not (result-exists? node-key-parser1))
-           (push-listener tramp [index parser2] listener))))))
+           (push-listener tramp node-key-parser2 listener))))))
           
 (defn ordered-alt-full-parse
   [this index tramp]
@@ -510,7 +510,7 @@
       (push-negative-listener 
         tramp       
         #(when (not (full-result-exists? node-key-parser1))
-           (push-full-listener tramp [index parser2] listener))))))
+           (push-full-listener tramp node-key-parser2 listener))))))
   
 (defn opt-parse
   [this index tramp]
