@@ -821,18 +821,18 @@
                         (star (string "aa")))})
 (def grammar55 {:s (alt (cat (string "a") (nt :s) (opt (string "a")))
                         (string "a"))})
-(def grammar50 {:s (alt (string "a")
+(def grammar56 {:s (alt (string "a")
                         (cat (string "a") (nt :s) (string "a"))
                         )})
 ;; PEG grammars
-(def grammar51 {:s (ord (plus (string "aa"))
+(def grammar57 {:s (ord (plus (string "aa"))
                         (plus (string "a")))})
 
-(def grammar52 {:s (cat (ord (plus (string "aa"))
+(def grammar58 {:s (cat (ord (plus (string "aa"))
                              (plus (string "a")))
                         (string "b"))})
 
-(def grammar53 {:S (cat (look (cat (nt :A) (string "c")))
+(def grammar59 {:S (cat (look (cat (nt :A) (string "c")))
                         (plus (string "a"))
                         (nt :B)
                         (neg (ord (string "a") (string "b") (string "c"))))
@@ -844,7 +844,7 @@
 ;Sum     ← Expr (('+' / '-') Expr)*
 ;Expr    ← Product / Sum / Value
 
-(def grammar54 {:Expr (alt (nt :Product) (nt :Sum) (nt :Value))
+(def grammar60 {:Expr (alt (nt :Product) (nt :Sum) (nt :Value))
                 :Product (cat (nt :Expr) 
                               (star (cat (alt (string "*")
                                               (string "/"))
