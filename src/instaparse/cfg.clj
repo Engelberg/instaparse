@@ -27,12 +27,12 @@
                      opt-whitespace
                      (hide (nt :rule-separator))
                      opt-whitespace
-                     (nt :alt)
+                     (alt (nt :alt) (nt :ord))
                      (hide (alt (nt :opt-whitespace)
                                 (regexp "\\s*[.;]\\s*"))))          
           :nt (cat
                 (neg (nt :epsilon))
-                (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;.]+"))
+                (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+"))
           :hide-nt (cat (hide (string "<"))
                         opt-whitespace
                         (nt :nt)
@@ -43,6 +43,13 @@
                       (cat
                         opt-whitespace
                         (hide (string "|"))
+                        opt-whitespace
+                        (nt :cat))))
+          :ord (cat (nt :cat)
+                    (star
+                      (cat
+                        opt-whitespace
+                        (hide (string "/"))
                         opt-whitespace
                         (nt :cat))))
           :paren (cat (hide (string "("))
@@ -140,3 +147,9 @@
   "S = 'a' S | Epsilon;
    C = 'b'.
    D = A")
+(def cfg16
+  "S = 'a' / 'b'")
+(def cfg17
+  "S = 'a' / 'b' | 'c'")
+(def cfg18
+  "S = 'a' | 'b' / 'c'")
