@@ -275,15 +275,17 @@
           (reset! stack @next-stack) 
           (reset! next-stack [])
           (swap! (:generation tramp) inc)
+          (doseq [listener @(:failure-listeners tramp)]
+            (push-stack tramp listener))        
           (reset! (:failure-listeners tramp) [])
           (recur tramp nil))
-        
-        (pos? (count @(:failure-listeners tramp)))        
+
+        (pos? (count @(:failure-listeners tramp)))
         (do (doseq [listener @(:failure-listeners tramp)]
-              (push-stack tramp listener))
+              (push-stack tramp listener))        
           (reset! (:failure-listeners tramp) [])
-          (recur tramp found-result?))                              
-        
+          (recur tramp found-result?))
+      
         :else nil))))
 
 ;; Listeners
@@ -484,22 +486,32 @@
   [this index tramp]
   (let [parser1 (:parser1 this)
         parser2 (:parser2 this)
-        node-key-parser1 [index parser1]]
-    (push-listener tramp node-key-parser1 (NodeListener [index this] tramp))
-    (push-negative-listener 
-      tramp
-      #(push-listener tramp [index parser2] (NodeListener [index this] tramp)))))
-                            
+        node-key-parser1 [index parser1]
+        node-key-parser2 [index parser2]
+        listener (NodeListener [index this] tramp)]
+    (push-listener tramp node-key-parser1 listener)
+    ; If parser1 already has a result, we won't ever need to bother with parser2
+    (when (not (result-exists? node-key-parser1))
+      (push-negative-listener 
+        tramp       
+        #(when (not (result-exists? node-key-parser1))
+           (push-listener tramp [index parser2] listener))))))
+          
 (defn ordered-alt-full-parse
   [this index tramp]
   (let [parser1 (:parser1 this)
         parser2 (:parser2 this)
-        node-key-parser1 [index parser1]]
-    (push-full-listener tramp node-key-parser1 (NodeListener [index this] tramp))
-    (push-negative-listener 
-      tramp
-      #(push-full-listener tramp [index parser2] (NodeListener [index this] tramp)))))
-
+        node-key-parser1 [index parser1]
+        node-key-parser2 [index parser2]
+        listener (NodeListener [index this] tramp)]
+    (push-full-listener tramp node-key-parser1 listener)
+    ; If parser1 already has a full result, we won't ever need to bother with parser2
+    (when (not (full-result-exists? node-key-parser1))
+      (push-negative-listener 
+        tramp       
+        #(when (not (full-result-exists? node-key-parser1))
+           (push-full-listener tramp [index parser2] listener))))))
+  
 (defn opt-parse
   [this index tramp]
   (let [parser (:parser this)]
@@ -548,11 +560,16 @@
   [this index tramp]
   (let [parser (:parser this)        
         node-key [index parser]]
-    ;just activate?
-    (push-listener tramp node-key (fn [result] (fail tramp index)))     
-    (push-negative-listener 
-      tramp
-      #(success tramp [index this] nil index))))      
+    (if (result-exists? tramp node-key)
+      (fail tramp index)
+      (do 
+        (push-listener tramp node-key 
+                       (let [fail-send (delay (fail tramp index))]
+                         (fn [result] (force fail-send))))     
+        (push-negative-listener 
+          tramp
+          #(when (not (result-exists? tramp node-key))
+             (success tramp [index this] nil index)))))))      
 
 (def Epsilon {:tag :epsilon})
 (defn epsilon-parse
