@@ -171,7 +171,8 @@
 
 (defn push-listener
   "Pushes a listener into the trampoline's node.
-   Schedules notification to listener of all existing results."
+   Schedules notification to listener of all existing results.
+   Initiates parse if necessary"
   [tramp node-key listener]
   (let [listener-already-exists? (listener-exists? tramp node-key)
         node (node-get tramp node-key)
@@ -182,7 +183,8 @@
       (push-message tramp listener result))
     (doseq [result @(:full-results node)]
       (push-message tramp listener result))
-    (not listener-already-exists?))) 
+    (when (not listener-already-exists?)
+      (push-stack tramp #(-parse (node-key 1) (node-key 0) tramp))))) 
 
 (defn push-full-listener
   "Pushes a listener into the trampoline's node.
@@ -195,7 +197,8 @@
     (swap! listeners conj listener)
     (doseq [result @(:full-results node)]
       (push-message tramp listener result))
-    (not full-listener-already-exists?))) 
+    (when (not full-listener-already-exists?)
+      (push-stack tramp #(-full-parse (node-key 1) (node-key 0) tramp)))))
 
 ;(defn success [tramp node-key result end]
 ;  (push-result tramp node-key (make-success result end)))
@@ -282,9 +285,8 @@
     (let [{parsed-result :result continue-index :index} result
           new-results-so-far (conj results-so-far parsed-result)]
       (if (seq parser-sequence)
-        (when (push-listener tramp [continue-index (first parser-sequence)]
-                           (CatListener new-results-so-far (next parser-sequence) node-key tramp))
-          (push-stack tramp #(-parse (first parser-sequence) continue-index tramp)))
+        (push-listener tramp [continue-index (first parser-sequence)]
+                       (CatListener new-results-so-far (next parser-sequence) node-key tramp))          
         (success tramp node-key new-results-so-far continue-index)))))
 
 (defn singleton? [s]
@@ -300,14 +302,12 @@
           new-results-so-far (conj results-so-far parsed-result)]
       (cond
         (singleton? parser-sequence)
-        (when (push-full-listener tramp [continue-index (first parser-sequence)]
-                           (CatFullListener new-results-so-far (next parser-sequence) node-key tramp))
-          (push-stack tramp #(-full-parse (first parser-sequence) continue-index tramp)))
+        (push-full-listener tramp [continue-index (first parser-sequence)]
+                            (CatFullListener new-results-so-far (next parser-sequence) node-key tramp))        
         
         (seq parser-sequence)
-        (when (push-listener tramp [continue-index (first parser-sequence)]
-                           (CatFullListener new-results-so-far (next parser-sequence) node-key tramp))
-          (push-stack tramp #(-parse (first parser-sequence) continue-index tramp)))
+        (push-listener tramp [continue-index (first parser-sequence)]
+                       (CatFullListener new-results-so-far (next parser-sequence) node-key tramp))          
         
         :else
         (success tramp node-key new-results-so-far continue-index)))))
@@ -321,10 +321,9 @@
       (when (> continue-index prev-index)
         ;(println "PLUS" (type results-so-far))
         (let [new-results-so-far (conj results-so-far parsed-result)]
-          (when (push-listener tramp [continue-index parser]
-                               (PlusListener new-results-so-far parser continue-index
-                                             node-key tramp))
-            (push-stack tramp #(-parse parser continue-index tramp)))
+          (push-listener tramp [continue-index parser]
+                         (PlusListener new-results-so-far parser continue-index
+                                       node-key tramp))            
           (success tramp node-key new-results-so-far continue-index))))))
 
 (defn PlusFullListener [results-so-far parser prev-index node-key tramp]
@@ -335,11 +334,10 @@
         (let [new-results-so-far (conj results-so-far parsed-result)]
           (if (= continue-index (count (:text tramp)))
             (success tramp node-key new-results-so-far continue-index)
-            (when (push-listener tramp [continue-index parser]
-                                 (PlusFullListener new-results-so-far parser continue-index node-key tramp))
-              (push-stack tramp #(-parse parser continue-index tramp)))))))))
-            
-
+            (push-listener tramp [continue-index parser]
+                           (PlusFullListener new-results-so-far parser continue-index 
+                                             node-key tramp))))))))
+                        
 ; The top level listener is the final kind of listener
 
 (defn TopListener [tramp] 
@@ -400,40 +398,35 @@
 	  (let [parsers (:parsers this)]
 	    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
 	    ; and with a final target of notifying this parser when the whole sequence is complete
-	    (when (push-listener tramp [index (first parsers)] 
-                          (CatListener empty-cat-result (next parsers) [index this] tramp))
-	      (push-stack tramp #(-parse (first parsers) index tramp)))))
+	    (push-listener tramp [index (first parsers)] 
+                    (CatListener empty-cat-result (next parsers) [index this] tramp))))	      
 	
 	(defn cat-full-parse
 	  [this index tramp]
 	  (let [parsers (:parsers this)]
 	    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
 	    ; and with a final target of notifying this parser when the whole sequence is complete
-	    (when (push-listener tramp [index (first parsers)] 
-                          (CatFullListener empty-cat-result (next parsers) [index this] tramp))
-	      (push-stack tramp #(-parse (first parsers) index tramp)))))
+	    (push-listener tramp [index (first parsers)] 
+                    (CatFullListener empty-cat-result (next parsers) [index this] tramp))))	      
  
  (defn plus-parse
 	  [this index tramp]
 	  (let [parser (:parser this)]
-	    (when (push-listener tramp [index parser] 
-                          (PlusListener empty-cat-result parser index [index this] tramp))
-       (push-stack tramp #(-parse parser index tramp)))))
+	    (push-listener tramp [index parser] 
+                    (PlusListener empty-cat-result parser index [index this] tramp))))       
  
  (defn plus-full-parse
    [this index tramp]
    (let [parser (:parser this)]
-     (when (push-listener tramp [index parser] 
-                          (PlusFullListener empty-cat-result parser index [index this] tramp))
-       (push-stack tramp #(-parse parser index tramp)))))
+     (push-listener tramp [index parser] 
+                    (PlusFullListener empty-cat-result parser index [index this] tramp))))       
  
  (defn star-parse
 	  [this index tramp]
 	  (let [parser (:parser this)]
-	    (when (push-listener tramp [index parser] 
-                          (PlusListener empty-cat-result parser index [index this] tramp))       
-       (push-stack tramp #(-parse parser index tramp)))
-      (success tramp [index this] nil index)))
+	    (push-listener tramp [index parser] 
+                    (PlusListener empty-cat-result parser index [index this] tramp))              
+     (success tramp [index this] nil index)))
 
  (defn star-full-parse
    [this index tramp]
@@ -441,37 +434,32 @@
      (if (= index (count (:text tramp)))
        (success tramp [index this] nil index)
        (do
-         (when (push-listener tramp [index parser] 
-                              (PlusFullListener empty-cat-result parser index [index this] tramp))
-           (push-stack tramp #(-parse parser index tramp)))))))
+         (push-listener tramp [index parser] 
+                        (PlusFullListener empty-cat-result parser index [index this] tramp))))))         
  )
 
 (defn alt-parse
   [this index tramp]
   (let [parsers (:parsers this)]
     (doseq [parser parsers]
-      (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
-        (push-stack tramp #(-parse parser index tramp))))))
+      (push-listener tramp [index parser] (NodeListener [index this] tramp)))))      
 
 (defn alt-full-parse
   [this index tramp]
   (let [parsers (:parsers this)]
     (doseq [parser parsers]
-      (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
-        (push-stack tramp #(-full-parse parser index tramp))))))
+      (push-full-listener tramp [index parser] (NodeListener [index this] tramp)))))        
 
 (defn opt-parse
   [this index tramp]
   (let [parser (:parser this)]
-    (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
-      (push-stack tramp #(-parse parser index tramp)))
+    (push-listener tramp [index parser] (NodeListener [index this] tramp))      
     (success tramp [index this] nil index)))
 
 (defn opt-full-parse
   [this index tramp]
   (let [parser (:parser this)]
-    (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
-      (push-stack tramp #(-full-parse parser index tramp)))
+    (push-full-listener tramp [index parser] (NodeListener [index this] tramp))    
     (if (= index (count (:text tramp)))
       (success tramp [index this] nil index)
       (fail tramp index))))    
@@ -479,20 +467,17 @@
 (defn non-terminal-parse
   [this index tramp]
   (let [parser (get-parser (:grammar tramp) (:keyword this))]
-    (when (push-listener tramp [index parser] (NodeListener [index this] tramp))
-      (push-stack tramp #(-parse parser index tramp)))))
+    (push-listener tramp [index parser] (NodeListener [index this] tramp))))      
 
 (defn non-terminal-full-parse
   [this index tramp]
   (let [parser (get-parser (:grammar tramp) (:keyword this))]
-    (when (push-full-listener tramp [index parser] (NodeListener [index this] tramp))
-      (push-stack tramp #(-full-parse parser index tramp)))))
+    (push-full-listener tramp [index parser] (NodeListener [index this] tramp))))      
 
 (defn lookahead-parse
   [this index tramp]
   (let [parser (:parser this)]
-    (when (push-listener tramp [index parser] (LookListener [index this] tramp))
-      (push-stack tramp #(-parse parser index tramp)))))
+    (push-listener tramp [index parser] (LookListener [index this] tramp))))      
 
 (defn lookahead-full-parse
   [this index tramp]
@@ -611,8 +596,7 @@
   (let [grammar (apply-standard-reductions grammar)
         tramp (make-tramp grammar text)
         parser (nt parser)]
-    (push-full-listener tramp [0 parser] (TopListener tramp))
-    (push-stack tramp #(-full-parse parser 0 tramp))
+    (push-full-listener tramp [0 parser] (TopListener tramp))    
     (if-let [all-parses (run tramp)]
       all-parses 
       @(:failure tramp))))
@@ -623,8 +607,7 @@
   "takes pre-processed grammar and parser" 
   [grammar parser text]  
   (let [tramp (make-tramp grammar text)]
-    (push-listener tramp [0 parser] (TopListener tramp))
-    (push-stack tramp #(-parse parser 0 tramp))
+    (push-listener tramp [0 parser] (TopListener tramp))    
     (empty? (run tramp))))
     
 
