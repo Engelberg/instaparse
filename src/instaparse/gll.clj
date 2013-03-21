@@ -270,18 +270,19 @@
         (pos? (count @stack))
         (do (step stack) (recur tramp found-result?))
         
-        (pos? (count @(:failure-listeners tramp)))
-        (do (doseq [listener @(:failure-listeners tramp)]
-              (push-stack tramp listener))
-          (reset! (:failure-listeners tramp) [])
-          (recur tramp found-result?))              
-        
         found-result?
         (let [next-stack (:next-stack tramp)]
           (reset! stack @next-stack) 
           (reset! next-stack [])
           (swap! (:generation tramp) inc)
+          (reset! (:failure-listeners tramp) [])
           (recur tramp nil))
+        
+        (pos? (count @(:failure-listeners tramp)))        
+        (do (doseq [listener @(:failure-listeners tramp)]
+              (push-stack tramp listener))
+          (reset! (:failure-listeners tramp) [])
+          (recur tramp found-result?))                              
         
         :else nil))))
 
@@ -487,8 +488,7 @@
     (push-listener tramp node-key-parser1 (NodeListener [index this] tramp))
     (push-negative-listener 
       tramp
-      #(when (not (result-exists? tramp node-key-parser1))
-         (push-listener tramp [index parser2] (NodeListener [index this] tramp))))))
+      #(push-listener tramp [index parser2] (NodeListener [index this] tramp)))))
                             
 (defn ordered-alt-full-parse
   [this index tramp]
@@ -498,8 +498,7 @@
     (push-full-listener tramp node-key-parser1 (NodeListener [index this] tramp))
     (push-negative-listener 
       tramp
-      #(when (not (full-result-exists? tramp node-key-parser1))
-         (push-full-listener tramp [index parser2] (NodeListener [index this] tramp))))))
+      #(push-full-listener tramp [index parser2] (NodeListener [index this] tramp)))))
 
 (defn opt-parse
   [this index tramp]
@@ -544,6 +543,16 @@
     (if (negative-parse? (:grammar tramp) parser remaining-text)
       (success tramp [index this] nil index)
       (fail tramp index))))
+
+(defn negative-lookahead-parse
+  [this index tramp]
+  (let [parser (:parser this)        
+        node-key [index parser]]
+    ;just activate?
+    (push-listener tramp node-key (fn [result] (fail tramp index)))     
+    (push-negative-listener 
+      tramp
+      #(success tramp [index this] nil index))))      
 
 (def Epsilon {:tag :epsilon})
 (defn epsilon-parse
