@@ -535,14 +535,14 @@
     (lookahead-parse this index tramp)
     (fail tramp index)))
 
-(declare negative-parse?)
-(defn negative-lookahead-parse
-  [this index tramp]
-  (let [parser (:parser this)
-        remaining-text (subs (:text tramp) index)]
-    (if (negative-parse? (:grammar tramp) parser remaining-text)
-      (success tramp [index this] nil index)
-      (fail tramp index))))
+;(declare negative-parse?)
+;(defn negative-lookahead-parse
+;  [this index tramp]
+;  (let [parser (:parser this)
+;        remaining-text (subs (:text tramp) index)]
+;    (if (negative-parse? (:grammar tramp) parser remaining-text)
+;      (success tramp [index this] nil index)
+;      (fail tramp index))))
 
 (defn negative-lookahead-parse
   [this index tramp]
@@ -587,12 +587,17 @@
     (singleton? parsers) (first parsers)
     :else {:tag :alt :parsers parsers}))
 
-(defn ord [parser1 parser2]
+(defn ord2 [parser1 parser2]
   (cond
     (= parser1 Epsilon) Epsilon
     (= parser2 Epsilon) parser1
     :else
     {:tag :ord :parser1 parser1 :parser2 parser2}))
+
+(defn ord [& parsers]
+  (if (seq parsers)
+    (ord2 (first parsers) (apply ord (rest parsers)))
+    Epsilon))
 
 (defn cat [& parsers]
   (if (every? (partial = Epsilon) parsers) Epsilon
@@ -669,13 +674,13 @@
 
 ;; Variation, but not for end-user
 
-(defn negative-parse? 
-  "takes pre-processed grammar and parser" 
-  [grammar parser text]  
-  (let [tramp (make-tramp grammar text)]
-    (push-listener tramp [0 parser] (TopListener tramp))    
-    (empty? (run tramp))))
-    
+;(defn negative-parse? 
+;  "takes pre-processed grammar and parser" 
+;  [grammar parser text]  
+;  (let [tramp (make-tramp grammar text)]
+;    (push-listener tramp [0 parser] (TopListener tramp))    
+;    (empty? (run tramp))))
+;    
 
 (def grammar1 {:s (alt (string "a") (string "aa") (string "aaa"))})
 (def grammar2 {:s (alt (string "a") (string "b"))})
@@ -809,3 +814,11 @@
 (def grammar52 {:s (cat (ord (plus (string "aa"))
                              (plus (string "a")))
                         (string "b"))})
+
+(def grammar53 {:S (cat (look (cat (nt :A) (string "c")))
+                        (plus (string "a"))
+                        (nt :B)
+                        (neg (ord (string "a") (string "b") (string "c"))))
+                :A (cat (string "a") (opt (nt :A)) (string "b"))
+                :B (hide-tag (cat (string "b") (opt (nt :B)) (string "c")))})
+  
