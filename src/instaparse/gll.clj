@@ -42,7 +42,7 @@
          non-terminal-full-parse opt-full-parse plus-full-parse star-full-parse
          regexp-full-parse lookahead-full-parse ordered-alt-full-parse)
 (defn -full-parse [parser index tramp]
-  (println "-full-parse" index (:tag parser))
+  ;(println "-full-parse" index (:tag parser))
   (case (:tag parser)
     :nt (non-terminal-full-parse parser index tramp)
     :alt (alt-full-parse parser index tramp)
@@ -491,10 +491,10 @@
         listener (NodeListener [index this] tramp)]
     (push-listener tramp node-key-parser1 listener)
     ; If parser1 already has a result, we won't ever need to bother with parser2
-    (when (not (result-exists? node-key-parser1))
+    (when (not (result-exists? tramp node-key-parser1))
       (push-negative-listener 
         tramp       
-        #(when (not (result-exists? node-key-parser1))
+        #(when (not (result-exists? tramp node-key-parser1))
            (push-listener tramp node-key-parser2 listener))))))
           
 (defn ordered-alt-full-parse
@@ -506,10 +506,10 @@
         listener (NodeListener [index this] tramp)]
     (push-full-listener tramp node-key-parser1 listener)
     ; If parser1 already has a full result, we won't ever need to bother with parser2
-    (when (not (full-result-exists? node-key-parser1))
+    (when (not (full-result-exists? tramp node-key-parser1))
       (push-negative-listener 
         tramp       
-        #(when (not (full-result-exists? node-key-parser1))
+        #(when (not (full-result-exists? tramp node-key-parser1))
            (push-full-listener tramp node-key-parser2 listener))))))
   
 (defn opt-parse
