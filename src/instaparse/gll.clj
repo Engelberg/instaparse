@@ -839,3 +839,22 @@
                 :A (cat (string "a") (opt (nt :A)) (string "b"))
                 :B (hide-tag (cat (string "b") (opt (nt :B)) (string "c")))})
   
+;Value   ← [0-9.]+ / '(' Expr ')'
+;Product ← Expr (('*' / '/') Expr)*
+;Sum     ← Expr (('+' / '-') Expr)*
+;Expr    ← Product / Sum / Value
+
+(def grammar54 {:Expr (alt (nt :Product) (nt :Sum) (nt :Value))
+                :Product (cat (nt :Expr) 
+                              (star (cat (alt (string "*")
+                                              (string "/"))
+                                         (nt :Expr))))
+                :Sum (cat (nt :Expr)
+                          (star (cat (alt (string "+")
+                                          (string "-"))
+                                     (nt :Expr))))
+                :Value (alt (regexp "[0-9]+")
+                            (cat (string "(")
+                                 (nt :Expr)
+                                 (string ")")))})
+                            
