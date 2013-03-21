@@ -21,7 +21,7 @@
 
 (declare alt-parse cat-parse string-parse epsilon-parse non-terminal-parse
          opt-parse plus-parse star-parse regexp-parse lookahead-parse
-         negative-lookahead-parse)
+         negative-lookahead-parse ordered-alt-parse)
 (defn -parse [parser index tramp]
 ;  (println "-parse" index parser)
   (case (:tag parser)
@@ -35,11 +35,12 @@
     :star (star-parse parser index tramp)
     :regexp (regexp-parse parser index tramp)
     :look (lookahead-parse parser index tramp)
-    :neg (negative-lookahead-parse parser index tramp)))
+    :neg (negative-lookahead-parse parser index tramp)
+    :ord (ordered-alt-parse parser index tramp)))
 
 (declare alt-full-parse cat-full-parse string-full-parse epsilon-full-parse 
          non-terminal-full-parse opt-full-parse plus-full-parse star-full-parse
-         regexp-full-parse lookahead-full-parse)
+         regexp-full-parse lookahead-full-parse ordered-alt-full-parse)
 (defn -full-parse [parser index tramp]
 ;  (println "-full-parse" index parser)
   (case (:tag parser)
@@ -53,7 +54,8 @@
     :star (star-full-parse parser index tramp)
     :regexp (regexp-full-parse parser index tramp)
     :look (lookahead-full-parse parser index tramp)
-    :neg (negative-lookahead-parse parser index tramp)))
+    :neg (negative-lookahead-parse parser index tramp)
+    :ord (ordered-alt-full-parse parser index tramp)))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
@@ -64,9 +66,10 @@
 ; success contains a successful parse
 ; failure contains the index of the furthest-along failure
 
-(defrecord Tramp [grammar text stack next-stack generation msg-cache nodes success failure])
+(defrecord Tramp [grammar text stack next-stack generation 
+                  failure-listeners msg-cache nodes success failure])
 (defn make-tramp [grammar text] 
-  (Tramp. grammar text (atom []) (atom []) (atom 0)
+  (Tramp. grammar text (atom []) (atom []) (atom 0) (atom []) 
           (atom {}) (atom {}) (atom nil) (atom 0)))
   
 ; A Success record contains the result and the index to continue from
@@ -117,12 +120,27 @@
       (pos? (count @(:listeners node))))))
 
 (defn full-listener-exists?
-  "Tests whether node already has a full-listener"
+  "Tests whether node already has a listener or full-listener"
   [tramp node-key]
   (let [nodes (:nodes tramp)]
     (when-let [node (@nodes node-key)]
       (or (pos? (count @(:full-listeners node)))
           (pos? (count @(:listeners node)))))))
+
+(defn result-exists?
+  "Tests whether node has a result or full-result"
+  [tramp node-key]
+  (let [nodes (:nodes tramp)]
+    (when-let [node (@nodes node-key)]
+      (or (pos? (count @(:full-results node)))
+          (pos? (count @(:results node)))))))
+
+(defn full-result-exists?
+  "Tests whether node has a full-result"
+  [tramp node-key]
+  (let [nodes (:nodes tramp)]
+    (when-let [node (@nodes node-key)]
+      (pos? (count @(:full-results node))))))      
 
 (defn node-get
   "Gets node if already exists, otherwise creates one"
@@ -200,6 +218,11 @@
     (when (not full-listener-already-exists?)
       (push-stack tramp #(-full-parse (node-key 1) (node-key 0) tramp)))))
 
+(defn push-negative-listener
+  "Pushes a thunk onto the trampoline's failure-listener stack."
+  [tramp negative-listener]
+  (swap! (:failure-listeners tramp) conj negative-listener))  
+
 ;(defn success [tramp node-key result end]
 ;  (push-result tramp node-key (make-success result end)))
 
@@ -246,6 +269,12 @@
         
         (pos? (count @stack))
         (do (step stack) (recur tramp found-result?))
+        
+        (pos? (count @(:failure-listeners tramp)))
+        (do (doseq [listener @(:failure-listeners tramp)]
+              (push-stack tramp listener))
+          (reset! (:failure-listeners tramp) [])
+          (recur tramp found-result?))              
         
         found-result?
         (let [next-stack (:next-stack tramp)]
@@ -450,6 +479,28 @@
     (doseq [parser parsers]
       (push-full-listener tramp [index parser] (NodeListener [index this] tramp)))))        
 
+(defn ordered-alt-parse
+  [this index tramp]
+  (let [parser1 (:parser1 this)
+        parser2 (:parser2 this)
+        node-key-parser1 [index parser1]]
+    (push-listener tramp node-key-parser1 (NodeListener [index this] tramp))
+    (push-negative-listener 
+      tramp
+      #(when (not (result-exists? tramp node-key-parser1))
+         (push-listener tramp [index parser2] (NodeListener [index this] tramp))))))
+                            
+(defn ordered-alt-full-parse
+  [this index tramp]
+  (let [parser1 (:parser1 this)
+        parser2 (:parser2 this)
+        node-key-parser1 [index parser1]]
+    (push-full-listener tramp node-key-parser1 (NodeListener [index this] tramp))
+    (push-negative-listener 
+      tramp
+      #(when (not (full-result-exists? tramp node-key-parser1))
+         (push-full-listener tramp [index parser2] (NodeListener [index this] tramp))))))
+
 (defn opt-parse
   [this index tramp]
   (let [parser (:parser this)]
@@ -493,7 +544,6 @@
     (if (negative-parse? (:grammar tramp) parser remaining-text)
       (success tramp [index this] nil index)
       (fail tramp index))))
-        
 
 (def Epsilon {:tag :epsilon})
 (defn epsilon-parse
@@ -527,6 +577,13 @@
     (every? (partial = Epsilon) parsers) Epsilon
     (singleton? parsers) (first parsers)
     :else {:tag :alt :parsers parsers}))
+
+(defn ord [parser1 parser2]
+  (cond
+    (= parser1 Epsilon) Epsilon
+    (= parser2 Epsilon) parser1
+    :else
+    {:tag :ord :parser1 parser1 :parser2 parser2}))
 
 (defn cat [& parsers]
   (if (every? (partial = Epsilon) parsers) Epsilon
@@ -736,3 +793,10 @@
 (def grammar50 {:s (alt (string "a")
                         (cat (string "a") (nt :s) (string "a"))
                         )})
+;; PEG grammars
+(def grammar51 {:s (ord (plus (string "aa"))
+                        (plus (string "a")))})
+
+(def grammar52 {:s (cat (ord (plus (string "aa"))
+                             (plus (string "a")))
+                        (string "b"))})
