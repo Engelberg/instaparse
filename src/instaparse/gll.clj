@@ -2,6 +2,13 @@
   (:require [instaparse.incremental-vector :as iv])
   (:use clojure.pprint clojure.repl))
 
+(def DEBUG nil)
+(defmacro debug [& body]
+  (when DEBUG
+    `(do ~@body)))
+(defmacro dprintln [& body]
+  `(debug (println ~@body)))
+
 ;TODO
 ;    ENBF
 ;Error messages
@@ -23,7 +30,7 @@
          opt-parse plus-parse star-parse regexp-parse lookahead-parse
          negative-lookahead-parse ordered-alt-parse)
 (defn -parse [parser index tramp]
-;  (println "-parse" index parser)
+  (dprintln "-parse" index (:tag parser))
   (case (:tag parser)
     :nt (non-terminal-parse parser index tramp)
     :alt (alt-parse parser index tramp)
@@ -42,7 +49,7 @@
          non-terminal-full-parse opt-full-parse plus-full-parse star-full-parse
          regexp-full-parse lookahead-full-parse ordered-alt-full-parse)
 (defn -full-parse [parser index tramp]
-  ;(println "-full-parse" index (:tag parser))
+  (dprintln "-full-parse" index (:tag parser))
   (case (:tag parser)
     :nt (non-terminal-full-parse parser index tramp)
     :alt (alt-full-parse parser index tramp)
@@ -104,14 +111,16 @@
   (let [cache (:msg-cache tramp)
         i (:index result)
         k [listener i]
-        c (get @cache k 0)]    
+        c (get @cache k 0)
+        f #(listener result)]    
+    #_(dprintln "push-message" i c @(:generation tramp) (count @(:stack tramp))
+             (count @(:next-stack tramp)))
+    #_(dprintln "listener result" listener result)
     (if (> c @(:generation tramp))
-      (swap! (:next-stack tramp) conj #(listener result))
-      (swap! (:stack tramp) conj #(listener result)))
+      (swap! (:next-stack tramp) conj f)
+      (swap! (:stack tramp) conj f))
     (swap! cache assoc k (inc c))))
-    ;(println listener i c (get @cache k 0))))
-    ;(println (count @cache))))
-
+    
 (defn listener-exists?
   "Tests whether node already has a listener"
   [tramp node-key]
@@ -164,7 +173,7 @@
    Schedules notification to all existing listeners of result
    (Full listeners only get notified about full results)"
   [tramp node-key result]
-  ;(println (node-key 0) (node-key 1) (type (:result result)) result)
+  (dprintln "Push result" (node-key 0) (:tag (node-key 1)) result)
   (let [node (node-get tramp node-key)
         parser (node-key 1)
         ;; reduce result with reduction function if it exists
@@ -253,6 +262,7 @@
   [stack]
   (let [top (peek @stack)]
     (swap! stack pop)
+    #_(dprintln "Top" top (meta top))
     (top)))
 
 (defn run
@@ -260,7 +270,7 @@
   ([tramp] (run tramp nil))
   ([tramp found-result?] 
     (let [stack (:stack tramp)]
-      ;_ (println found-result? (count @(:stack tramp)) (count @(:next-stack tramp)))
+      ;_ (dprintln found-result? (count @(:stack tramp)) (count @(:next-stack tramp)))
       (cond
         @(:success tramp)
         (lazy-seq (cons (:result @(:success tramp))
@@ -268,7 +278,8 @@
                           (run tramp true))))
         
         (pos? (count @stack))
-        (do (step stack) (recur tramp found-result?))
+        (do (dprintln "stacks" (count @stack) (count @(:next-stack tramp)))
+          (step stack) (recur tramp found-result?))
         
         (pos? (count @(:failure-listeners tramp)))
         (do (doseq [listener @(:failure-listeners tramp)]
@@ -278,12 +289,16 @@
         
         found-result?
         (let [next-stack (:next-stack tramp)]
+          (dprintln "Swapping stacks" (count @(:stack tramp)) 
+                   (count @(:next-stack tramp)))
           (reset! stack @next-stack) 
           (reset! next-stack [])
           (swap! (:generation tramp) inc)
           (doseq [listener @(:failure-listeners tramp)]
             (push-stack tramp listener))        
           (reset! (:failure-listeners tramp) [])
+          (dprintln "Swapped stacks" (count @(:stack tramp)) 
+                   (count @(:next-stack tramp)))          
           (recur tramp nil))        
       
         :else nil))))
@@ -295,7 +310,9 @@
 ; Takes the node-key of the parser which is awaiting this result.
 
 (defn NodeListener [node-key tramp]  
-  (fn [result] (push-result tramp node-key result)))
+  (fn [result]
+    (dprintln "Listener" [(node-key 0) (:tag (node-key 1))] "result" result)
+    (push-result tramp node-key result)))
 
 ; The second kind of listener handles lookahead.
 (defn LookListener [node-key tramp]
@@ -351,7 +368,7 @@
   (fn [result]
     (let [{parsed-result :result continue-index :index} result]
       (when (> continue-index prev-index)
-        ;(println "PLUS" (type results-so-far))
+        ;(dprintln "PLUS" (type results-so-far))
         (let [new-results-so-far (conj results-so-far parsed-result)]
           (push-listener tramp [continue-index parser]
                          (PlusListener new-results-so-far parser continue-index
@@ -362,7 +379,7 @@
   (fn [result]
     (let [{parsed-result :result continue-index :index} result]
       (when (> continue-index prev-index)
-        ;(println "plusfull" (type parsed-result))
+        ;(dprintln "plusfull" (type parsed-result))
         (let [new-results-so-far (conj results-so-far parsed-result)]
           (if (= continue-index (count (:text tramp)))
             (success tramp node-key new-results-so-far continue-index)
@@ -844,7 +861,7 @@
 ;Sum     ← Expr (('+' / '-') Expr)*
 ;Expr    ← Product / Sum / Value
 
-(def grammar60 {:Expr (alt (nt :Product) (nt :Sum) (nt :Value))
+(def grammar60 {:Expr (ord (nt :Product) (nt :Sum) (nt :Value))
                 :Product (cat (nt :Expr) 
                               (star (cat (alt (string "*")
                                               (string "/"))
@@ -858,3 +875,18 @@
                                  (nt :Expr)
                                  (string ")")))})
                             
+
+(def grammar61 {:Expr (alt (nt :Product) (nt :Value))
+                :Product (cat (nt :Expr) 
+                              (star (cat (alt (string "*")
+                                              (string "/"))
+                                         (nt :Expr))))                
+                :Value (alt (string "[0-9]+")
+                            (cat (string "(")
+                                 (nt :Expr)
+                                 (string ")")))})
+
+(def grammar62 {:Expr (alt (nt :Product) (string "0"))
+                :Product (plus (nt :Expr))}) 
+                
+(def grammar63 {:Expr (alt (nt :Expr) (string "0"))})
