@@ -519,11 +519,12 @@
         node-key-parser2 [index parser2]
         listener (NodeListener [index this] tramp)]
     (push-full-listener tramp node-key-parser1 listener)
-    ; If parser1 already has a full result, we won't ever need to bother with parser2
-    (when (not (full-result-exists? tramp node-key-parser1))
+    (push-listener tramp node-key-parser1 identity)
+    ; If parser1 already has a result, we won't ever need to bother with parser2
+    (when (not (result-exists? tramp node-key-parser1))
       (push-negative-listener 
         tramp       
-        #(when (not (full-result-exists? tramp node-key-parser1))
+        #(when (not (result-exists? tramp node-key-parser1))
            (push-full-listener tramp node-key-parser2 listener))))))
   
 (defn opt-parse
@@ -624,8 +625,8 @@
     (= parser1 Epsilon) Epsilon
     (= parser2 Epsilon) parser1
     :else
-    (alt parser1 (cat (neg parser1) parser2))))
-    ;{:tag :ord :parser1 parser1 :parser2 parser2}))
+    ;(alt parser1 (cat (neg parser1) parser2))))
+    {:tag :ord :parser1 parser1 :parser2 parser2}))
 
 (defn ord [& parsers]
   (if (seq parsers)
