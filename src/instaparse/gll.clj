@@ -77,7 +77,7 @@
                   failure-listeners msg-cache nodes success failure])
 (defn make-tramp [grammar text] 
   (Tramp. grammar text (atom []) (atom []) (atom 0) (atom []) 
-          (atom {}) (atom {}) (atom nil) (atom (Failure. 0 nil))))
+          (atom {}) (atom {}) (atom nil) (atom (Failure. 0 []))))
   
 ; A Success record contains the result and the index to continue from
 (defn make-success [result index] {:result result :index index})
@@ -242,9 +242,10 @@
   (swap! (:failure tramp) 
          (fn [failure] 
            (let [current-index (:index failure)]
-             (if (> index current-index)
-               (Failure. index reason)
-               failure)))))                 
+             (case (compare index current-index)
+               1 (Failure. index [reason])
+               0 (Failure. index (conj (:reason failure) reason))
+               -1  failure)))))                 
 
 ;; Stack helper functions
 
@@ -444,7 +445,7 @@
       (doseq [match seq-filtered-matches]
         (success tramp [index this] match (count text)))
       (fail tramp index
-            {:tag :regexp :expecting (str regexp)}))))
+            {:tag :regexp :expecting (str "#\"" regexp "\"" )}))))
         
 (let [empty-cat-result (make-flattenable iv/EMPTY)]
 	(defn cat-parse
@@ -548,7 +549,7 @@
     (push-full-listener tramp [index parser] (NodeListener [index this] tramp))    
     (if (= index (count (:text tramp)))
       (success tramp [index this] nil index)
-      (fail tramp index {:tag :optional}))))    
+      (fail tramp index {:tag :optional :expected "\u03b5"}))))    
 
 (defn non-terminal-parse
   [this index tramp]
@@ -569,7 +570,7 @@
   [this index tramp]
   (if (= index (count (:text tramp)))
     (lookahead-parse this index tramp)
-    (fail tramp index {:tag :lookahead})))
+    (fail tramp index {:tag :lookahead :expected "\u03b5"})))
 
 ;(declare negative-parse?)
 ;(defn negative-lookahead-parse
@@ -589,7 +590,8 @@
       (do 
         (push-listener tramp node-key 
                        (let [fail-send (delay (fail tramp index
-                                                    {:tag :negative-lookahead}))]
+                                                    {:tag :negative-lookahead
+                                                     :expected "not parser"}))] ;TBD
                          (fn [result] (force fail-send))))     
         (push-negative-listener 
           tramp
@@ -603,7 +605,7 @@
   [index tramp] 
   (if (= index (count (:text tramp)))
     (success tramp [index Epsilon] nil index)
-    (fail tramp index {:tag :Epsilon})))
+    (fail tramp index {:tag :Epsilon :expected "\u03b5"})))
     
 ;; Ways to build parsers
 
