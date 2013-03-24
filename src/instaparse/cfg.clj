@@ -14,8 +14,8 @@
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
 
-(def cfg {:rules (cat opt-whitespace
-                      (plus (nt :rule)))
+(def cfg {:rules (hide-tag (cat opt-whitespace
+                                (plus (nt :rule))))
           :whitespace (regexp "[,\\s]+")
           :opt-whitespace (regexp "[,\\s]*")
           :rule-separator (alt (string ":")
@@ -47,7 +47,7 @@
                         opt-whitespace
                         (nt :cat))))
           :ord (cat (nt :cat)
-                    (star
+                    (plus
                       (cat
                         opt-whitespace
                         (hide (string "/"))
@@ -114,6 +114,51 @@
                                  (nt :paren)
                                  (nt :hide)
                                  (nt :epsilon)))})
+
+(def tag first)
+(def contents next)
+(def content fnext)
+
+(defn process-string
+  "Converts single quoted string to double-quoted"
+  [s]
+  (let [stripped
+        (subs s 1 (dec (count s)))
+        remove-escape
+        (clojure.string/replace stripped "\\'" "'")]
+    remove-escape))
+
+(defn build-rule [tree]
+  (println tree)
+  (case (tag tree)
+    :rule (let [[nt alt-or-ord] (contents tree)]
+            (if (= (tag nt) :hide-nt)
+              [(keyword (content (content nt)))
+               (hide-tag (build-rule alt-or-ord))]
+              [(keyword (content nt))
+               (build-rule alt-or-ord)]))
+    :nt (nt (keyword (content tree)))
+    :alt (apply alt (map build-rule (contents tree)))
+    :ord (apply ord (map build-rule (contents tree)))
+    :paren (recur (content tree))
+    :hide (hide (nt (content tree)))
+    :cat (apply cat (map build-rule (contents tree)))
+    :string (string (process-string (content tree))) ;TBD escape chars
+    :regexp (regexp (process-string (content tree)))
+    :opt (opt (build-rule (content tree)))
+    :star (star (build-rule (content tree)))
+    :plus (plus (build-rule (content tree)))
+    :look (look (build-rule (content tree)))
+    :neg (neg (build-rule (content tree)))
+    :epsilon Epsilon))
+    
+(defn build-grammar [spec]
+  (let [rules (parse cfg :rules spec)]
+    (if (not (instance? instaparse.gll.Failure rules))
+      (into {} 
+            (map build-rule 
+                 (first rules)))
+      rules)))
 
 (def cfg1 "S = 'a'")
 (def cfg2 
