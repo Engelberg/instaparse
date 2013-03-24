@@ -519,7 +519,8 @@
         node-key-parser2 [index parser2]
         listener (NodeListener [index this] tramp)]
     (push-full-listener tramp node-key-parser1 listener)
-    (push-listener tramp node-key-parser1 identity)
+    ; Also kick off a regular parse of parser1 to determine negative lookahead.
+    (push-stack tramp #(-parse parser1 index tramp)
     ; If parser1 already has a result, we won't ever need to bother with parser2
     (when (not (result-exists? tramp node-key-parser1))
       (push-negative-listener 
