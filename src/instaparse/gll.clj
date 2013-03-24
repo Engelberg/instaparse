@@ -13,8 +13,6 @@
 ;    ENBF
 ;Error messages
 ;Documentation
-;Move parse calls into listener creation for clarity
-;Incremental Hashing
 ;Concurrency
 ;Allow parsing of arbitrary sequences.
 
