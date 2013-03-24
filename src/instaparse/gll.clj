@@ -1,5 +1,6 @@
 (ns instaparse.gll
   (:require [instaparse.incremental-vector :as iv])
+  (:use instaparse.combinators instaparse.combinators-private)
   (:use clojure.pprint clojure.repl))
 
 (def DEBUG nil)
@@ -161,11 +162,6 @@
         (add! :create-node)
         (swap! nodes assoc node-key node)
         node))))
-
-(declare apply-reduction)
-
-(defn make-flattenable [s]
-  (with-meta s {:flattenable? true}))
 
 (defn push-result
   "Pushes a result into the trampoline's node.
@@ -339,9 +335,6 @@
         (push-listener tramp [continue-index (first parser-sequence)]
                        (CatListener new-results-so-far (next parser-sequence) node-key tramp))          
         (success tramp node-key new-results-so-far continue-index)))))
-
-(defn singleton? [s]
-  (and (seq s) (not (next s))))
 
 (defn CatFullListener [results-so-far parser-sequence node-key tramp]
 ;  (pprint {:tag :CatFullListener
@@ -598,7 +591,6 @@
           #(when (not (result-exists? tramp node-key))
              (success tramp [index this] nil index)))))))      
 
-(def Epsilon {:tag :epsilon})
 (defn epsilon-parse
   [index tramp] (success tramp [index Epsilon] nil index))
 (defn epsilon-full-parse
@@ -607,105 +599,6 @@
     (success tramp [index Epsilon] nil index)
     (fail tramp index {:tag :Epsilon :expected "\u03b5"})))
     
-;; Ways to build parsers
-
-(defn red [parser f] (assoc parser :red f))
-
-(defn hide [parser] (assoc parser :hide true))
-
-(defn opt [parser] 
-  (if (= parser Epsilon) Epsilon
-    {:tag :opt :parser parser}))
-
-(defn plus [parser]
-  (if (= parser Epsilon) Epsilon
-    {:tag :plus :parser parser}))
-
-(defn star [parser] 
-  (if (= parser Epsilon) Epsilon
-    {:tag :star :parser parser}))
-
-(defn alt [& parsers] 
-  (cond
-    (every? (partial = Epsilon) parsers) Epsilon
-    (singleton? parsers) (first parsers)
-    :else {:tag :alt :parsers parsers}))
-
-(declare neg)
-(defn ord2 [parser1 parser2]
-  (cond
-    (= parser1 Epsilon) Epsilon
-    (= parser2 Epsilon) parser1
-    :else
-    ;(alt parser1 (cat (neg parser1) parser2))))
-    {:tag :ord :parser1 parser1 :parser2 parser2}))
-
-(defn ord [& parsers]
-  (if (seq parsers)
-    (ord2 (first parsers) (apply ord (rest parsers)))
-    Epsilon))
-
-(defn cat [& parsers]
-  (if (every? (partial = Epsilon) parsers) Epsilon
-    (let [parsers (remove #{Epsilon} parsers)]
-      (if (singleton? parsers) (first parsers) ; apply vector reduction
-        {:tag :cat :parsers parsers}))))
-
-(defn string [s] 
-  (if (= s "") Epsilon
-    {:tag :string :string s}))
-
-(defn regexp [r]
-  (let [s (str \^ r)]
-    (if (= s "^") Epsilon
-      {:tag :regexp :regexp (re-pattern s)})))
-
-(defn nt [s] {:tag :nt :keyword s})
-
-(defn look [parser] {:tag :look :parser parser}) 
-
-(defn neg [parser] {:tag :neg :parser parser})
-
-;; Flattening and reductions
-
-(defn flattenable? [s]
-  (:flattenable? (meta s)))
-
-(defn nt-flatten [s]
-  (when (seq s)
-    (let [fs (first s)]
-      (cond 
-        (nil? fs)         (recur (next s))
-        (flattenable? fs) (concat (nt-flatten fs) (nt-flatten (next s)))
-        :else             (lazy-seq (cons fs (nt-flatten (next s))))))))
-
-(defn apply-reduction [f result]
-  (apply f (nt-flatten (make-flattenable [result]))))
-
-(defn hiccup-non-terminal-reduction [key] 
-  (fn [& parse-result]
-    ;(cons key parse-result)))
-    (into [key] parse-result)))
-
-(defn enlive-non-terminal-reduction [key] 
-  (fn [& parse-result]
-    {:tag key, :content parse-result}))
-
-(defn raw-non-terminal-reduction [& parse-result] 
-  (if parse-result
-    (make-flattenable parse-result)
-    nil)) 
-
-(defn hide-tag [parser]
-  (red parser raw-non-terminal-reduction))
-
-(def standard-non-terminal-reduction hiccup-non-terminal-reduction)
-
-(defn apply-standard-reductions [grammar]
-  (into {} (for [[k v] grammar]
-             (if (:red v) [k v]
-               [k (assoc v :red (standard-non-terminal-reduction k))]))))
-
 ;; End-user parsing function
 
 (defn parses [grammar parser text]

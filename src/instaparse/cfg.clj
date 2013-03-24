@@ -1,5 +1,7 @@
 (ns instaparse.cfg
-  (:use instaparse.gll)
+  (:use instaparse.combinators)
+  (:use [instaparse.combinators-private :only [apply-standard-reductions]])
+  (:use [instaparse.gll :only [parse]])
   (:use clojure.pprint clojure.repl))
 ;
 ;(def single-quoted-string "'(\\'|[^'])*'")
