@@ -102,6 +102,7 @@
           :epsilon (alt (string "Epsilon")
                         (string "epsilon")
                         (string "EPSILON")
+                        (string "eps")
                         (string "\u03b5"))
           :factor (hide-tag (alt (nt :nt)
                                  (nt :string)

@@ -283,7 +283,7 @@
         
         (pos? (count @(:failure-listeners tramp)))
         (do (doseq [listener @(:failure-listeners tramp)]
-              (push-stack tramp listener))        
+              (listener))        
           (reset! (:failure-listeners tramp) [])
           (recur tramp found-result?))
         
@@ -293,9 +293,7 @@
                    (count @(:next-stack tramp)))
           (reset! stack @next-stack) 
           (reset! next-stack [])
-          (swap! (:generation tramp) inc)
-          (doseq [listener @(:failure-listeners tramp)]
-            (push-stack tramp listener))        
+          (swap! (:generation tramp) inc)  
           (reset! (:failure-listeners tramp) [])
           (dprintln "Swapped stacks" (count @(:stack tramp)) 
                    (count @(:next-stack tramp)))          
