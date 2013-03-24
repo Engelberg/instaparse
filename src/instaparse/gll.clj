@@ -62,6 +62,8 @@
     :neg (negative-lookahead-parse parser index tramp)
     :ord (ordered-alt-full-parse parser index tramp)))
 
+(defrecord Failure [index reason])  
+
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
 ; grammar is a map from non-terminals to parsers
@@ -75,7 +77,7 @@
                   failure-listeners msg-cache nodes success failure])
 (defn make-tramp [grammar text] 
   (Tramp. grammar text (atom []) (atom []) (atom 0) (atom []) 
-          (atom {}) (atom {}) (atom nil) (atom 0)))
+          (atom {}) (atom {}) (atom nil) (atom (Failure. 0 nil))))
   
 ; A Success record contains the result and the index to continue from
 (defn make-success [result index] {:result result :index index})
@@ -236,9 +238,13 @@
 (defmacro success [tramp node-key result end]
   `(push-result ~tramp ~node-key (make-success ~result ~end)))
 
-
-(defn fail [tramp index]  
-  (swap! (:failure tramp) (fn [i] (max i index)))) 
+(defn fail [tramp index reason]  
+  (swap! (:failure tramp) 
+         (fn [failure] 
+           (let [current-index (:index failure)]
+             (if (> index current-index)
+               (Failure. index reason)
+               failure)))))                 
 
 ;; Stack helper functions
 
@@ -398,7 +404,8 @@
         head (subs text index end)]      
     (if (= string head)
       (success tramp [index this] string end)
-      (fail tramp index))))
+      (fail tramp index
+            {:tag :string :expecting string}))))
 
 (defn string-full-parse
   [this index tramp]
@@ -408,7 +415,8 @@
         head (subs text index end)]      
     (if (and (= end (count text)) (= string head))
       (success tramp [index this] string end)
-      (fail tramp index))))
+      (fail tramp index
+            {:tag :string :expecting string}))))
 
 (defn re-seq-no-submatches [regexp text]
   (for [match (re-seq regexp text)]
@@ -422,7 +430,8 @@
     (if (seq matches)
       (doseq [match matches]
         (success tramp [index this] match (+ index (count match))))
-      (fail tramp index))))
+      (fail tramp index
+            {:tag :regexp :expecting (str regexp)}))))
 
 (defn regexp-full-parse
   [this index tramp]
@@ -434,7 +443,8 @@
     (if-let [seq-filtered-matches (seq filtered-matches)]
       (doseq [match seq-filtered-matches]
         (success tramp [index this] match (count text)))
-      (fail tramp index))))
+      (fail tramp index
+            {:tag :regexp :expecting (str regexp)}))))
         
 (let [empty-cat-result (make-flattenable iv/EMPTY)]
 	(defn cat-parse
@@ -538,7 +548,7 @@
     (push-full-listener tramp [index parser] (NodeListener [index this] tramp))    
     (if (= index (count (:text tramp)))
       (success tramp [index this] nil index)
-      (fail tramp index))))    
+      (fail tramp index {:tag :optional}))))    
 
 (defn non-terminal-parse
   [this index tramp]
@@ -559,7 +569,7 @@
   [this index tramp]
   (if (= index (count (:text tramp)))
     (lookahead-parse this index tramp)
-    (fail tramp index)))
+    (fail tramp index {:tag :lookahead})))
 
 ;(declare negative-parse?)
 ;(defn negative-lookahead-parse
@@ -568,17 +578,18 @@
 ;        remaining-text (subs (:text tramp) index)]
 ;    (if (negative-parse? (:grammar tramp) parser remaining-text)
 ;      (success tramp [index this] nil index)
-;      (fail tramp index))))
+;      (fail tramp index :negative-lookahead))))
 
 (defn negative-lookahead-parse
   [this index tramp]
   (let [parser (:parser this)        
         node-key [index parser]]
     (if (result-exists? tramp node-key)
-      (fail tramp index)
+      (fail tramp index {:tag :negative-lookahead})
       (do 
         (push-listener tramp node-key 
-                       (let [fail-send (delay (fail tramp index))]
+                       (let [fail-send (delay (fail tramp index
+                                                    {:tag :negative-lookahead}))]
                          (fn [result] (force fail-send))))     
         (push-negative-listener 
           tramp
@@ -592,7 +603,7 @@
   [index tramp] 
   (if (= index (count (:text tramp)))
     (success tramp [index Epsilon] nil index)
-    (fail tramp index)))
+    (fail tramp index {:tag :Epsilon})))
     
 ;; Ways to build parsers
 
