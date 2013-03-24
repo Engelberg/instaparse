@@ -14,25 +14,27 @@
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
 
-(def cfg {:rules (hide-tag (cat opt-whitespace
-                                (plus (nt :rule))))
-          :whitespace (regexp "[,\\s]+")
-          :opt-whitespace (regexp "[,\\s]*")
-          :rule-separator (alt (string ":")
-                               (string ":=")
-                               (string "::=")
-                               (string "="))
-          :rule (cat (alt (nt :nt)
-                          (nt :hide-nt))
-                     opt-whitespace
-                     (hide (nt :rule-separator))
-                     opt-whitespace
-                     (nt :alt-or-ord)
-                     (hide (alt (nt :opt-whitespace)
-                                (regexp "\\s*[.;]\\s*"))))          
-          :nt (cat
-                (neg (nt :epsilon))
-                (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+"))
+(def cfg 
+  (apply-standard-reductions 
+    {:rules (hide-tag (cat opt-whitespace
+                           (plus (nt :rule))))
+     :whitespace (regexp "[,\\s]+")
+     :opt-whitespace (regexp "[,\\s]*")
+     :rule-separator (alt (string ":")
+                          (string ":=")
+                          (string "::=")
+                          (string "="))
+     :rule (cat (alt (nt :nt)
+                     (nt :hide-nt))
+                opt-whitespace
+                (hide (nt :rule-separator))
+                opt-whitespace
+                (nt :alt-or-ord)
+                (hide (alt (nt :opt-whitespace)
+                           (regexp "\\s*[.;]\\s*"))))          
+     :nt (cat
+           (neg (nt :epsilon))
+           (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+"))
           :hide-nt (cat (hide (string "<"))
                         opt-whitespace
                         (nt :nt)
@@ -113,8 +115,8 @@
                                  (nt :plus)
                                  (nt :paren)
                                  (nt :hide)
-                                 (nt :epsilon)))})
-
+                                 (nt :epsilon)))}))
+  
 (def tag first)
 (def contents next)
 (def content fnext)
@@ -129,7 +131,7 @@
     remove-escape))
 
 (defn build-rule [tree]
-  (println tree)
+  ;(println tree)
   (case (tag tree)
     :rule (let [[nt alt-or-ord] (contents tree)]
             (if (= (tag nt) :hide-nt)
@@ -152,51 +154,11 @@
     :neg (neg (build-rule (content tree)))
     :epsilon Epsilon))
     
-(defn build-grammar [spec]
-  (let [rules (parse cfg :rules spec)]
-    (if (not (instance? instaparse.gll.Failure rules))
-      (into {} 
-            (map build-rule 
-                 (first rules)))
-      rules)))
+;; TBD Check grammar
+(defn build-parser [spec]
+  (if-let [rules (parse cfg :rules spec)]    
+    (let [productions (map build-rule rules)
+          start-production (first (first productions))] 
+      {:grammar (apply-standard-reductions (into {} productions))
+       :start-production start-production})))
 
-(def cfg1 "S = 'a'")
-(def cfg2 
-  "S = X
-   X = Y
-   Y = Z")
-(def cfg3
-  "S = X | Y
-   Y = A Z
-   Z = 'a'")
-(def cfg4
-  "S := A B | C
-   C := (A | B) C")
-(def cfg5
-  "S=A?")
-(def cfg6
-  "S =(A | B)?")
-(def cfg7
-  "S = A, B?, (C C)*, D+, E")
-(def cfg8
-  "<S> = <A B?> (C | D)")
-(def cfg9
-  "S = A, &B")
-(def cfg10
-  "S = &B A")
-(def cfg11
-  "S = &B+ A")
-(def cfg12
-  "S = !B A")
-(def cfg13
-  "S = !&B A")
-(def cfg15
-  "S = 'a' S | Epsilon;
-   C = 'b'.
-   D = A")
-(def cfg16
-  "S = 'a' / 'b'")
-(def cfg17
-  "S = 'a' / 'b' | 'c'")
-(def cfg18
-  "S = 'a' | 'b' / 'c'")
