@@ -618,12 +618,14 @@
     (singleton? parsers) (first parsers)
     :else {:tag :alt :parsers parsers}))
 
+(declare neg)
 (defn ord2 [parser1 parser2]
   (cond
     (= parser1 Epsilon) Epsilon
     (= parser2 Epsilon) parser1
     :else
-    {:tag :ord :parser1 parser1 :parser2 parser2}))
+    (alt parser1 (cat (neg parser1) parser2))))
+    ;{:tag :ord :parser1 parser1 :parser2 parser2}))
 
 (defn ord [& parsers]
   (if (seq parsers)
