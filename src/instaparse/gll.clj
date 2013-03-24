@@ -282,9 +282,9 @@
           (step stack) (recur tramp found-result?))
         
         (pos? (count @(:failure-listeners tramp)))
-        (do (doseq [listener @(:failure-listeners tramp)]
-              (listener))        
-          (reset! (:failure-listeners tramp) [])
+        (let [listener (peek @(:failure-listeners tramp))]
+          (listener)
+          (swap! (:failure-listeners tramp) pop)
           (recur tramp found-result?))
         
         found-result?
@@ -520,7 +520,7 @@
         listener (NodeListener [index this] tramp)]
     (push-full-listener tramp node-key-parser1 listener)
     ; Also kick off a regular parse of parser1 to determine negative lookahead.
-    (push-stack tramp #(-parse parser1 index tramp)
+    (push-stack tramp #(-parse parser1 index tramp))
     ; If parser1 already has a result, we won't ever need to bother with parser2
     (when (not (result-exists? tramp node-key-parser1))
       (push-negative-listener 
@@ -919,3 +919,7 @@
 (def grammar67 {:s (cat (neg (nt :s)) (string "0"))})
 (def grammar68 {:s (cat (neg (nt :a)) (string "0"))
                 :a (neg (nt :s))})
+(def grammar69 {:s (cat (neg (nt :a)) (string "abc"))
+                :a (cat (neg (string "b")) (string "c"))})
+(def grammar70 {:s (cat (neg (nt :a)) (string "abc"))
+                :a (cat (neg (string "b")) (string "a"))})
