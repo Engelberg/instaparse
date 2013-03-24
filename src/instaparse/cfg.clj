@@ -27,7 +27,7 @@
                      opt-whitespace
                      (hide (nt :rule-separator))
                      opt-whitespace
-                     (alt (nt :alt) (nt :ord))
+                     (nt :alt-or-ord)
                      (hide (alt (nt :opt-whitespace)
                                 (regexp "\\s*[.;]\\s*"))))          
           :nt (cat
@@ -37,7 +37,8 @@
                         opt-whitespace
                         (nt :nt)
                         opt-whitespace
-                        (hide (string ">")))                        
+                        (hide (string ">")))
+          :alt-or-ord (hide-tag (alt (nt :alt) (nt :ord)))
           :alt (cat (nt :cat)                           
                     (star
                       (cat
@@ -54,12 +55,12 @@
                         (nt :cat))))
           :paren (cat (hide (string "("))
                       opt-whitespace
-                      (nt :alt)
+                      (nt :alt-or-ord)
                       opt-whitespace
                       (hide (string ")")))
           :hide (cat (hide (string "<"))
                      opt-whitespace	
-                     (nt :alt)
+                     (nt :alt-or-ord)
                      opt-whitespace
                      (hide (string ">")))
           :cat (plus (cat
@@ -75,7 +76,7 @@
           :opt (alt
                  (cat (hide (string "["))
                       opt-whitespace
-                      (nt :alt)
+                      (nt :alt-or-ord)
                       opt-whitespace
                       (hide (string "]")))
                  (cat (nt :factor)
@@ -84,7 +85,7 @@
           :star (alt
                   (cat (hide (string "{"))
                        opt-whitespace
-                       (nt :alt)
+                       (nt :alt-or-ord)
                        opt-whitespace
                        (hide (string "}")))
                   (cat (nt :factor)
