@@ -3,12 +3,7 @@
   (:use [instaparse.combinators-private :only [apply-standard-reductions]])
   (:use [instaparse.gll :only [parse]])
   (:use clojure.pprint clojure.repl))
-;
-;(def single-quoted-string "'(\\'|[^'])*'")
-;(def single-quoted-string "'([^']|(?<!\\\\)')*?'") 
-;(def single-quoted-string #"'[^\\]*?'")
-;(def single-quoted-string #"'([^\\']|\\\\|\\')*'")
-;(def single-quoted-string #"'([^']|\\')*'")
+
 (def single-quoted-string #"'(?:[^\\']|\\.)*'")
 (def single-quoted-regexp #"#'(?:[^\\']|\\.)*'")
 (def double-quoted-string #"\"(?:[^\\\"]|\\.)*\"")

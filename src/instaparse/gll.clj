@@ -1,5 +1,6 @@
 (ns instaparse.gll
   (:require [instaparse.incremental-vector :as iv])
+  (:require [instaparse.errors :as err])
   (:use instaparse.combinators instaparse.combinators-private)
   (:use clojure.pprint clojure.repl))
 
@@ -599,7 +600,7 @@
     (success tramp [index Epsilon] nil index)
     (fail tramp index {:tag :Epsilon :expected "\u03b5"})))
     
-;; End-user parsing function
+;; End-user parsing functions
 
 (defn parses [grammar parser text]
   (clear!)
@@ -608,7 +609,8 @@
     (push-full-listener tramp [0 parser] (TopListener tramp))    
     (if-let [all-parses (run tramp)]
       all-parses 
-      (with-meta () @(:failure tramp)))))
+      (with-meta () 
+        (err/augment-failure @(:failure tramp) text)))))
 
 (defn parse [grammar parser text]
   (clear!)
@@ -617,7 +619,7 @@
     (push-full-listener tramp [0 parser] (TopListener tramp))    
     (if-let [all-parses (run tramp)]
       (first all-parses) 
-      @(:failure tramp))))
+      (err/augment-failure @(:failure tramp) text))))
 
 ;; Variation, but not for end-user
 

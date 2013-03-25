@@ -1,6 +1,7 @@
 (ns instaparse.core
   (:require [instaparse.gll :as gll] 
-            [instaparse.cfg :as cfg]))
+            [instaparse.cfg :as cfg]
+            [instaparse.errors :as err]))
 
 (defprotocol IParser
   (parse [parser text] [parser production text]
