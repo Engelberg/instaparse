@@ -152,10 +152,10 @@
     :epsilon Epsilon))
     
 ;; TBD Check grammar
-(defn build-parser [spec]
+(defn build-parser [spec output-format]
   (if-let [rules (parse cfg :rules spec)]    
     (let [productions (map build-rule rules)
           start-production (first (first productions))] 
-      {:grammar (apply-standard-reductions (into {} productions))
+      {:grammar (apply-standard-reductions (into {} productions) output-format)
        :start-production start-production})))
 
