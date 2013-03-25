@@ -68,13 +68,12 @@
     :else
     nil))
 
-(defn report-failure
+(defn pprint-failure
   "Pretty-prints failure message for failed parse result to standard output.
    If input is anything other than a failed parse result, nothing is printed.
    Either way, the function returns the input unchanged, so this function 
    can be used as an identity function in a chained series of functions."
   [result]
   (when (failure? result)
-    (err/pprint-failure result))
-  result)
+    (err/pprint-failure (get-failure result))))
     

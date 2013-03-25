@@ -65,6 +65,9 @@
     :ord (ordered-alt-full-parse parser index tramp)))
 
 (defrecord Failure [index reason])  
+;(defmethod clojure.core/print-method Failure [x writer]
+;  (binding [*out* writer]
+;    (err/pprint-failure x)))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
@@ -426,7 +429,7 @@
       (doseq [match matches]
         (success tramp [index this] match (+ index (count match))))
       (fail tramp index
-            {:tag :regexp :expecting (str regexp)}))))
+            {:tag :regexp :expecting regexp}))))
 
 (defn regexp-full-parse
   [this index tramp]
@@ -439,7 +442,7 @@
       (doseq [match seq-filtered-matches]
         (success tramp [index this] match (count text)))
       (fail tramp index
-            {:tag :regexp :expecting (str "#\"" regexp "\"" )}))))
+            {:tag :regexp :expecting regexp}))))
         
 (let [empty-cat-result (make-flattenable iv/EMPTY)]
 	(defn cat-parse
@@ -543,7 +546,7 @@
     (push-full-listener tramp [index parser] (NodeListener [index this] tramp))    
     (if (= index (count (:text tramp)))
       (success tramp [index this] nil index)
-      (fail tramp index {:tag :optional :expected "\u03b5"}))))    
+      (fail tramp index {:tag :optional :expected :end-of-file}))))    
 
 (defn non-terminal-parse
   [this index tramp]
@@ -564,7 +567,7 @@
   [this index tramp]
   (if (= index (count (:text tramp)))
     (lookahead-parse this index tramp)
-    (fail tramp index {:tag :lookahead :expected "\u03b5"})))
+    (fail tramp index {:tag :lookahead :expected :end-of-file})))
 
 ;(declare negative-parse?)
 ;(defn negative-lookahead-parse
@@ -598,7 +601,7 @@
   [index tramp] 
   (if (= index (count (:text tramp)))
     (success tramp [index Epsilon] nil index)
-    (fail tramp index {:tag :Epsilon :expected "\u03b5"})))
+    (fail tramp index {:tag :Epsilon :expected :end-of-file})))
     
 ;; End-user parsing functions
 
