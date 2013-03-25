@@ -12,16 +12,18 @@
   `(debug (println ~@body)))
 
 ;TODO
-;    ENBF
-;Error messages
+;Pretty print parser
+;Improve error message for negative lookahead
+;Check for valid grammar
+;total and partial parses
 ;Documentation
 ;Concurrency
 ;Allow parsing of arbitrary sequences.
 
 
-(def stats (atom {}))
-(defn add! [call] (swap! stats update-in [call] (fnil inc 0)))
-(defn clear! [] (reset! stats {}))
+(debug (def stats (atom {})))
+(debug (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
+(debug (defn clear! [] (reset! stats {})))
 
 (defn get-parser [grammar p]
   (get grammar p p))
@@ -107,7 +109,7 @@
 (defn push-stack
   "Pushes an item onto the trampoline's stack"
   [tramp item]
-  (add! :push-stack)
+  (debug (add! :push-stack))
   (swap! (:stack tramp) conj item))
 
 (defn push-message
@@ -163,7 +165,7 @@
     (if-let [node (@nodes node-key)]
       node 
       (let [node (make-node)]
-        (add! :create-node)
+        (debug (add! :create-node))
         (swap! nodes assoc node-key node)
         node))))
 
@@ -188,7 +190,7 @@
         total? (total-success? tramp result)
         results (if total? (:full-results node) (:results node))]
     (when (not (@results result))  ; when result is not already in @results
-      (add! :push-result)
+      (debug (add! :push-result))
       (swap! results conj result)
       (doseq [listener @(:listeners node)]
         (push-message tramp listener result))
@@ -204,7 +206,7 @@
   (let [listener-already-exists? (listener-exists? tramp node-key)
         node (node-get tramp node-key)
         listeners (:listeners node)]
-    (add! :push-listener)
+    (debug (add! :push-listener))
     (swap! listeners conj listener)
     (doseq [result @(:results node)]
       (push-message tramp listener result))
@@ -220,7 +222,7 @@
   (let [full-listener-already-exists? (full-listener-exists? tramp node-key)
         node (node-get tramp node-key)
         listeners (:full-listeners node)]
-    (add! :push-full-listener)
+    (debug (add! :push-full-listener))
     (swap! listeners conj listener)
     (doseq [result @(:full-results node)]
       (push-message tramp listener result))
@@ -593,7 +595,7 @@
 ;; End-user parsing functions
 
 (defn parses [grammar parser text]
-  (clear!)
+  (debug (clear!))
   (let [tramp (make-tramp grammar text)
         parser (nt parser)]
     (push-full-listener tramp [0 parser] (TopListener tramp))    
@@ -603,7 +605,7 @@
         (err/augment-failure @(:failure tramp) text)))))
 
 (defn parse [grammar parser text]
-  (clear!)
+  (debug (clear!))
   (let [tramp (make-tramp grammar text)
         parser (nt parser)]
     (push-full-listener tramp [0 parser] (TopListener tramp))    
