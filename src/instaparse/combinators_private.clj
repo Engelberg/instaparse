@@ -42,12 +42,21 @@
   (fn [& parse-result]
     {:tag key, :content parse-result}))
 
-(def standard-non-terminal-reduction hiccup-non-terminal-reduction)
+(def reduction-types {:hiccup hiccup-non-terminal-reduction
+                      :enlive enlive-non-terminal-reduction})
+                      
+(def standard-non-terminal-reduction :hiccup)
 
 (defn apply-reduction [f result]
   (apply f (nt-flatten (make-flattenable [result]))))
 
-(defn apply-standard-reductions [grammar]
-  (into {} (for [[k v] grammar]
-             (if (:red v) [k v]
-               [k (assoc v :red (standard-non-terminal-reduction k))]))))
+(defn apply-standard-reductions 
+  ([grammar] (apply-standard-reductions grammar standard-non-terminal-reduction))
+  ([grammar reduction-type]
+    (if-let [reduction (reduction-types reduction-type)]
+      (into {} (for [[k v] grammar]
+                 (if (:red v) [k v]
+                   [k (assoc v :red (reduction k))])))
+      (throw (IllegalArgumentException. 
+               (format "Invalid output format %s. Use :enlive or :hiccup."))))))
+    

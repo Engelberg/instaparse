@@ -249,19 +249,6 @@
 
 ;; Stack helper functions
 
-;(defn step
-;  "Executes one thing on the stack"
-;  [stack]
-;  ; It's a little tricky to atomically pop an item off of an atom-based stack
-;  ; We need to get down-and-dirty with the low-level compare-and-set! function.
-;  ; If step ends up being used from only one thread, this can be simplified.
-;  (let [current-stack @stack
-;        top (peek current-stack)
-;        new-stack (pop current-stack)]
-;    (if (and top (compare-and-set! stack current-stack new-stack))
-;      (execute top)
-;      (recur))))
-
 (defn step
   "Executes one thing on the stack (not threadsafe)"
   [stack]
