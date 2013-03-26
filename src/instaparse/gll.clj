@@ -8,9 +8,9 @@
   ;; for this use-case for vectors
   (:require [instaparse.incremental-vector :as iv])
   
-  ;; errors contains the augment-failure function, which is called to
+  ;; failure contains the augment-failure function, which is called to
   ;; add enough information to the failure object for pretty printing 
-  (:require [instaparse.errors :as err])
+  (:require [instaparse.failure :as fail])
   
   ;; Primarily contains code relating to reductions and flattening.
   (:require [instaparse.combinators-private :as cp])
@@ -19,7 +19,7 @@
   (:require [instaparse.combinators :refer [Epsilon nt]])
   
   ;; Need a way to convert parsers into strings for printing and error messages.
-  (:require [instaparse.print :as p])
+  (:require [instaparse.print :as print])
     
   (:use clojure.pprint clojure.repl))
 
@@ -89,7 +89,7 @@
 (defrecord Failure [index reason])  
 ;(defmethod clojure.core/print-method Failure [x writer]
 ;  (binding [*out* writer]
-;    (err/pprint-failure x)))
+;    (fail/pprint-failure x)))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
@@ -597,7 +597,7 @@
         (push-listener tramp node-key 
                        (let [fail-send (delay (fail tramp index
                                                     {:tag :negative-lookahead
-                                                     :expected (str "NOT " (p/parser->str parser))}))] ;TBD
+                                                     :expected (str "NOT " (print/parser->str parser))}))] ;TBD
                          (fn [result] (force fail-send))))     
         (push-negative-listener 
           tramp
@@ -622,7 +622,7 @@
     (if-let [all-parses (run tramp)]
       all-parses 
       (with-meta () 
-        (err/augment-failure @(:failure tramp) text)))))
+        (fail/augment-failure @(:failure tramp) text)))))
 
 (defn parse [grammar parser text]
   (debug (clear!))
@@ -631,7 +631,7 @@
     (push-full-listener tramp [0 parser] (TopListener tramp))    
     (if-let [all-parses (run tramp)]
       (first all-parses) 
-      (err/augment-failure @(:failure tramp) text))))
+      (fail/augment-failure @(:failure tramp) text))))
 
 ;; Variation, but not for end-user
 

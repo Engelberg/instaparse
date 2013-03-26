@@ -1,4 +1,4 @@
-(ns instaparse.errors
+(ns instaparse.failure
 "Facilities for printing and manipulating error messages."
 (:import java.io.BufferedReader java.io.StringReader))
 

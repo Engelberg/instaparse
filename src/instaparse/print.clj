@@ -1,5 +1,6 @@
 (ns instaparse.print
-  "Facilities for taking parsers and grammars, and converting them to strings."
+  "Facilities for taking parsers and grammars, and converting them to strings.
+   Used for pretty-printing."
   (:require [clojure.string :as str]))
 
 (declare parser->str) ; mutual recursion

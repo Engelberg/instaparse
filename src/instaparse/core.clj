@@ -1,7 +1,8 @@
 (ns instaparse.core
   (:require [instaparse.gll :as gll] 
             [instaparse.cfg :as cfg]
-            [instaparse.errors :as err]))
+            [instaparse.failure :as fail]
+            [instaparse.print :as print]))
 
 (def ^:dynamic *default-output-format* :hiccup)
 (defn set-default-output-format!
@@ -67,7 +68,8 @@
 (defn pprint-parser
   "Pretty prints the parser"
   [parser]
-  (println (cfg/Parser->str parser)))
+  {:pre [(instance? Parser parser)]}
+  (println (print/Parser->str parser)))
 
 (defn failure?
   "Tests whether a parse result is a failure."
@@ -89,10 +91,8 @@
 
 (defn pprint-failure
   "Pretty-prints failure message for failed parse result to standard output.
-   If input is anything other than a failed parse result, nothing is printed.
-   Either way, the function returns the input unchanged, so this function 
-   can be used as an identity function in a chained series of functions."
+   If input is anything other than a failed parse result, nothing is printed."
   [result]
   (when (failure? result)
-    (err/pprint-failure (get-failure result))))
+    (fail/pprint-failure (get-failure result))))
     
