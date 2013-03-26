@@ -555,7 +555,7 @@
     (push-full-listener tramp [index parser] (NodeListener [index this] tramp))    
     (if (= index (count (:text tramp)))
       (success tramp [index this] nil index)
-      (fail tramp index {:tag :optional :expected :end-of-file}))))    
+      (fail tramp index {:tag :optional :expecting :end-of-file}))))    
 
 (defn non-terminal-parse
   [this index tramp]
@@ -576,7 +576,7 @@
   [this index tramp]
   (if (= index (count (:text tramp)))
     (lookahead-parse this index tramp)
-    (fail tramp index {:tag :lookahead :expected :end-of-file})))
+    (fail tramp index {:tag :lookahead :expecting :end-of-file})))
 
 ;(declare negative-parse?)
 ;(defn negative-lookahead-parse
@@ -597,7 +597,7 @@
         (push-listener tramp node-key 
                        (let [fail-send (delay (fail tramp index
                                                     {:tag :negative-lookahead
-                                                     :expected (str "NOT " (print/parser->str parser))}))] ;TBD
+                                                     :expecting {:NOT (print/parser->str parser)}}))] 
                          (fn [result] (force fail-send))))     
         (push-negative-listener 
           tramp
@@ -610,7 +610,7 @@
   [index tramp] 
   (if (= index (count (:text tramp)))
     (success tramp [index Epsilon] nil index)
-    (fail tramp index {:tag :Epsilon :expected :end-of-file})))
+    (fail tramp index {:tag :Epsilon :expecting :end-of-file})))
     
 ;; End-user parsing functions
 

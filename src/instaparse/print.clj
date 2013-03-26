@@ -26,7 +26,7 @@
               " / "
               (paren-for-tags #{:alt} parser2))
     :cat (str/join " " (map (partial paren-for-tags #{:alt :ord}) parsers))
-    :string (with-out-str (prn (:string p)))
+    :string (:string p)
     :regexp (str (:regexp p))
     :nt (subs (str (:keyword p)) 1)
     :look (str "&" (paren-for-compound parser))
