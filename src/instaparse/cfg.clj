@@ -2,6 +2,7 @@
   (:use instaparse.combinators)
   (:use [instaparse.combinators-private :only [apply-standard-reductions]])
   (:use [instaparse.gll :only [parse]])
+  (:require [clojure.string :as str])
   (:use clojure.pprint clojure.repl))
 
 (def single-quoted-string #"'(?:[^\\']|\\.)*'")
@@ -124,7 +125,7 @@
   (let [stripped
         (subs s 1 (dec (count s)))
         remove-escape
-        (clojure.string/replace stripped "\\'" "'")]
+        (str/replace stripped "\\'" "'")]
     remove-escape))
 
 (defn build-rule [tree]
@@ -158,4 +159,3 @@
           start-production (first (first productions))] 
       {:grammar (apply-standard-reductions (into {} productions) output-format)
        :start-production start-production})))
-

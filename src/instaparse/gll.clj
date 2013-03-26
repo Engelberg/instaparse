@@ -12,14 +12,15 @@
   `(debug (println ~@body)))
 
 ;TODO
-;Pretty print parser
+;Decide whether to make pretty printing the default. 
 ;Improve error message for negative lookahead
+;Make more consistent error vs fail vs negative
 ;Check for valid grammar
 ;total and partial parses
+;build parser from combinators
 ;Documentation
 ;Concurrency
 ;Allow parsing of arbitrary sequences.
-
 
 (debug (def stats (atom {})))
 (debug (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
@@ -577,7 +578,7 @@
         (push-listener tramp node-key 
                        (let [fail-send (delay (fail tramp index
                                                     {:tag :negative-lookahead
-                                                     :expected "not parser"}))] ;TBD
+                                                     :expected (str "NOT " (parser->str parser))}))] ;TBD
                          (fn [result] (force fail-send))))     
         (push-negative-listener 
           tramp

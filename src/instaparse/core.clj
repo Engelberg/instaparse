@@ -64,6 +64,11 @@
         (catch java.io.FileNotFoundException e 
           (cfg/build-parser string-or-uri output-format))))))
 
+(defn pprint-parser
+  "Pretty prints the parser"
+  [parser]
+  (println (cfg/Parser->str parser)))
+
 (defn failure?
   "Tests whether a parse result is a failure."
   [result]
