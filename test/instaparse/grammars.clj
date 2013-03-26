@@ -1,5 +1,13 @@
 (ns instaparse.grammars
-  (:use clojure.test))
+  (:use clojure.test)
+  (:use instaparse.combinators instaparse.combinators-private)
+  (:require [instaparse.gll :as gll]))
+
+(defn parse [grammar start text]
+  (gll/parse (apply-standard-reductions grammar) start text))
+
+(defn parses [grammar start text]
+  (gll/parse (apply-standard-reductions grammar) start text))
 
 ;; Grammars built with combinators
 
@@ -11,7 +19,6 @@
 (def grammar5 {:s (cat (string "a") (string "b") (string "c"))})
 (def grammar6 {:s (alt (cat (string "a") (nt :s)) (string "a"))})
 (def grammar7 {:s (alt (cat (string "a") (nt :s)) Epsilon)})
-; This next one is fairly slow
 (def grammar8 {:s (alt (cat (string "a") (nt :s) Epsilon) (string "a"))})
 (def grammar9 {:s (alt (cat (string "a") (nt :s))
                        (cat (string "b") (nt :s))
@@ -141,12 +148,7 @@
                         (nt :B)
                         (neg (ord (string "a") (string "b") (string "c"))))
                 :A (cat (string "a") (opt (nt :A)) (string "b"))
-                :B (hide-tag (cat (string "b") (opt (nt :B)) (string "c")))})
-  
-;Value   ← [0-9.]+ / '(' Expr ')'
-;Product ← Expr (('*' / '/') Expr)*
-;Sum     ← Expr (('+' / '-') Expr)*
-;Expr    ← Product / Sum / Value
+                :B (hide-tag (cat (string "b") (opt (nt :B)) (string "c")))}) 
 
 (def grammar60 {:Expr (ord (nt :Product) (nt :Sum) (nt :Value))
                 :Product (cat (nt :Expr) 

@@ -14,6 +14,7 @@
 
 (def cfg 
   (apply-standard-reductions 
+    :hiccup    ; use the hiccup output format 
     {:rules (hide-tag (cat opt-whitespace
                            (plus (nt :rule))))
      :whitespace (regexp "[,\\s]+")
@@ -157,5 +158,5 @@
   (if-let [rules (parse cfg :rules spec)]    
     (let [productions (map build-rule rules)
           start-production (first (first productions))] 
-      {:grammar (apply-standard-reductions (into {} productions) output-format)
+      {:grammar (apply-standard-reductions output-format (into {} productions))
        :start-production start-production})))

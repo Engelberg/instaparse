@@ -614,20 +614,20 @@
     
 ;; End-user parsing functions
 
-(defn parses [grammar parser text]
+(defn parses [grammar start text]
   (debug (clear!))
   (let [tramp (make-tramp grammar text)
-        parser (nt parser)]
+        parser (nt start)]
     (push-full-listener tramp [0 parser] (TopListener tramp))    
     (if-let [all-parses (run tramp)]
       all-parses 
       (with-meta () 
         (fail/augment-failure @(:failure tramp) text)))))
 
-(defn parse [grammar parser text]
+(defn parse [grammar start text]
   (debug (clear!))
   (let [tramp (make-tramp grammar text)
-        parser (nt parser)]
+        parser (nt start)]
     (push-full-listener tramp [0 parser] (TopListener tramp))    
     (if-let [all-parses (run tramp)]
       (first all-parses) 

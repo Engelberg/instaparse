@@ -51,12 +51,12 @@
   (apply f (nt-flatten (make-flattenable [result]))))
 
 (defn apply-standard-reductions 
-  ([grammar] (apply-standard-reductions grammar standard-non-terminal-reduction))
-  ([grammar reduction-type]
+  ([grammar] (apply-standard-reductions standard-non-terminal-reduction grammar))
+  ([reduction-type grammar]
     (if-let [reduction (reduction-types reduction-type)]
       (into {} (for [[k v] grammar]
                  (if (:red v) [k v]
                    [k (assoc v :red (reduction k))])))
       (throw (IllegalArgumentException. 
-               (format "Invalid output format %s. Use :enlive or :hiccup."))))))
+               (format "Invalid output format %s. Use :enlive or :hiccup." reduction-type))))))
     
