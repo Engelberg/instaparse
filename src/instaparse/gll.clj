@@ -1,7 +1,26 @@
 (ns instaparse.gll
+  "The heart of the parsing mechanism.  Contains the trampoline structure,
+   the parsing dispatch function, the nodes where listeners are stored,
+   the different types of listeners, and the loop for executing the various
+   listeners and parse commands that are on the stack."
+  
+  ;; Incremental vector provides a more performant hashing strategy 
+  ;; for this use-case for vectors
   (:require [instaparse.incremental-vector :as iv])
+  
+  ;; errors contains the augment-failure function, which is called to
+  ;; add enough information to the failure object for pretty printing 
   (:require [instaparse.errors :as err])
-  (:use instaparse.combinators instaparse.combinators-private)
+  
+  ;; Primarily contains code relating to reductions and flattening.
+  (:require [instaparse.combinators-private :as cp])
+  
+  ;; Two of the public combinators are needed here.
+  (:require [instaparse.combinators :refer [Epsilon nt]])
+  
+  ;; Need a way to convert parsers into strings for printing and error messages.
+  (:require [instaparse.print :as p])
+    
   (:use clojure.pprint clojure.repl))
 
 (def DEBUG nil)
@@ -185,8 +204,8 @@
                  result)
         result (if-let [reduction-function (:red parser)]
                  (assoc result :result 
-                        (apply-reduction reduction-function
-                                         (:result result)))
+                        (cp/apply-reduction reduction-function
+                                           (:result result)))
                  result)              
         total? (total-success? tramp result)
         results (if total? (:full-results node) (:results node))]
@@ -339,7 +358,7 @@
     (let [{parsed-result :result continue-index :index} result
           new-results-so-far (conj results-so-far parsed-result)]
       (cond
-        (singleton? parser-sequence)
+        (cp/singleton? parser-sequence)
         (push-full-listener tramp [continue-index (first parser-sequence)]
                             (CatFullListener new-results-so-far (next parser-sequence) node-key tramp))        
         
@@ -434,7 +453,7 @@
       (fail tramp index
             {:tag :regexp :expecting regexp}))))
         
-(let [empty-cat-result (make-flattenable iv/EMPTY)]
+(let [empty-cat-result (cp/make-flattenable iv/EMPTY)]
 	(defn cat-parse
 	  [this index tramp]
 	  (let [parsers (:parsers this)]
@@ -578,7 +597,7 @@
         (push-listener tramp node-key 
                        (let [fail-send (delay (fail tramp index
                                                     {:tag :negative-lookahead
-                                                     :expected (str "NOT " (parser->str parser))}))] ;TBD
+                                                     :expected (str "NOT " (p/parser->str parser))}))] ;TBD
                          (fn [result] (force fail-send))))     
         (push-negative-listener 
           tramp
