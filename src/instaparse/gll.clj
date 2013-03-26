@@ -12,10 +12,10 @@
   ;; add enough information to the failure object for pretty printing 
   (:require [instaparse.failure :as fail])
   
-  ;; Primarily contains code relating to reductions and flattening.
+  ;; combinators-private contains code relating to reductions and flattening.
   (:require [instaparse.combinators-private :as cp])
   
-  ;; Two of the public combinators are needed here.
+  ;; Two of the public combinators from here are needed.
   (:require [instaparse.combinators :refer [Epsilon nt]])
   
   ;; Need a way to convert parsers into strings for printing and error messages.
