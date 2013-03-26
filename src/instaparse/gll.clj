@@ -101,7 +101,7 @@
 ; failure contains the index of the furthest-along failure
 
 (defrecord Tramp [grammar text stack next-stack generation 
-                  failure-listeners msg-cache nodes success failure])
+                  negative-listeners msg-cache nodes success failure])
 (defn make-tramp [grammar text] 
   (Tramp. grammar text (atom []) (atom []) (atom 0) (atom []) 
           (atom {}) (atom {}) (atom nil) (atom (Failure. 0 []))))
@@ -250,9 +250,9 @@
       (push-stack tramp #(-full-parse (node-key 1) (node-key 0) tramp)))))
 
 (defn push-negative-listener
-  "Pushes a thunk onto the trampoline's failure-listener stack."
+  "Pushes a thunk onto the trampoline's negative-listener stack."
   [tramp negative-listener]
-  (swap! (:failure-listeners tramp) conj negative-listener))  
+  (swap! (:negative-listeners tramp) conj negative-listener))  
 
 ;(defn success [tramp node-key result end]
 ;  (push-result tramp node-key (make-success result end)))
@@ -295,10 +295,10 @@
         (do (dprintln "stacks" (count @stack) (count @(:next-stack tramp)))
           (step stack) (recur tramp found-result?))
         
-        (pos? (count @(:failure-listeners tramp)))
-        (let [listener (peek @(:failure-listeners tramp))]
+        (pos? (count @(:negative-listeners tramp)))
+        (let [listener (peek @(:negative-listeners tramp))]
           (listener)
-          (swap! (:failure-listeners tramp) pop)
+          (swap! (:negative-listeners tramp) pop)
           (recur tramp found-result?))
         
         found-result?
