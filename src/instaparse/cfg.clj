@@ -181,3 +181,9 @@
         {:grammar (check-grammar (apply-standard-reductions output-format (into {} productions)))
          :start-production start-production}))))
   
+(defn build-parser-from-combinators [grammar-map output-format start-production]
+  (if (nil? start-production)
+    (throw (IllegalArgumentException. 
+             "When you build a parser from a map of parser combinators, you must provide a start production using the :start keyword argument."))
+    {:grammar (check-grammar (apply-standard-reductions output-format grammar-map))
+     :start-production start-production}))

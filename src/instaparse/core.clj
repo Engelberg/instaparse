@@ -55,19 +55,42 @@
 (defn parser
   "Takes a string specification of a context-free grammar,
    or a URI for a text file containing such a specification,
-   and returns a parser for that grammar.
+   or a map of parser combinators and returns a parser for that grammar.
 
-   Optional keyword argument:
+   Optional keyword arguments:
    :output-format :enlive
    or
-   :output-format :hiccup"
-  [string-or-uri &{:as options}]
-  (let [output-format (get options :output-format *default-output-format*)] 
-    (map->Parser
-      (try (let [spec (slurp string-or-uri)]
-             (cfg/build-parser spec output-format))
-        (catch java.io.FileNotFoundException e 
-          (cfg/build-parser string-or-uri output-format))))))
+   :output-format :hiccup
+   
+   :start :keyword (where :keyword is name of starting production rule)"
+  [grammar-specification &{:as options}]
+  (let [output-format (get options :output-format *default-output-format*)
+        start (get options :start nil)]    
+    (cond
+      (string? grammar-specification)
+      (let [parser
+            (try (let [spec (slurp grammar-specification)]
+                   (cfg/build-parser spec output-format))
+              (catch java.io.FileNotFoundException e 
+                (cfg/build-parser grammar-specification output-format)))]
+        (if start (map->Parser (assoc parser :start-production start))
+          (map->Parser parser)))
+      
+      (map? grammar-specification)
+      (let [parser
+            (cfg/build-parser-from-combinators grammar-specification
+                                               output-format
+                                               start)]
+        (map->Parser parser))
+      
+      (vector? grammar-specification)
+      (let [start (if start start (grammar-specification 0))
+            parser
+            (cfg/build-parser-from-combinators (apply hash-map grammar-specification)
+                                               output-format
+                                               start)]
+        (map->Parser parser)))))
+        
 
 (defn failure?
   "Tests whether a parse result is a failure."
