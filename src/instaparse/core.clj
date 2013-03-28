@@ -48,6 +48,10 @@
   (invoke [parser text key1 val1 key2 val2] (parse parser text key1 val1 key2 val2))
   (invoke [parser text key1 val1 key2 val2 key3 val3] (parse parser text key1 val1 key2 val2 key3 val3)))
 
+(defmethod clojure.core/print-method Parser [x writer]
+  (binding [*out* writer]
+    (println (print/Parser->str x))))
+
 (defn parser
   "Takes a string specification of a context-free grammar,
    or a URI for a text file containing such a specification,
@@ -64,12 +68,6 @@
              (cfg/build-parser spec output-format))
         (catch java.io.FileNotFoundException e 
           (cfg/build-parser string-or-uri output-format))))))
-
-(defn pprint-parser
-  "Pretty prints the parser"
-  [parser]
-  {:pre [(instance? Parser parser)]}
-  (println (print/Parser->str parser)))
 
 (defn failure?
   "Tests whether a parse result is a failure."
@@ -88,11 +86,3 @@
     (meta result)
     :else
     nil))
-
-(defn pprint-failure
-  "Pretty-prints failure message for failed parse result to standard output.
-   If input is anything other than a failed parse result, nothing is printed."
-  [result]
-  (when (failure? result)
-    (fail/pprint-failure (get-failure result))))
-    

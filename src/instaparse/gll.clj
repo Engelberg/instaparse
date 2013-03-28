@@ -31,9 +31,8 @@
   `(debug (println ~@body)))
 
 ;TODO
-;Decide whether to make pretty printing the default. 
-;Improve error message for negative lookahead
-;Make more consistent error vs fail vs negative
+;Decide whether to make pretty printing the default.
+;Rename combinators-private namespace
 ;Check for valid grammar
 ;total and partial parses
 ;build parser from combinators
@@ -87,9 +86,9 @@
     :ord (ordered-alt-full-parse parser index tramp)))
 
 (defrecord Failure [index reason])  
-;(defmethod clojure.core/print-method Failure [x writer]
-;  (binding [*out* writer]
-;    (fail/pprint-failure x)))
+(defmethod clojure.core/print-method Failure [x writer]
+  (binding [*out* writer]
+    (fail/pprint-failure x)))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
