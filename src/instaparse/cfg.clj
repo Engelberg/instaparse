@@ -14,7 +14,7 @@
 (def single-quoted-string #"'(?:[^']|(?<=\\)')*'")
 (def single-quoted-regexp #"#'(?:[^']|(?<=\\)')*'")
 (def double-quoted-string #"\"(?:[^\"]|(?<=\\)\")*\"")
-(def single-quoted-regexp #"#\"(?:[^\"]|(?<=\\)\")*\"")
+(def double-quoted-regexp #"#\"(?:[^\"]|(?<=\\)\")*\"")
 
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
@@ -145,6 +145,23 @@
     (prn final-string)
     final-string))
 
+(defn process-regexp
+  "Converts single quoted regexp to double-quoted"
+  [s]
+  (prn s)
+  (let [stripped
+        (subs s 2 (dec (count s)))
+        remove-escaped-single-quotes
+        (str/replace stripped "\\'" "'")
+        remove-escaped-backslashes
+        (str/replace remove-escaped-single-quotes "\\\\" "\\")
+        final-string
+        remove-escaped-backslashes]
+        
+    (prn final-string)
+    final-string))
+
+
 (defn build-rule [tree]
   ;(println tree)
   (case (tag tree)
@@ -160,8 +177,8 @@
     :paren (recur (content tree))
     :hide (hide (nt (content tree)))
     :cat (apply cat (map build-rule (contents tree)))
-    :string (string (process-string (content tree))) ;TBD escape chars
-    :regexp (regexp (process-string (content tree)))
+    :string (string (process-string (content tree)))
+    :regexp (regexp (process-regexp (content tree)))
     :opt (opt (build-rule (content tree)))
     :star (star (build-rule (content tree)))
     :plus (plus (build-rule (content tree)))
