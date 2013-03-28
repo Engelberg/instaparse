@@ -1,12 +1,12 @@
 (ns instaparse.grammars
   (:use clojure.test)
-  (:use instaparse.combinators instaparse.combinators-private)
+  (:use instaparse.combinators instaparse.reduction)
   (:require [instaparse.gll :as gll]))
 
-(defn parse [grammar start text]
+(defn- parse [grammar start text]
   (gll/parse (apply-standard-reductions grammar) start text))
 
-(defn parses [grammar start text]
+(defn- parses [grammar start text]
   (gll/parse (apply-standard-reductions grammar) start text))
 
 ;; Grammars built with combinators

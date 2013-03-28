@@ -31,9 +31,7 @@
   `(debug (println ~@body)))
 
 ;TODO
-;Decide whether to make pretty printing the default.
-;Rename combinators-private namespace
-;Check for valid grammar
+;Double check that regexps are working right and single-quoted escapes
 ;total and partial parses
 ;build parser from combinators
 ;Documentation

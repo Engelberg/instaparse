@@ -152,11 +152,32 @@
     :look (look (build-rule (content tree)))
     :neg (neg (build-rule (content tree)))
     :epsilon Epsilon))
+
+(defn seq-nt
+  "Returns a sequence of all non-terminals in a parser built from combinators."
+  [parser]
+  (case (:tag parser)
+    :nt [(:keyword parser)]
+    (:string :regexp :epsilon) []
+    (:opt :plus :star :look :neg) (recur (:parser parser))
+    (:alt :cat) (mapcat seq-nt (:parsers parser))
+    :ord (mapcat seq-nt (juxt [:parser1 :parser2] parser))))
     
-;; TBD Check grammar
+(defn check-grammar [grammar-map]
+  (let [valid-nts (set (keys grammar-map))]
+    (doseq [nt (distinct (mapcat seq-nt (vals grammar-map)))]
+      (when-not (valid-nts nt)
+        (throw (RuntimeException. (format "%s occurs on the right-hand side of your grammar, but not on the left"
+                                          (subs (str nt) 1)))))))
+  grammar-map)
+          
 (defn build-parser [spec output-format]
-  (if-let [rules (parse cfg :rules spec)]    
-    (let [productions (map build-rule rules)
-          start-production (first (first productions))] 
-      {:grammar (apply-standard-reductions output-format (into {} productions))
-       :start-production start-production})))
+  (let [rules (parse cfg :rules spec)]
+    (if (instance? instaparse.gll.Failure rules)
+      (throw (RuntimeException. (str "Error parsing grammar specification:\n"
+                                    (with-out-str (println rules)))))
+      (let [productions (map build-rule rules)
+            start-production (first (first productions))] 
+        {:grammar (check-grammar (apply-standard-reductions output-format (into {} productions)))
+         :start-production start-production}))))
+  
