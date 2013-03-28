@@ -3,12 +3,19 @@
   (:use [instaparse.reduction :only [apply-standard-reductions]])
   (:use [instaparse.gll :only [parse]])
   (:require [clojure.string :as str])
+  (:require clojure.edn)
   (:use clojure.pprint clojure.repl))
 
-(def single-quoted-string #"'(?:[^\\']|\\.)*'")
-(def single-quoted-regexp #"#'(?:[^\\']|\\.)*'")
-(def double-quoted-string #"\"(?:[^\\\"]|\\.)*\"")
-(def double-quoted-regexp #"#\"(?:[^\\\"]|\\.)*\"")
+;(def single-quoted-string #"'(?:[^\\']|\\.)*'")
+;(def single-quoted-regexp #"#'(?:[^\\']|\\.)*'")
+;(def double-quoted-string #"\"(?:[^\\\"]|\\.)*\"")
+;(def double-quoted-regexp #"#\"(?:[^\\\"]|\\.)*\"")
+; New improved
+(def single-quoted-string #"'(?:[^']|(?<=\\)')*'")
+(def single-quoted-regexp #"#'(?:[^']|(?<=\\)')*'")
+(def double-quoted-string #"\"(?:[^\"]|(?<=\\)\")*\"")
+(def single-quoted-regexp #"#\"(?:[^\"]|(?<=\\)\")*\"")
+
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
 
@@ -123,11 +130,20 @@
 (defn process-string
   "Converts single quoted string to double-quoted"
   [s]
+  (prn s)
   (let [stripped
         (subs s 1 (dec (count s)))
-        remove-escape
-        (str/replace stripped "\\'" "'")]
-    remove-escape))
+        remove-escaped-single-quotes
+        (str/replace stripped "\\'" "'")
+        remove-escaped-backslashes
+        (str/replace remove-escaped-single-quotes "\\\\" "\\")
+        final-string
+        remove-escaped-backslashes]
+        ;remove-other-escapes
+        ;(clojure.edn/read-string (str \" remove-escaped-single-quotes \"))
+        
+    (prn final-string)
+    final-string))
 
 (defn build-rule [tree]
   ;(println tree)

@@ -33,10 +33,8 @@
 ;TODO
 ;Double check that regexps are working right and single-quoted escapes
 ;total and partial parses
-;build parser from combinators
 ;Documentation
 ;Concurrency
-;Allow parsing of arbitrary sequences.
 
 (debug (def stats (atom {})))
 (debug (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
