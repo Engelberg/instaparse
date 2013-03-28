@@ -1,4 +1,4 @@
-(ns instaparse.combinators-private)
+(ns instaparse.reduction)
 
 ;; utilities
 

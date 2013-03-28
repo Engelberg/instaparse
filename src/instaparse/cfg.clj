@@ -1,6 +1,6 @@
 (ns instaparse.cfg
   (:use instaparse.combinators)
-  (:use [instaparse.combinators-private :only [apply-standard-reductions]])
+  (:use [instaparse.reduction :only [apply-standard-reductions]])
   (:use [instaparse.gll :only [parse]])
   (:require [clojure.string :as str])
   (:use clojure.pprint clojure.repl))

@@ -13,7 +13,7 @@
   (:require [instaparse.failure :as fail])
   
   ;; combinators-private contains code relating to reductions and flattening.
-  (:require [instaparse.combinators-private :as cp])
+  (:require [instaparse.reduction :as red])
   
   ;; Two of the public combinators from here are needed.
   (:require [instaparse.combinators :refer [Epsilon nt]])
@@ -203,7 +203,7 @@
                  result)
         result (if-let [reduction-function (:red parser)]
                  (assoc result :result 
-                        (cp/apply-reduction reduction-function
+                        (red/apply-reduction reduction-function
                                            (:result result)))
                  result)              
         total? (total-success? tramp result)
@@ -357,7 +357,7 @@
     (let [{parsed-result :result continue-index :index} result
           new-results-so-far (conj results-so-far parsed-result)]
       (cond
-        (cp/singleton? parser-sequence)
+        (red/singleton? parser-sequence)
         (push-full-listener tramp [continue-index (first parser-sequence)]
                             (CatFullListener new-results-so-far (next parser-sequence) node-key tramp))        
         
@@ -452,7 +452,7 @@
       (fail tramp index
             {:tag :regexp :expecting regexp}))))
         
-(let [empty-cat-result (cp/make-flattenable iv/EMPTY)]
+(let [empty-cat-result (red/make-flattenable iv/EMPTY)]
 	(defn cat-parse
 	  [this index tramp]
 	  (let [parsers (:parsers this)]

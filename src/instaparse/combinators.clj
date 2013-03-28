@@ -1,5 +1,5 @@
 (ns instaparse.combinators
-  (:use instaparse.combinators-private))
+  (:use instaparse.reduction))
 
 ;; Ways to build parsers
 
