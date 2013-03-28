@@ -12,7 +12,7 @@
   ;; add enough information to the failure object for pretty printing 
   (:require [instaparse.failure :as fail])
   
-  ;; combinators-private contains code relating to reductions and flattening.
+  ;; reduction contains code relating to reductions and flattening.
   (:require [instaparse.reduction :as red])
   
   ;; Two of the public combinators from here are needed.
