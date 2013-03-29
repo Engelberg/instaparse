@@ -145,20 +145,33 @@
     (prn final-string)
     final-string))
 
+(defn regexp-replace
+  "Replaces characters in string so that re-pattern will act more like
+literal regexps" 
+  [s]
+  (case s
+    "\\" "\\\\"
+    "\n" "\\n"
+    "\b" "\\b"
+    "\f" "\\f"
+    "\r" "\\r"
+    "\t" "\\t"))
+    
 (defn process-regexp
   "Converts single quoted regexp to double-quoted"
   [s]
-  (prn s)
+  (println (with-out-str (pr s)))
   (let [stripped
         (subs s 2 (dec (count s)))
         remove-escaped-single-quotes
         (str/replace stripped "\\'" "'")
-        remove-escaped-backslashes
-        (str/replace remove-escaped-single-quotes "\\\\" "\\")
+        add-backslashes
+        (str/replace remove-escaped-single-quotes 
+                     #"[\\\backspace\newline\tab\formfeed\return]" regexp-replace)        
         final-string
-        remove-escaped-backslashes]
+        add-backslashes]
         
-    (prn final-string)
+    (println (with-out-str (pr final-string)))
     final-string))
 
 
