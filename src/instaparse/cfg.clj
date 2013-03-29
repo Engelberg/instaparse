@@ -127,51 +127,50 @@
 (def contents next)
 (def content fnext)
 
+(defn safe-read-string [s]
+  (binding [*read-eval* false]
+    (read-string s)))
+
 (defn process-string
   "Converts single quoted string to double-quoted"
   [s]
-  (prn s)
+  ;(prn s)
   (let [stripped
         (subs s 1 (dec (count s)))
         remove-escaped-single-quotes
         (str/replace stripped "\\'" "'")
-        remove-escaped-backslashes
-        (str/replace remove-escaped-single-quotes "\\\\" "\\")
         final-string
-        remove-escaped-backslashes]
-        ;remove-other-escapes
-        ;(clojure.edn/read-string (str \" remove-escaped-single-quotes \"))
+        (safe-read-string (str \" remove-escaped-single-quotes \"))]
         
-    (prn final-string)
+    ;(prn final-string)
     final-string))
 
 (defn regexp-replace
-  "Replaces characters in string so that re-pattern will act more like
-literal regexps" 
+  "Replaces whitespace characters with escape sequences for better printing" 
   [s]
   (case s
-    "\\" "\\\\"
     "\n" "\\n"
     "\b" "\\b"
     "\f" "\\f"
     "\r" "\\r"
-    "\t" "\\t"))
-    
+    "\t" "\\t"
+    :else s))
+
 (defn process-regexp
   "Converts single quoted regexp to double-quoted"
   [s]
-  (println (with-out-str (pr s)))
+  ;(println (with-out-str (pr s)))
   (let [stripped
         (subs s 2 (dec (count s)))
         remove-escaped-single-quotes
         (str/replace stripped "\\'" "'")
         add-backslashes
         (str/replace remove-escaped-single-quotes 
-                     #"[\\\backspace\newline\tab\formfeed\return]" regexp-replace)        
+                     #"[\s]" regexp-replace)        
         final-string
-        add-backslashes]
+        (safe-read-string (str "#\"" add-backslashes \"))]
         
-    (println (with-out-str (pr final-string)))
+    ;(println (with-out-str (pr final-string)))
     final-string))
 
 
