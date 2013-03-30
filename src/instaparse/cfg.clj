@@ -127,9 +127,22 @@
 (def contents next)
 (def content fnext)
 
-(defn safe-read-string [s]
-  (binding [*read-eval* false]
-    (read-string s)))
+;(defn safe-read-string [s]
+;  (binding [*read-eval* false]
+;    (read-string s)))
+
+(let [string-reader (clojure.lang.LispReader$StringReader.)]
+  (defn safe-read-string
+    "Expects a double-quote at the end of the string"
+    [s]
+    (with-in-str s (string-reader *in* nil))))
+
+; I think re-pattern might be sufficient.
+;(let [regexp-reader (clojure.lang.LispReader$RegexReader.)]
+;  (defn safe-read-regexp
+;    "Expects a double-quote at the end of the string"
+;    [s]
+;    (with-in-str s (regexp-reader *in* nil))))
 
 (defn process-string
   "Converts single quoted string to double-quoted"
@@ -140,21 +153,21 @@
         remove-escaped-single-quotes
         (str/replace stripped "\\'" "'")
         final-string
-        (safe-read-string (str \" remove-escaped-single-quotes \"))]
+        (safe-read-string (str remove-escaped-single-quotes \"))]
         
     ;(prn final-string)
     final-string))
 
-(defn regexp-replace
-  "Replaces whitespace characters with escape sequences for better printing" 
-  [s]
-  (case s
-    "\n" "\\n"
-    "\b" "\\b"
-    "\f" "\\f"
-    "\r" "\\r"
-    "\t" "\\t"
-    :else s))
+;(defn regexp-replace
+;  "Replaces whitespace characters with escape sequences for better printing" 
+;  [s]
+;  (case s
+;    "\n" "\\n"
+;    "\b" "\\b"
+;    "\f" "\\f"
+;    "\r" "\\r"
+;    "\t" "\\t"
+;    :else s))
 
 (defn process-regexp
   "Converts single quoted regexp to double-quoted"
@@ -164,11 +177,12 @@
         (subs s 2 (dec (count s)))
         remove-escaped-single-quotes
         (str/replace stripped "\\'" "'")
-        add-backslashes
-        (str/replace remove-escaped-single-quotes 
-                     #"[\s]" regexp-replace)        
+;        add-backslashes
+;        (str/replace remove-escaped-single-quotes 
+;                     #"[\s]" regexp-replace)        
         final-string
-        (safe-read-string (str "#\"" add-backslashes \"))]
+        (re-pattern remove-escaped-single-quotes)]
+;        (safe-read-regexp (str remove-escaped-single-quotes \"))]
         
     ;(println (with-out-str (pr final-string)))
     final-string))

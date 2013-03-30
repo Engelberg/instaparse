@@ -27,7 +27,9 @@
               (paren-for-tags #{:alt} parser2))
     :cat (str/join " " (map (partial paren-for-tags #{:alt :ord}) parsers))
     :string (with-out-str (pr (:string p)))
-    :regexp (with-out-str (pr (:regexp p)))
+    ; Quirkily, Clojure doesn't pr regexps with escaped whitespace characters,
+    ; so we have to go through some extra convolutions to get that behavior
+    :regexp (str "#" (with-out-str (pr (subs (str (:regexp p)) 1))))
     :nt (subs (str (:keyword p)) 1)
     :look (str "&" (paren-for-compound parser))
     :neg (str "!" (paren-for-compound parser))
