@@ -22,9 +22,14 @@
    :total true      (if parse fails, embed failure node in tree)"
   (let [start-production 
         (get options :start (:start-production parser))]
-    (gll/parse (:grammar parser)
-               start-production
-               text)))
+    (cond
+      (:partial options)
+      (gll/parse-partial (:grammar parser) start-production text)
+      
+      :else
+      (gll/parse (:grammar parser)
+                 start-production
+                 text))))
   
 (defn parses [parser text &{:keys [partial total] :as options}]
   "Use parser to parse the text.  Returns lazy seq of all parse trees
@@ -37,9 +42,14 @@
    :total true      (if parse fails, embed failure node in tree)"
   (let [start-production 
         (get options :start (:start-production parser))]
-    (gll/parses (:grammar parser)
-                start-production
-                text)))
+    (cond
+      (:partial options)
+      (gll/parses-partial (:grammar parser) start-production text)
+      
+      :else
+      (gll/parses (:grammar parser)
+                  start-production
+                  text))))
   
 (defrecord Parser [grammar start-production]
   clojure.lang.IFn

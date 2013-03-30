@@ -31,7 +31,6 @@
   `(debug (println ~@body)))
 
 ;TODO
-;Double check that regexps are working right and single-quoted escapes
 ;total and partial parses
 ;Documentation
 ;Concurrency
@@ -624,6 +623,25 @@
   (let [tramp (make-tramp grammar text)
         parser (nt start)]
     (push-full-listener tramp [0 parser] (TopListener tramp))    
+    (if-let [all-parses (run tramp)]
+      (first all-parses) 
+      (fail/augment-failure @(:failure tramp) text))))
+
+(defn parses-partial [grammar start text]
+  (debug (clear!))
+  (let [tramp (make-tramp grammar text)
+        parser (nt start)]
+    (push-listener tramp [0 parser] (TopListener tramp))    
+    (if-let [all-parses (run tramp)]
+      all-parses 
+      (with-meta () 
+        (fail/augment-failure @(:failure tramp) text)))))
+
+(defn parse-partial [grammar start text]
+  (debug (clear!))
+  (let [tramp (make-tramp grammar text)
+        parser (nt start)]
+    (push-listener tramp [0 parser] (TopListener tramp))    
     (if-let [all-parses (run tramp)]
       (first all-parses) 
       (fail/augment-failure @(:failure tramp) text))))
