@@ -231,18 +231,20 @@
   grammar-map)
           
 (defn build-parser [spec output-format]
-  (let [rules (parse cfg :rules spec)]
+  (let [rules (parse cfg :rules spec false)]
     (if (instance? instaparse.gll.Failure rules)
       (throw (RuntimeException. (str "Error parsing grammar specification:\n"
                                     (with-out-str (println rules)))))
       (let [productions (map build-rule rules)
             start-production (first (first productions))] 
         {:grammar (check-grammar (apply-standard-reductions output-format (into {} productions)))
-         :start-production start-production}))))
+         :start-production start-production
+         :output-format output-format}))))
   
 (defn build-parser-from-combinators [grammar-map output-format start-production]
   (if (nil? start-production)
     (throw (IllegalArgumentException. 
              "When you build a parser from a map of parser combinators, you must provide a start production using the :start keyword argument."))
     {:grammar (check-grammar (apply-standard-reductions output-format grammar-map))
-     :start-production start-production}))
+     :start-production start-production
+     :output-format output-format}))

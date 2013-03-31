@@ -94,12 +94,14 @@
 ; success contains a successful parse
 ; failure contains the index of the furthest-along failure
 
-(defrecord Tramp [grammar text fail-index stack next-stack generation 
-                  negative-listeners msg-cache nodes success failure])
+(defrecord Tramp [grammar text fail-index node-builder
+                  stack next-stack generation negative-listeners 
+                  msg-cache nodes success failure])
 (defn make-tramp 
-  ([grammar text] (make-tramp grammar text -1))
-  ([grammar text fail-index] 
-    (Tramp. grammar text fail-index (atom []) (atom []) (atom 0) (atom []) 
+  ([grammar text] (make-tramp grammar text -1 nil))
+  ([grammar text fail-index node-builder]
+    (Tramp. grammar text fail-index node-builder
+            (atom []) (atom []) (atom 0) (atom []) 
             (atom {}) (atom {}) (atom nil) (atom (Failure. 0 [])))))
   
 ; A Success record contains the result and the index to continue from
@@ -267,7 +269,7 @@
   (dprintln "Fail index" (:fail-index tramp))
   (when (= index (:fail-index tramp))
     (success tramp node-key 
-             [:fail (subs (:text tramp) index)] 
+             ((:node-builder tramp) :failure (subs (:text tramp) index)) 
              (count (:text tramp)))))
 
 ;; Stack helper functions
@@ -639,38 +641,45 @@
       (first all-parses) 
       (fail/augment-failure @(:failure tramp) text))))
 
-(defn parses-total-after-fail [grammar start text fail-index partial?]
+(defn parses-total-after-fail 
+  [grammar start text fail-index partial? node-builder]
   (dprintln "Parses-total-after-fail")  
-  (let [tramp (make-tramp grammar text fail-index)
+  (let [tramp (make-tramp grammar text fail-index node-builder)
         parser (nt start)]
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       all-parses
-      [start [:fail text]])))
+      (node-builder start (node-builder :failure text)))))      
 
-(defn parses-total [grammar start text partial?]
+(defn parses-total 
+  [grammar start text partial? node-builder]
   (debug (clear!))
   (let [all-parses (parses grammar start text partial?)]
     (if (seq all-parses)
       all-parses
       (parses-total-after-fail grammar start text 
-                               (:index (meta all-parses)) partial?))))
+                               (:index (meta all-parses)) 
+                               partial? node-builder))))
 
-(defn parse-total-after-fail [grammar start text fail-index partial?]
+(defn parse-total-after-fail 
+  [grammar start text fail-index partial? node-builder]
   (dprintln "Parse-total-after-fail")  
-  (let [tramp (make-tramp grammar text fail-index)
+  (let [tramp (make-tramp grammar text fail-index node-builder)
         parser (nt start)]
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       (first all-parses)
-      [start [:fail text]])))
+      (node-builder start (node-builder :failure text)))))
 
-(defn parse-total [grammar start text partial?]
+(defn parse-total 
+  [grammar start text partial? node-builder]
   (debug (clear!))
   (let [result (parse grammar start text partial?)]
     (if-not (instance? Failure result)
       result
-      (parse-total-after-fail grammar start text (:index result) partial?))))
+      (parse-total-after-fail grammar start text 
+                              (:index result) 
+                              partial? node-builder))))
 
 ;; Variation, but not for end-user
 

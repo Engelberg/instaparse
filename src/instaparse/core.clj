@@ -2,7 +2,8 @@
   (:require [instaparse.gll :as gll] 
             [instaparse.cfg :as cfg]
             [instaparse.failure :as fail]
-            [instaparse.print :as print]))
+            [instaparse.print :as print]
+            [instaparse.reduction :as red]))
 
 (def ^:dynamic *default-output-format* :hiccup)
 (defn set-default-output-format!
@@ -28,7 +29,8 @@
     
     (cond
       (:total options)
-      (gll/parse-total (:grammar parser) start-production text partial?)
+      (gll/parse-total (:grammar parser) start-production text 
+                       partial? (red/node-builders (:output-format parser)))
 
       :else
       (gll/parse (:grammar parser) start-production text partial?))))
@@ -50,12 +52,13 @@
 
     (cond
       (:total options)
-      (gll/parses-total (:grammar parser) start-production text partial?)
+      (gll/parses-total (:grammar parser) start-production text 
+                        partial? (red/node-builders (:output-format parser)))
       
       :else
       (gll/parses (:grammar parser) start-production text partial?))))
   
-(defrecord Parser [grammar start-production]
+(defrecord Parser [grammar start-production output-format]
   clojure.lang.IFn
   (invoke [parser text] (parse parser text))
   (invoke [parser text key1 val1] (parse parser text key1 val1))

@@ -42,9 +42,16 @@
   (fn [& parse-result]
     {:tag key, :content parse-result}))
 
-(def reduction-types {:hiccup hiccup-non-terminal-reduction
-                      :enlive enlive-non-terminal-reduction})
-                      
+(def ^:constant reduction-types 
+  {:hiccup hiccup-non-terminal-reduction
+   :enlive enlive-non-terminal-reduction})
+                    
+(def ^:constant node-builders
+  ; A map of functions for building a node that only has one item
+  ; These functions are used in total-parse mode to build failure nodes
+  {:enlive (fn [tag item] {:tag tag :content [item]})
+   :hiccup (fn [tag item] [tag item])})
+
 (def standard-non-terminal-reduction :hiccup)
 
 (defn apply-reduction [f result]
