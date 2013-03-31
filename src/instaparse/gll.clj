@@ -600,7 +600,8 @@
         (push-listener tramp node-key 
                        (let [fail-send (delay (fail tramp [index this] index
                                                     {:tag :negative-lookahead
-                                                     :expecting {:NOT (print/parser->str parser)}}))] 
+                                                     :expecting {:NOT 
+                                                                 (print/parser->str parser)}}))] 
                          (fn [result] (force fail-send))))     
         (push-negative-listener 
           tramp

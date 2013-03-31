@@ -30,6 +30,16 @@
            lc
            {:text (get-line (:line lc) text)})))
 
+(defn print-reason
+  "Provides special case for printing negative lookahead reasons"
+  [r]
+  (cond
+    (:NOT r)
+    (do (print "NOT ")    
+      (println (:NOT r))),
+    :else
+    (prn r)))
+
 (defn pprint-failure
   "Takes an augmented failure object and prints the error message"
   [{:keys [line column text reason]}]
@@ -44,5 +54,5 @@
     (println " (followed by end-of-string)"))
   (doseq [r (distinct (map :expecting
                            (filter (complement :full) reason)))]
-    (prn r)))
+    (print-reason r)))
   
