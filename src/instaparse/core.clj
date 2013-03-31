@@ -46,6 +46,9 @@
       (:partial options)
       (gll/parses-partial (:grammar parser) start-production text)
       
+      (:total options)
+      (gll/parses-total (:grammar parser) start-production text)
+      
       :else
       (gll/parses (:grammar parser)
                   start-production

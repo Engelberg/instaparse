@@ -38,6 +38,11 @@
   (println text)
   (println (marker column))
   (println "Expected one of:")
-  (doseq [r (distinct (map :expecting reason))]
+  (doseq [r (distinct (map :expecting
+                           (filter :full reason)))]
+    (pr r)
+    (println " (followed by end-of-string)"))
+  (doseq [r (distinct (map :expecting
+                           (filter (complement :full) reason)))]
     (prn r)))
   

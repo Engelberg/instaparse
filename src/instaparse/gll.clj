@@ -94,7 +94,7 @@
 ; success contains a successful parse
 ; failure contains the index of the furthest-along failure
 
-(defrecord Tramp [grammar text stack next-stack generation 
+(defrecord Tramp [grammar text fail-index stack next-stack generation 
                   negative-listeners msg-cache nodes success failure])
 (defn make-tramp 
   ([grammar text] (make-tramp grammar text -1))
@@ -423,7 +423,7 @@
     (if (and (= end (count text)) (= string head))
       (success tramp [index this] string end)
       (fail tramp [index this] index
-            {:tag :string :expecting string}))))
+            {:tag :string :expecting string :full true}))))
 
 (defn re-seq-no-submatches [regexp text]
   (for [match (re-seq regexp text)]
@@ -451,7 +451,7 @@
       (doseq [match seq-filtered-matches]
         (success tramp [index this] match (count text)))
       (fail tramp [index this] index
-            {:tag :regexp :expecting regexp}))))
+            {:tag :regexp :expecting regexp :full true}))))
         
 (let [empty-cat-result (red/make-flattenable iv/EMPTY)]
 	(defn cat-parse
@@ -555,7 +555,7 @@
     (push-full-listener tramp [index parser] (NodeListener [index this] tramp))    
     (if (= index (count (:text tramp)))
       (success tramp [index this] nil index)
-      (fail tramp [index this] index {:tag :optional :expecting :end-of-file}))))    
+      (fail tramp [index this] index {:tag :optional :expecting :end-of-string}))))    
 
 (defn non-terminal-parse
   [this index tramp]
@@ -576,7 +576,7 @@
   [this index tramp]
   (if (= index (count (:text tramp)))
     (lookahead-parse this index tramp)
-    (fail tramp [index this] index {:tag :lookahead :expecting :end-of-file})))
+    (fail tramp [index this] index {:tag :lookahead :expecting :end-of-string})))
 
 ;(declare negative-parse?)
 ;(defn negative-lookahead-parse
@@ -610,7 +610,7 @@
   [index tramp] 
   (if (= index (count (:text tramp)))
     (success tramp [index Epsilon] nil index)
-    (fail tramp [index Epsilon] index {:tag :Epsilon :expecting :end-of-file})))
+    (fail tramp [index Epsilon] index {:tag :Epsilon :expecting :end-of-string})))
     
 ;; End-user parsing functions
 
@@ -651,6 +651,23 @@
     (if-let [all-parses (run tramp)]
       (first all-parses) 
       (fail/augment-failure @(:failure tramp) text))))
+
+(defn parses-total-after-fail [grammar start text fail-index]
+  (println "Parses-total-after-fail")  
+  (let [tramp (make-tramp grammar text fail-index)
+        parser (nt start)]
+    (push-full-listener tramp [0 parser] (TopListener tramp))    
+    (if-let [all-parses (run tramp)]
+      all-parses
+      [start [:fail text]])))
+
+(defn parses-total [grammar start text]
+  (debug (clear!))
+  (let [all-parses (parses grammar start text)]
+    (if (seq all-parses)
+      all-parses
+      (parses-total-after-fail grammar start text (:index all-parses)))))
+    
 
 ;; Variation, but not for end-user
 
