@@ -658,9 +658,11 @@
   (let [all-parses (parses grammar start text partial?)]
     (if (seq all-parses)
       all-parses
-      (parses-total-after-fail grammar start text 
-                               (:index (meta all-parses)) 
-                               partial? node-builder))))
+      (with-meta
+        (parses-total-after-fail grammar start text 
+                                 (:index (meta all-parses)) 
+                                 partial? node-builder)
+        (meta all-parses)))))
 
 (defn parse-total-after-fail 
   [grammar start text fail-index partial? node-builder]
@@ -678,9 +680,11 @@
   (let [result (parse grammar start text partial?)]
     (if-not (instance? Failure result)
       result
-      (parse-total-after-fail grammar start text 
-                              (:index result) 
-                              partial? node-builder))))
+      (with-meta        
+        (parse-total-after-fail grammar start text 
+                                (:index result) 
+                                partial? node-builder)
+        result))))
 
 ;; Variation, but not for end-user
 
