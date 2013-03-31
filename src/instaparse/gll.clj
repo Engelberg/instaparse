@@ -19,21 +19,14 @@
   (:require [instaparse.combinators :refer [Epsilon nt]])
   
   ;; Need a way to convert parsers into strings for printing and error messages.
-  (:require [instaparse.print :as print])
+  (:require [instaparse.print :as print]))
     
-  (:use clojure.pprint clojure.repl))
-
 (def DEBUG nil)
 (defmacro debug [& body]
   (when DEBUG
     `(do ~@body)))
 (defmacro dprintln [& body]
   `(debug (println ~@body)))
-
-;TODO
-;total and partial parses
-;Documentation
-;Concurrency
 
 (debug (def stats (atom {})))
 (debug (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))

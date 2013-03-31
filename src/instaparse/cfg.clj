@@ -4,8 +4,7 @@
   (:use [instaparse.reduction :only [apply-standard-reductions]])
   (:use [instaparse.gll :only [parse]])
   (:require [clojure.string :as str])
-  (:require clojure.edn)
-  (:use clojure.pprint clojure.repl))
+  (:require clojure.edn))
 
 ; New improved
 (def single-quoted-string #"'(?:[^']|(?<=\\)')*'")
