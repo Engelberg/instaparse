@@ -613,82 +613,73 @@
     (success tramp [index Epsilon] nil index)
     (fail tramp [index Epsilon] index {:tag :Epsilon :expecting :end-of-string})))
     
-;; End-user parsing functions
+;; Parsing functions
+
+(defn start-parser [tramp parser partial?]
+  (if partial?
+    (push-listener tramp [0 parser] (TopListener tramp))
+    (push-full-listener tramp [0 parser] (TopListener tramp))))
 
 (defn parses 
-  ([grammar start text] (parses grammar start text nil))
+  ([grammar start text] (parses grammar start text false))
   ([grammar start text partial?]
     (debug (clear!))
     (let [tramp (make-tramp grammar text)
           parser (nt start)]
-      (if partial?
-        (push-listener tramp [0 parser] (TopListener tramp))
-        (push-full-listener tramp [0 parser] (TopListener tramp)))    
+      (start-parser tramp parser partial?)
       (if-let [all-parses (run tramp)]
         all-parses 
         (with-meta () 
           (fail/augment-failure @(:failure tramp) text))))))
   
-(defn parse [grammar start text]
-  (debug (clear!))
-  (let [tramp (make-tramp grammar text)
-        parser (nt start)]
-    (push-full-listener tramp [0 parser] (TopListener tramp))    
-    (if-let [all-parses (run tramp)]
-      (first all-parses) 
-      (fail/augment-failure @(:failure tramp) text))))
-
-(defn parses-partial [grammar start text]
-  (debug (clear!))
-  (let [tramp (make-tramp grammar text)
-        parser (nt start)]
-    (push-listener tramp [0 parser] (TopListener tramp))    
-    (if-let [all-parses (run tramp)]
-      all-parses 
-      (with-meta () 
+(defn parse 
+  ([grammar start text] (parse grammar start text false))
+  ([grammar start text partial?]
+    (debug (clear!))
+    (let [tramp (make-tramp grammar text)
+          parser (nt start)]
+      (start-parser tramp parser partial?)
+      (if-let [all-parses (run tramp)]
+        (first all-parses) 
         (fail/augment-failure @(:failure tramp) text)))))
 
-(defn parse-partial [grammar start text]
-  (debug (clear!))
-  (let [tramp (make-tramp grammar text)        
-        parser (nt start)]
-    (push-listener tramp [0 parser] (TopListener tramp))    
-    (if-let [all-parses (run tramp)]
-      (first all-parses) 
-      (fail/augment-failure @(:failure tramp) text))))
-
-(defn parses-total-after-fail [grammar start text fail-index]
+(defn parses-total-after-fail [grammar start text fail-index partial?]
   (dprintln "Parses-total-after-fail")  
   (let [tramp (make-tramp grammar text fail-index)
         parser (nt start)]
-    (push-full-listener tramp [0 parser] (TopListener tramp))    
+    (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       all-parses
       [start [:fail text]])))
 
-(defn parses-total [grammar start text]
-  (debug (clear!))
-  (let [all-parses (parses grammar start text)]
-    (if (seq all-parses)
-      all-parses
-      (parses-total-after-fail grammar start text (:index (meta all-parses))))))
+(defn parses-total 
+  ([grammar start text] (parses-total grammar start text false))
+  ([grammar start text partial?]
+    (debug (clear!))
+    (let [all-parses (parses grammar start text partial?)]
+      (if (seq all-parses)
+        all-parses
+        (parses-total-after-fail grammar start text 
+                                 (:index (meta all-parses)) partial?)))))
 
-(defn parse-total-after-fail [grammar start text fail-index]
+(defn parse-total-after-fail [grammar start text fail-index partial?]
   (dprintln "Parse-total-after-fail")  
   (let [tramp (make-tramp grammar text fail-index)
         parser (nt start)]
-    (push-full-listener tramp [0 parser] (TopListener tramp))    
+    (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       (first all-parses)
       [start [:fail text]])))
 
-(defn parse-total [grammar start text]
-  (debug (clear!))
-  (let [result (parse grammar start text)]
-    (if-not (instance? Failure result)
-      result
-      (parse-total-after-fail grammar start text (:index result)))))
-
+(defn parse-total 
+  ([grammar start text] (parse-total grammar start text false))
+  ([grammar start text partial?]
+    (debug (clear!))
+    (let [result (parse grammar start text partial?)]
+      (if-not (instance? Failure result)
+        result
+        (parse-total-after-fail grammar start text (:index result) partial?)))))
+  
 ;; Variation, but not for end-user
 
 ;(defn negative-parse? 

@@ -4,10 +4,10 @@
   (:require [instaparse.gll :as gll]))
 
 (defn- parse [grammar start text]
-  (gll/parse (apply-standard-reductions grammar) start text))
+  (gll/parse (apply-standard-reductions grammar) start text false))
 
 (defn- parses [grammar start text]
-  (gll/parse (apply-standard-reductions grammar) start text))
+  (gll/parses (apply-standard-reductions grammar) start text false))
 
 ;; Grammars built with combinators
 

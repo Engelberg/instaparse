@@ -21,18 +21,17 @@
    :partial true    (parses that don't consume the whole string are okay)
    :total true      (if parse fails, embed failure node in tree)"
   (let [start-production 
-        (get options :start (:start-production parser))]
+        (get options :start (:start-production parser)),
+        
+        partial?
+        (get options :partial false)]
+    
     (cond
-      (:partial options)
-      (gll/parse-partial (:grammar parser) start-production text)
-      
       (:total options)
-      (gll/parse-total (:grammar parser) start-production text)
+      (gll/parse-total (:grammar parser) start-production text partial?)
 
       :else
-      (gll/parse (:grammar parser)
-                 start-production
-                 text))))
+      (gll/parse (:grammar parser) start-production text partial?))))
   
 (defn parses [parser text &{:keys [partial total] :as options}]
   "Use parser to parse the text.  Returns lazy seq of all parse trees
@@ -44,18 +43,17 @@
    :partial true    (parses that don't consume the whole string are okay)
    :total true      (if parse fails, embed failure node in tree)"
   (let [start-production 
-        (get options :start (:start-production parser))]
+        (get options :start (:start-production parser)),
+        
+        partial?
+        (get options :partial false)]
+
     (cond
-      (:partial options)
-      (gll/parses-partial (:grammar parser) start-production text)
-      
       (:total options)
-      (gll/parses-total (:grammar parser) start-production text)
+      (gll/parses-total (:grammar parser) start-production text partial?)
       
       :else
-      (gll/parses (:grammar parser)
-                  start-production
-                  text))))
+      (gll/parses (:grammar parser) start-production text partial?))))
   
 (defrecord Parser [grammar start-production]
   clojure.lang.IFn
