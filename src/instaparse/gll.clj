@@ -15,7 +15,7 @@
   ;; reduction contains code relating to reductions and flattening.
   (:require [instaparse.reduction :as red])
   
-  ;; Two of the public combinators from here are needed.
+  ;; Two of the public combinators are needed.
   (:require [instaparse.combinators :refer [Epsilon nt]])
   
   ;; Need a way to convert parsers into strings for printing and error messages.

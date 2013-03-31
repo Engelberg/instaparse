@@ -1,4 +1,5 @@
 (ns instaparse.cfg
+  "This is the context free grammar that recognizes context free grammars."
   (:use instaparse.combinators)
   (:use [instaparse.reduction :only [apply-standard-reductions]])
   (:use [instaparse.gll :only [parse]])
@@ -6,10 +7,6 @@
   (:require clojure.edn)
   (:use clojure.pprint clojure.repl))
 
-;(def single-quoted-string #"'(?:[^\\']|\\.)*'")
-;(def single-quoted-regexp #"#'(?:[^\\']|\\.)*'")
-;(def double-quoted-string #"\"(?:[^\\\"]|\\.)*\"")
-;(def double-quoted-regexp #"#\"(?:[^\\\"]|\\.)*\"")
 ; New improved
 (def single-quoted-string #"'(?:[^']|(?<=\\)')*'")
 (def single-quoted-regexp #"#'(?:[^']|(?<=\\)')*'")
@@ -122,10 +119,14 @@
                                  (nt :paren)
                                  (nt :hide)
                                  (nt :epsilon)))}))
-  
+
+; Internally, we're converting the grammar into a hiccup parse tree
+; Here's how you extract the relevant information
 (def tag first)
 (def contents next)
 (def content fnext)
+
+;;;; Helper functions for reading strings and regexes
 
 ;(defn safe-read-string [s]
 ;  (binding [*read-eval* false]
@@ -137,7 +138,7 @@
     [s]
     (with-in-str s (string-reader *in* nil))))
 
-; I think re-pattern might be sufficient.
+; I think re-pattern is sufficient, but here's how to do it without.
 ;(let [regexp-reader (clojure.lang.LispReader$RegexReader.)]
 ;  (defn safe-read-regexp
 ;    "Expects a double-quote at the end of the string"
@@ -147,27 +148,14 @@
 (defn process-string
   "Converts single quoted string to double-quoted"
   [s]
-  ;(prn s)
   (let [stripped
         (subs s 1 (dec (count s)))
         remove-escaped-single-quotes
         (str/replace stripped "\\'" "'")
         final-string
-        (safe-read-string (str remove-escaped-single-quotes \"))]
-        
-    ;(prn final-string)
-    final-string))
+        (safe-read-string (str remove-escaped-single-quotes \"))]            
 
-;(defn regexp-replace
-;  "Replaces whitespace characters with escape sequences for better printing" 
-;  [s]
-;  (case s
-;    "\n" "\\n"
-;    "\b" "\\b"
-;    "\f" "\\f"
-;    "\r" "\\r"
-;    "\t" "\\t"
-;    :else s))
+    final-string))
 
 (defn process-regexp
   "Converts single quoted regexp to double-quoted"
@@ -177,19 +165,17 @@
         (subs s 2 (dec (count s)))
         remove-escaped-single-quotes
         (str/replace stripped "\\'" "'")
-;        add-backslashes
-;        (str/replace remove-escaped-single-quotes 
-;                     #"[\s]" regexp-replace)        
         final-string
         (re-pattern remove-escaped-single-quotes)]
 ;        (safe-read-regexp (str remove-escaped-single-quotes \"))]
         
-    ;(println (with-out-str (pr final-string)))
     final-string))
 
+;;; Now we need to convert the grammar's parse tree into combinators
 
-(defn build-rule [tree]
-  ;(println tree)
+(defn build-rule
+  "Convert one parsed rule from the grammar into combinators"
+  [tree]
   (case (tag tree)
     :rule (let [[nt alt-or-ord] (contents tree)]
             (if (= (tag nt) :hide-nt)
@@ -222,7 +208,9 @@
     (:alt :cat) (mapcat seq-nt (:parsers parser))
     :ord (mapcat seq-nt (juxt [:parser1 :parser2] parser))))
     
-(defn check-grammar [grammar-map]
+(defn check-grammar
+  "Throw error if grammar uses any invalid non-terminals in its productions"
+  [grammar-map]
   (let [valid-nts (set (keys grammar-map))]
     (doseq [nt (distinct (mapcat seq-nt (vals grammar-map)))]
       (when-not (valid-nts nt)
