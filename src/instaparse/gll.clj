@@ -264,6 +264,7 @@
                1 (Failure. index [reason])
                0 (Failure. index (conj (:reason failure) reason))
                -1  failure))))
+  (dprintln "Fail index" (:fail-index tramp))
   (when (= index (:fail-index tramp))
     (success tramp node-key 
              [:fail (subs (:text tramp) index)] 
@@ -292,7 +293,7 @@
                           (run tramp true))))
         
         (pos? (count @stack))
-        (do (dprintln "stacks" (count @stack) (count @(:next-stack tramp)))
+        (do ;(dprintln "stacks" (count @stack) (count @(:next-stack tramp)))
           (step stack) (recur tramp found-result?))
         
         (pos? (count @(:negative-listeners tramp)))
@@ -614,16 +615,20 @@
     
 ;; End-user parsing functions
 
-(defn parses [grammar start text]
-  (debug (clear!))
-  (let [tramp (make-tramp grammar text)
-        parser (nt start)]
-    (push-full-listener tramp [0 parser] (TopListener tramp))    
-    (if-let [all-parses (run tramp)]
-      all-parses 
-      (with-meta () 
-        (fail/augment-failure @(:failure tramp) text)))))
-
+(defn parses 
+  ([grammar start text] (parses grammar start text nil))
+  ([grammar start text partial?]
+    (debug (clear!))
+    (let [tramp (make-tramp grammar text)
+          parser (nt start)]
+      (if partial?
+        (push-listener tramp [0 parser] (TopListener tramp))
+        (push-full-listener tramp [0 parser] (TopListener tramp)))    
+      (if-let [all-parses (run tramp)]
+        all-parses 
+        (with-meta () 
+          (fail/augment-failure @(:failure tramp) text))))))
+  
 (defn parse [grammar start text]
   (debug (clear!))
   (let [tramp (make-tramp grammar text)
@@ -645,7 +650,7 @@
 
 (defn parse-partial [grammar start text]
   (debug (clear!))
-  (let [tramp (make-tramp grammar text)
+  (let [tramp (make-tramp grammar text)        
         parser (nt start)]
     (push-listener tramp [0 parser] (TopListener tramp))    
     (if-let [all-parses (run tramp)]
@@ -653,7 +658,7 @@
       (fail/augment-failure @(:failure tramp) text))))
 
 (defn parses-total-after-fail [grammar start text fail-index]
-  (println "Parses-total-after-fail")  
+  (dprintln "Parses-total-after-fail")  
   (let [tramp (make-tramp grammar text fail-index)
         parser (nt start)]
     (push-full-listener tramp [0 parser] (TopListener tramp))    
@@ -666,8 +671,23 @@
   (let [all-parses (parses grammar start text)]
     (if (seq all-parses)
       all-parses
-      (parses-total-after-fail grammar start text (:index all-parses)))))
-    
+      (parses-total-after-fail grammar start text (:index (meta all-parses))))))
+
+(defn parse-total-after-fail [grammar start text fail-index]
+  (dprintln "Parse-total-after-fail")  
+  (let [tramp (make-tramp grammar text fail-index)
+        parser (nt start)]
+    (push-full-listener tramp [0 parser] (TopListener tramp))    
+    (if-let [all-parses (run tramp)]
+      (first all-parses)
+      [start [:fail text]])))
+
+(defn parse-total [grammar start text]
+  (debug (clear!))
+  (let [result (parse grammar start text)]
+    (if-not (instance? Failure result)
+      result
+      (parse-total-after-fail grammar start text (:index result)))))
 
 ;; Variation, but not for end-user
 

@@ -26,6 +26,9 @@
       (:partial options)
       (gll/parse-partial (:grammar parser) start-production text)
       
+      (:total options)
+      (gll/parse-total (:grammar parser) start-production text)
+
       :else
       (gll/parse (:grammar parser)
                  start-production
