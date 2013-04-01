@@ -59,7 +59,7 @@ With instaparse, turning this grammar into an executable parser is as simple as 
 
 ### Notation
 
-Instaparse supports most of the common notations for context-free grammars.  For example, a popular alternative to `*` is to surround the term with curly braces `{}`, and a popular alternative to `?` is to surround the term with square brackets `[]`.  Rules can be specified with `=`, `:`, `:=`, or `::=`.  Rules can optionally end with `;`.  Instaparse is very flexible in terms of how you use whitespace (as in Clojure, `,` is treated as whitespace) and you can liberally use parentheses for grouping.  Terminal strings can be enclosed in either single quotes or double quotes (however, since you are writing the grammar specification inside of a Clojure double-quoted strings, any uses of double-quotes would have to be escaped, therefore single-quotes are easier to read). Newlines are optional; you can put the entire grammar on one line if you desire.  In fact, all these notations can be mixed up in the same specification if you want.
+Instaparse supports most of the common notations for context-free grammars.  For example, a popular alternative to `*` is to surround the term with curly braces `{}`, and a popular alternative to `?` is to surround the term with square brackets `[]`.  Rules can be specified with `=`, `:`, `:=`, or `::=`.  Rules can optionally end with `;`.  Instaparse is very flexible in terms of how you use whitespace (as in Clojure, `,` is treated as whitespace) and you can liberally use parentheses for grouping.  Terminal strings can be enclosed in either single quotes or double quotes (however, since you are writing the grammar specification inside of a Clojure double-quoted string, any use of double-quotes would have to be escaped, therefore single-quotes are easier to read). Newlines are optional; you can put the entire grammar on one line if you desire.  In fact, all these notations can be mixed up in the same specification if you want.
 
 So here is an equally valid (but messier) way to write out the exact same grammar, just to illustrate the flexibility that you have:
 
@@ -94,7 +94,22 @@ Here's a quick guide to the syntax for defining context-free grammars:
 <tr><td>Epsilon</td><td>Epsilon epsilon EPSILON eps &#949; "" ''</td><td>S = 'a' S | Epsilon</td></tr>
 </table>
 
-As is the norm in ENBF notation, concatenation has a higher precedence than alternation, so in the absence of parentheses, something like `A B | C D` means `(A B) | (C D)`.
+As is the norm in EBNF notation, concatenation has a higher precedence than alternation, so in the absence of parentheses, something like `A B | C D` means `(A B) | (C D)`.
+
+### Input from resource file
+
+Parsers can also be built from a specification contained in a file, either locally or on the web.  Building the parser from the URI is easy:
+
+	=> (insta/parse "https://gist.github.com/Engelberg/5283346/raw/9b10ae6d5e8450608934fa21839f58fd2cb2e219/SingleA")
+	S = #"\\s*" "a" #"\\s*"
+
+### Escape characters
+
+Ultimately, all grammars end in terminal strings or regular expressions that form the tokens of your language.  Since your grammar is expressed as a Clojure, double-quoted string, it is recommended that you use single-quoted strings and/or regular expressions to define your tokens.  Sometimes, however, it will be necessary to use escaped characters in your strings and regexes.  I've tried to make it as intuitive as possible, for example, supporting all the usual escape characters in addition to an escaped `'
+
+1. Add one extra backslash in front of any
+
+
 
 ### Output format
 
@@ -151,7 +166,7 @@ To better understand this, take a look at these two variations of the same parse
 	=> (as-and-bs-variation2 "aaaaabbbaaaabb")
 	[:S "a" "a" "a" "a" "a" "b" "b" "b" "a" "a" "a" "a" "b" "b"]
 
-**** Hiding content
+#### Hiding content
 
 For this next example, let's consider a parser that looks for a sequence of a's or b's surrounded by parens.
 
@@ -159,7 +174,7 @@ For this next example, let's consider a parser that looks for a sequence of a's 
 	  (insta/parser
 	    "paren-wrapped = '(' seq-of-A-or-B ')'
 	     seq-of-A-or-B = ('a' | 'b')*"))
-	
+
 	=> (paren-ab "(aba)")
 	[:paren-wrapped "(" [:seq-of-A-or-B "a" "b" "a"] ")"]
 
@@ -177,7 +192,7 @@ In Instaparse, you can use angle brackets `<>` to hide parsed elements, suppress
 
 Voila! The parens "(" and ")" tokens have been hidden.  Angle brackets are a powerful tool for hiding whitespace and other delimiters from the output.
 
-**** Hiding tags
+#### Hiding tags
 
 Continuing with the same example parser, let's say we decide that the :seq-of-A-or-B tag is also superfluous -- we'd rather not have that extra nesting level appear in the output tree.
 
@@ -202,3 +217,16 @@ Again, the angle brackets come to the rescue.  We simply use the angle brackets 
 	=> (paren-ab-hide-tag "(aba)")
 	[:paren-wrapped "a" "b" "a"]
 
+### No Grammar Left Behind
+
+### Multiple Parses
+
+### PEG extensions
+
+### Error messages
+
+### Alternative parsing modes
+
+#### Partial parsing mode
+
+#### Total parsing mode
