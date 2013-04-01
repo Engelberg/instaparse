@@ -104,7 +104,7 @@ Parsers can also be built from a specification contained in a file, either local
 
 Building the parser from the URI is easy:
 
-	(insta/parse "https://gist.github.com/Engelberg/5283346/raw/77e0b1d0cd7388a7ddf43e307804861f49082eb6/SingleA")
+	(insta/parser "https://gist.github.com/Engelberg/5283346/raw/77e0b1d0cd7388a7ddf43e307804861f49082eb6/SingleA")
 
 This provides a convenienent way to share parser specifications over the Internet.
 
@@ -116,6 +116,9 @@ When you specify a grammar directly in your Clojure code as a double-quoted stri
 
 1. All `"` string and regex delimiters must be turned into `\"` or replaced with a single-quote `'`.
 2. All backslash characters in your strings and regexes `\` should be escaped and turned into `\\`.  (In some cases you can get away with not escaping the backslash, but it is best practice to always do it.)
+
+For example, the above grammar could be written in Clojure as:
+	(insta/parser "S = #'\\s*' 'a' #'\\s*'")
 
 It is unfortunate that this extra level of escaping is necessary.  Many programming languages provide some sort of facility for creating "raw strings" which are taken verbatim (e.g., Python's triple-quoted strings).  I don't understand why Clojure does not support raw strings, but it doesn't.
 
