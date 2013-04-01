@@ -515,12 +515,9 @@
         node-key-parser2 [index parser2]
         listener (NodeListener [index this] tramp)]
     (push-listener tramp node-key-parser1 listener)
-    ; If parser1 already has a result, we won't ever need to bother with parser2
-    (when (not (result-exists? tramp node-key-parser1))
-      (push-negative-listener 
-        tramp       
-        #(when (not (result-exists? tramp node-key-parser1))
-           (push-listener tramp node-key-parser2 listener))))))
+    (push-negative-listener 
+      tramp       
+      #(push-listener tramp node-key-parser2 listener))))
           
 (defn ordered-alt-full-parse
   [this index tramp]
@@ -530,14 +527,9 @@
         node-key-parser2 [index parser2]
         listener (NodeListener [index this] tramp)]
     (push-full-listener tramp node-key-parser1 listener)
-    ; Also kick off a regular parse of parser1 to determine negative lookahead.
-    (push-stack tramp #(-parse parser1 index tramp))
-    ; If parser1 already has a result, we won't ever need to bother with parser2
-    (when (not (result-exists? tramp node-key-parser1))
-      (push-negative-listener 
-        tramp       
-        #(when (not (result-exists? tramp node-key-parser1))
-           (push-full-listener tramp node-key-parser2 listener))))))
+    (push-negative-listener 
+      tramp       
+      #(push-full-listener tramp node-key-parser2 listener))))
   
 (defn opt-parse
   [this index tramp]

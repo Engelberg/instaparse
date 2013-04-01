@@ -75,6 +75,15 @@
      Even = 'aa'*
      Odd = 'a'+"))
 
+(def ord2-test
+  (insta/parser
+    "S = token (<ws> token)*
+     ws = #'\\s+'
+     keyword = 'hello' | 'bye'
+     identifier = #'\\S+'
+     token = keyword / identifier
+     "))
+
 (deftest parsing-tutorial
   (are [x y] (= x y)
     (as-and-bs "aaaaabbbaaaabb")
