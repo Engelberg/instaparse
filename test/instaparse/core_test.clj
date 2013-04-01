@@ -117,10 +117,3 @@
     
     ))
     
-
-
-(defrecord Box [x]
-  clojure.lang.IFn
-  (invoke [this] x))
-
-(def b (Box. 1))
