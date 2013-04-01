@@ -383,7 +383,7 @@ Here is my favorite example of lookahead, a parser that only succeeds on strings
 	
 	=> (abc "aaabbbccc")
 	[:S "a" "a" "a" "b" "b" "b" "c" "c" "c"]
-	
+
 This example succeeds because there are three a's followed by three b's followed by three c's.  Verifying that this parser fails for unequal runs and other mixes of letters is left as an exercise for the reader.
 
 #### Negative lookahead
@@ -408,13 +408,42 @@ So this parser turns around the meaning of the previous example, accepting all s
 One issue with negative lookahead is that it introduces the possibility of paradoxes.  Consider:
 
 	S = !S 'a'
-	
+
 How should this parser behave on an input of "a"?  If S succeeds, it should fail, and if it fails it should succeed.
 
 PEGs simply don't allow this sort of grammar, but the whole spirit of instaparse is to flexibly allow recursive grammars, so I needed to find some way to handle it.  Basically, I've taken steps to make sure that a paradoxical grammar won't cause instaparse to go into an infinite loop.  It will terminate, but I make no promises about what the results will be.  If you specify a paradoxical grammar, it's a garbage-in-garbage-out kind of situation (although to be clear, instaparse won't return complete garbage; it will make some sort of reasonable judgment about how to interpret it).  If you're curious about how instaparse behaves with the above paradoxical example, here it is:
 
 	=> ((insta/parser "S = !S 'a'") "a")
 	[:S "a"]
+
+Negative lookahead, when used properly, is an extremely powerful tool for removing ambiguity from your parser.  To illustrate this, let's take a look at a very common parsing task, which involves tokenizing a string of characters into a combination of identifiers and reserved keywords.  Our first attempt at this ends up ambiguous:
+
+	(def ambiguous-tokenizer
+	  (insta/parser
+	    "sentence = token (<whitespace> token)*
+	     <token> = keyword | identifier
+	     whitespace = #'\\s+'
+	     identifier = #'[a-zA-Z]+'
+	     keyword = 'cond' | 'defn'"))
+
+	=> (insta/parses ambiguous-tokenizer "defn my cond")
+	([:sentence [:identifier "defn"] [:identifier "my"] [:identifier "cond"]]
+	 [:sentence [:keyword "defn"] [:identifier "my"] [:identifier "cond"]]
+	 [:sentence [:identifier "defn"] [:identifier "my"] [:keyword "cond"]]
+	 [:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]])
+
+Each of our keywords not only fits the description of keyword, but also of identifier, so our parser doesn't know which way to parse those words.  Instaparse makes no guarantee about what order it processes alternatives, and in this situation, we see that in fact, the combination we wanted was listed last among the possible parses.  Negative lookahead provides an easy way to remove this ambiguity:
+
+	(def unambiguous-tokenizer
+	  (insta/parser
+	    "sentence = token (<whitespace> token)*
+	     <token> = keyword | !keyword identifier
+	     whitespace = #'\\s+'
+	     identifier = #'[a-zA-Z]+'
+	     keyword = 'cond' | 'defn'"))
+
+	=> (insta/parses unambiguous-tokenizer "defn my cond")
+	([:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]])
 
 
 

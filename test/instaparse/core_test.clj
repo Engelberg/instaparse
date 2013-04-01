@@ -90,18 +90,28 @@
   (insta/parser
     "S = !'ab' ('a' | 'b')+"))
 
-;{:S (cat (look (cat (nt :A) (string "c")))
-;                        (plus (string "a"))
-;                        (nt :B)
-;                        (neg (ord (string "a") (string "b") (string "c"))))
-;                :A (cat (string "a") (opt (nt :A)) (string "b"))
-;                :B (hide-tag (cat (string "b") (opt (nt :B)) (string "c")))
-
 (def abc
   (insta/parser
     "S = &(A 'c') 'a'+ B
      A = 'a' A? 'b'
      <B> = 'b' B? 'c'"))
+
+(def ambiguous-tokenizer
+  (insta/parser
+    "sentence = token (<whitespace> token)*
+     <token> = keyword | identifier
+     whitespace = #'\\s+'
+     identifier = #'[a-zA-Z]+'
+     keyword = 'cond' | 'defn'"))
+
+(def unambiguous-tokenizer
+  (insta/parser
+    "sentence = token (<whitespace> token)*
+     <token> = keyword | !keyword identifier
+     whitespace = #'\\s+'
+     identifier = #'[a-zA-Z]+'
+     keyword = 'cond' | 'defn'"))
+
 
 (def ord-test
   (insta/parser
@@ -190,5 +200,16 @@
     (negative-lookahead-example "bbaaaab")
     [:S "b" "b" "a" "a" "a" "a" "b"]
 
+    (insta/parses ambiguous-tokenizer "defn my cond")
+    ([:sentence
+      [:identifier "defn"]
+      [:identifier "my"]
+      [:identifier "cond"]]
+      [:sentence [:keyword "defn"] [:identifier "my"] [:identifier "cond"]]
+      [:sentence [:identifier "defn"] [:identifier "my"] [:keyword "cond"]]
+      [:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]])
+    
+    (insta/parses unambiguous-tokenizer "defn my cond")
+    ([:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]])
     ))
     
