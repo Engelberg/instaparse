@@ -13,6 +13,17 @@
 (def paren-for-compound 
   (partial paren-for-tags #{:alt :ord :cat}))
 
+(defn regexp-replace
+  "Replaces whitespace characters with escape sequences for better printing" 
+  [s]
+  (case s
+    "\n" "\\n"
+    "\b" "\\b"
+    "\f" "\\f"
+    "\r" "\\r"
+    "\t" "\\t"
+    :else s)) 
+
 (defn parser->str
   "Stringifies a parser built from combinators"
   [{:keys [parser parser1 parser2 parsers tag] :as p}]
@@ -27,9 +38,9 @@
               (paren-for-tags #{:alt} parser2))
     :cat (str/join " " (map (partial paren-for-tags #{:alt :ord}) parsers))
     :string (with-out-str (pr (:string p)))
-    ; Quirkily, Clojure doesn't pr regexps with escaped whitespace characters,
-    ; so we have to go through some extra convolutions to get that behavior
-    :regexp (str "#" (with-out-str (pr (subs (str (:regexp p)) 1))))
+    :regexp (str/replace 
+              (str "#\"" (subs (str (:regexp p)) 1) "\"")
+              #"[\s]" regexp-replace)
     :nt (subs (str (:keyword p)) 1)
     :look (str "&" (paren-for-compound parser))
     :neg (str "!" (paren-for-compound parser))

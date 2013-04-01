@@ -98,18 +98,28 @@ As is the norm in EBNF notation, concatenation has a higher precedence than alte
 
 ### Input from resource file
 
-Parsers can also be built from a specification contained in a file, either locally or on the web.  Building the parser from the URI is easy:
+Parsers can also be built from a specification contained in a file, either locally or on the web.  For example, I stored on github a file with a simple grammar to parse text containing a single 'a' surrounded optionally by whitespace.  The specification in the file looks like this:
 
-	=> (insta/parse "https://gist.github.com/Engelberg/5283346/raw/9b10ae6d5e8450608934fa21839f58fd2cb2e219/SingleA")
-	S = #"\\s*" "a" #"\\s*"
+	S = #"\s*" "a" #"\s*"
+
+Building the parser from the URI is easy:
+
+	(insta/parse "https://gist.github.com/Engelberg/5283346/raw/77e0b1d0cd7388a7ddf43e307804861f49082eb6/SingleA")
+
+This provides a convenienent way to share parser specifications over the Internet.
 
 ### Escape characters
 
-Ultimately, all grammars end in terminal strings or regular expressions that form the tokens of your language.  Since your grammar is expressed as a Clojure, double-quoted string, it is recommended that you use single-quoted strings and/or regular expressions to define your tokens.  Sometimes, however, it will be necessary to use escaped characters in your strings and regexes.  I've tried to make it as intuitive as possible, for example, supporting all the usual escape characters in addition to an escaped `'
+Putting your grammar in a separate resource file has an additional advantage -- it provides a very straightforward "what you see is what you get" view of the grammar.  The only escape characters needed are the ordinary escape characters for strings and regular expressions (additionally, Instaparse also supports `\'` inside single-quoted strings).
 
-1. Add one extra backslash in front of any
+When you specify a grammar directly in your Clojure code as a double-quoted string, extra escape characters may be needed in the strings and regexes of your grammar:
 
+1. All `"` string and regex delimiters must be turned into `\"` or replaced with a single-quote `'`.
+2. All backslash characters in your strings and regexes `\` should be escaped and turned into `\\`.  (In some cases you can get away with not escaping the backslash, but it is best practice to always do it.)
 
+It is unfortunate that this extra level of escaping is necessary.  Many programming languages provide some sort of facility for creating "raw strings" which are taken verbatim (e.g., Python's triple-quoted strings).  I don't understand why Clojure does not support raw strings, but it doesn't.
+
+Fortunately, for many grammars this is a non-issue, and if the escaping does get bad enough to affect readability, there is always the option of storing the grammar in a separate file.
 
 ### Output format
 
