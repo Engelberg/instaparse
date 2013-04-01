@@ -1,6 +1,6 @@
 # Instaparse
 
-> What if context-free grammars were as easy to use as regular expressions?
+> *What if context-free grammars were as easy to use as regular expressions?*
 
 ## Features
 
@@ -81,7 +81,7 @@ When building parsers, you can specify an output format of either :hiccup or :en
 	     A = 'a'+
 	     B = 'b'+"
 	    :output-format :enlive))
-	
+
 	=> (as-and-bs-enlive "aaaaabbbaaaabb")
 	{:tag :S,
 	 :content
@@ -93,3 +93,35 @@ When building parsers, you can specify an output format of either :hiccup or :en
 	   :content
 	   ({:tag :A, :content ("a" "a" "a" "a")}
 	    {:tag :B, :content ("b" "b")})})}
+
+I find the hiccup format to be pleasant and compact, especially when working with the parsed output in the REPL.  The main advantage of the enlive format is that it allows you to use the very powerful enlive library to select and transform nodes in your tree.
+
+If you want to alter instaparse's default output format:
+
+	(insta/set-default-output-format! :enlive)
+
+### Controlling the tree structure
+
+The principles of instaparse's output trees:
+- Every rule equals one level of nesting in the tree.
+- Each level is automatically tagged with the name of the rule.
+
+To better understand this, take a look at these two variations of the same parser we've been discussing:
+
+	(def as-and-bs-variation1
+	  (insta/parser
+	    "S = AB*
+	     AB = 'a'+ 'b'+"))
+	     
+	=> (as-and-bs-variation1 "aaaaabbbaaaabb")
+	[:S
+	 [:AB "a" "a" "a" "a" "a" "b" "b" "b"]
+	 [:AB "a" "a" "a" "a" "b" "b"]]
+	
+	(def as-and-bs-variation2
+	  (insta/parser
+	    "S = ('a'+ 'b'+)*"))
+	
+	=> (as-and-bs-variation2 "aaaaabbbaaaabb")
+	[:S "a" "a" "a" "a" "a" "b" "b" "b" "a" "a" "a" "a" "b" "b"]
+

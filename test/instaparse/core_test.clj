@@ -12,18 +12,29 @@
 (def as-and-bs-alternative
   (insta/parser
     "S:={AB}  ;
-     AB ::= A, B
-     A : 'a' + ;
+     AB ::= (A, B)
+     A : \"a\" + ;
      B ='b' + ;"))
+
 
 (def as-and-bs-enlive
   (insta/parser
     "S = AB*
      AB = A B
      A = 'a'+
-     B = 'b'+"
-    
+     B = 'b'+"    
     :output-format :enlive))
+
+(def as-and-bs-variation1
+  (insta/parser
+    "S = AB*
+     AB = 'a'+ 'b'+"))
+
+(def as-and-bs-variation2
+  (insta/parser
+    "S = ('a'+ 'b'+)*"))
+
+
 
 
 (deftest parsing-tutorial
