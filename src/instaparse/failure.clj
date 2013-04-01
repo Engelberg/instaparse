@@ -47,12 +47,17 @@
           line column)
   (println text)
   (println (marker column))
-  (println "Expected one of:")
-  (doseq [r (distinct (map :expecting
-                           (filter :full reason)))]
-    (pr r)
-    (println " (followed by end-of-string)"))
-  (doseq [r (distinct (map :expecting
-                           (filter (complement :full) reason)))]
-    (print-reason r)))
+  (let [full-reasons (distinct (map :expecting
+                                    (filter :full reason)))
+        partial-reasons (distinct (map :expecting
+                                       (filter (complement :full) reason)))
+        total (+ (count full-reasons) (count partial-reasons))]        
+    (cond (zero? total) nil
+          (= 1 total) (println "Expected:")
+          :else (println "Expected one of:"))
+    (doseq [r full-reasons]
+      (pr r)
+      (println " (followed by end-of-string)"))
+    (doseq [r partial-reasons]
+      (print-reason r))))
   

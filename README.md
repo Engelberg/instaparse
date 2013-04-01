@@ -328,6 +328,42 @@ Here is an example that I think is a tasteful use of regular expressions to spli
 
 ### PEG extensions
 
+PEGs are a popular alternative to context-free grammars.  On the surface, PEGs look very similar to CFGs, but the various choice operators are meant to be interpreted in a strictly greedy, ordered way that removes any ambiguity from the grammar.  Some view this lack of ambiguity as an advantage, but it does limit the expressiveness of PEGs relative to context-free grammars.  Furthermore, PEGs are usually tightly coupled to a specific parsing strategy that forbids left-recursion, further limiting their utility.
+
+To combat that lost expressiveness, PEGs adopted a few operators that actually allow PEGs to do some things that CFGs cannot express.  Even though the underlying paradigm is different, I've swiped these juicy bits from PEGs and included them in instaparse, giving instaparse more expressive power than either traditional PEGs or traditional CFGs.
+
+Here is a table of the PEG operators that have been adapted for use in instaparse; I'll explain them in more detail shortly.
+
+<table>
+<tr><th>Category</th><th>Notations</th><th>Example</th></tr>
+<tr><td>Lookahead</td><td>&</td><td>&A</td></tr>
+<tr><td>Negative lookahead</td><td>!</td><td>!A</td></tr>
+<tr><td>Ordered Choice</td><td>/</td><td>A / B</td></tr>
+</table>
+
+#### Lookahead
+
+The symbol for lookahead is `&`, and is generally used as part of a chain of concatenated parsers.  Lookahead tests whether there are some number of characters that lie ahead in the text stream that satisfy the parser.  It performs this test without actually "consuming" characters.  Only if that lookahead test succeeds do the remaining parsers in the chain execute.
+
+That's a mouthful, and hard to understand in the abstract, so let's look at a concrete example:
+
+	(def lookahead-example
+	  (insta/parser
+	    "S = &'ab' ('a' | 'b')+"))
+
+The `('a' | 'b')+` part should be familiar at this point, and you hopefully recognize this as a parser that ensures the text is a string entirely of a's and b's.  The other part, `&'ab'` is the lookahead.  Before processing the `('a' | 'b')+`, it looks ahead to verify that the `'ab'` parser could hypothetically be satisfied by the upcoming characters.  In other words, it will only accept strings that start off with the characters 'ab'.
+
+=> (lookahead-example "abaaaab")
+[:S "a" "b" "a" "a" "a" "a" "b"]
+=> (lookahead-example "bbaaaab")
+Parse error at line 1, column 1:
+bbaaaab
+^
+Expected:
+"ab"
+
+
+
 ### Error messages
 
 ### Alternative parsing modes
