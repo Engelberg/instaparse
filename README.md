@@ -57,7 +57,7 @@ With instaparse, turning this grammar into an executable parser is as simple as 
 	 [:AB [:A "a" "a" "a" "a" "a"] [:B "b" "b" "b"]]
 	 [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]
 
-### Alternative notations
+### Notation
 
 Instaparse supports most of the common notations for context-free grammars.  For example, a popular alternative to `*` is to surround the term with curly braces `{}`, and a popular alternative to `?` is to surround the term with square brackets `[]`.  Rules can be specified with `=`, `:`, `:=`, or `::=`.  Rules can optionally end with `;`.  Instaparse is very flexible in terms of how you use whitespace (as in Clojure, `,` is treated as whitespace) and you can liberally use parentheses for grouping.  Terminal strings can be enclosed in either single quotes or double quotes (however, since you are writing the grammar specification inside of a Clojure double-quoted strings, any uses of double-quotes would have to be escaped, therefore single-quotes are easier to read). Newlines are optional; you can put the entire grammar on one line if you desire.  In fact, all these notations can be mixed up in the same specification if you want.
 
@@ -91,8 +91,10 @@ Here's a quick guide to the syntax for defining context-free grammars:
 <tr><td>Zero or more</td><td>* {}</td><td>A* {A}</td></tr>
 <tr><td>String terminal</td><td>"" ''</td><td>'a' "a"</td></tr>
 <tr><td>Regex terminal</td><td>#"" #''</td><td>#'a' #"a"</td></tr>
-<tr><td>Epsilon</td><td>Epsilon epsilon EPSILON eps &#949; "" ''</td><td>S = 'a' S | ''</td></tr>
+<tr><td>Epsilon</td><td>Epsilon epsilon EPSILON eps &#949; "" ''</td><td>S = 'a' S | Epsilon</td></tr>
 </table>
+
+As is the norm in ENBF notation, concatenation has a higher precedence than alternation, so in the absence of parentheses, something like `A B | C D` means `(A B) | (C D)`.
 
 ### Output format
 
@@ -177,7 +179,7 @@ Voila! The parens "(" and ")" tokens have been hidden.  Angle brackets are a pow
 
 **** Hiding tags
 
-Continuing with the same example parser, let's say we decide that the :seq-of-A-or-B tag is also superfluous -- we'd rather not have that extra nesting level appear in the output tree.  
+Continuing with the same example parser, let's say we decide that the :seq-of-A-or-B tag is also superfluous -- we'd rather not have that extra nesting level appear in the output tree.
 
 We've already seen that one option is to simply lift the right-hand side of the seq-of-A-or-B rule into the paren-wrapped rule, as follows:
 
