@@ -53,7 +53,16 @@
     "paren-wrapped = <'('> seq-of-A-or-B <')'>
      <seq-of-A-or-B> = ('a' | 'b')*"))
 
-  
+(def plus
+  (insta/parser
+    "plus = plus <'+'> plus | num
+     num = '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'"))
+
+(def plus-e
+  (insta/parser
+    "plus = plus <'+'> plus | num
+     num = '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'"
+    :output-format :enlive))
 
 (deftest parsing-tutorial
   (are [x y] (= x y)
@@ -93,5 +102,25 @@
     
     (paren-ab-hide-tag "(aba)")
     [:paren-wrapped "a" "b" "a"]
+    
+    (insta/transform
+      {:num read-string
+       :plus +}
+      (plus "1+2+3+4+5"))
+    15
+
+    (insta/transform
+      {:num read-string
+      :plus +}
+      (plus-e "1+2+3+4+5"))
+    15    
+    
     ))
     
+
+
+(defrecord Box [x]
+  clojure.lang.IFn
+  (invoke [this] x))
+
+(def b (Box. 1))
