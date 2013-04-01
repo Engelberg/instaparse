@@ -110,7 +110,7 @@ This provides a convenienent way to share parser specifications over the Interne
 
 ### Escape characters
 
-Putting your grammar in a separate resource file has an additional advantage -- it provides a very straightforward "what you see is what you get" view of the grammar.  The only escape characters needed are the ordinary escape characters for strings and regular expressions (additionally, Instaparse also supports `\'` inside single-quoted strings).
+Putting your grammar in a separate resource file has an additional advantage -- it provides a very straightforward "what you see is what you get" view of the grammar.  The only escape characters needed are the ordinary escape characters for strings and regular expressions (additionally, instaparse also supports `\'` inside single-quoted strings).
 
 When you specify a grammar directly in your Clojure code as a double-quoted string, extra escape characters may be needed in the strings and regexes of your grammar:
 
@@ -193,7 +193,7 @@ For this next example, let's consider a parser that looks for a sequence of a's 
 
 It's very common in parsers to have elements that need to be present in the input and parsed, but we'd rather not have them appear in the output.    In the above example, the parens are essential to the grammar yet the tree would be much easier to read and manipulate if we could hide those parens; once the string has been parsed, the parens themselves carry no additional semantic value.
 
-In Instaparse, you can use angle brackets `<>` to hide parsed elements, suppressing them from the tree output.
+In instaparse, you can use angle brackets `<>` to hide parsed elements, suppressing them from the tree output.
 
 	(def paren-ab-hide-parens
 	  (insta/parser
@@ -232,7 +232,63 @@ Again, the angle brackets come to the rescue.  We simply use the angle brackets 
 
 ### No Grammar Left Behind
 
-### Multiple Parses
+One of the things that really sets instaparse apart from other Clojure parser generators is that it can handle any context-free grammar.  For example, some parsers only accept LL(1) grammars, others accept LALR grammars.  Many of the libraries use a recursive-descent strategy that fail for left-recursive grammars.  If you are willing to learn the esoteric restrictions posed by the library, it is usually possible to rework your grammar to fit that mold.  But instaparse lets you write your grammar in whatever way is most natural.
+
+#### Right recursion
+
+No problem:
+
+	=> ((insta/parser "S = 'a' S | Epsilon") "aaaa")
+	[:S "a" [:S "a" [:S "a" [:S "a" [:S]]]]]
+
+Note the use of Epsilon, a common name for the "empty" parser that always succeeds without consuming any characters.  You can also just use an empty string if you prefer.
+
+#### Left recursion
+
+No problem:
+
+	=> ((insta/parser "S = S 'a' | Epsilon") "aaaa")
+	[:S [:S [:S [:S [:S] "a"] "a"] "a"] "a"]
+
+As you can see, either of these recursive parsers will generate a parse tree that is deeply nested.  Unfortunately, Clojure does not handle deeply-nested data structures very well.  If you were to run the above parser on, say, a string of 20,000 a's, instaparse will happily try to generate the corresponding parse tree but then Clojure will stack overflow when it tries to hash the tree.
+
+So, as is often the case in Clojure, use recursion judiciously in a way that will keep your trees a manageable depth.  For the above parser, it is almost certainly better to just do:
+
+	=> ((insta/parser "S = 'a'*") "aaaa")
+	[:S "a" "a" "a" "a"]
+	
+### Ambiguous grammars
+
+	(def ambiguous
+	  (insta/parser
+	    "S = A A
+	     A = 'a'*"))
+
+This grammar is interesting because even though it specifies a repeated run of a's, there are many possible ways the grammar can chop it up.  Our parser will faithfully return one of the possible parses:
+
+	=> (ambiguous "aaaaaa")
+	[:S [:A "a"] [:A "a" "a" "a" "a" "a"]]
+
+However, we can do better.  First, I should point out that `(ambiguous "aaaaaa")` is really just shorthand for `(insta/parse ambiguous "aaaaaa")`.  Parsers are not actually functions, but are records that implement the function interface as a shorthand for calling the insta/parse function.
+
+`insta/parse` is the way you ask a parser to produce a single parse tree.  But there is another library function `insta/parses` that asks the parser to produce a lazy sequence of all parse trees.  Compare:
+	=> (insta/parse ambiguous "aaaaaa")
+	[:S [:A "a"] [:A "a" "a" "a" "a" "a"]]
+
+	=> (insta/parses ambiguous "aaaaaa")
+	([:S [:A "a"] [:A "a" "a" "a" "a" "a"]]
+	 [:S [:A "a" "a" "a" "a" "a" "a"] [:A]]
+	 [:S [:A "a" "a"] [:A "a" "a" "a" "a"]]
+	 [:S [:A "a" "a" "a"] [:A "a" "a" "a"]]
+	 [:S [:A "a" "a" "a" "a"] [:A "a" "a"]]
+	 [:S [:A "a" "a" "a" "a" "a"] [:A "a"]]
+	 [:S [:A] [:A "a" "a" "a" "a" "a" "a"]])
+
+You may wonder, why is this useful?  Two reasons:
+1. Sometimes it is difficult to remove ambiguity from a grammar, but the ambiguity doesn't really matter -- any parse tree will do.  In these situations, instaparse's ability to work with ambiguous grammars can be quite handy.
+2. Instaparse's ability to generate a sequence of all parses provides a powerful tool for debugging and thus *removing* ambiguity from an unintentionally ambiguous grammar.  It turns out that when designing a context-free grammar, it's all too easy to accidentally introduce some unintentional ambiguity.  Other parser tools often report ambiguities as cryptic "shift-reduce" messages, if at all.  It's rather empowering to see the precise parse that instaparse finds when multiple parses are possible.
+
+I generally test my parsers using the `insta/parses` function so I can immediately spot any ambiguities I've inadvertently introduced.  When I'm confident the parser is not ambiguous, I switch to `insta/parse` or just call the parser as a function.
 
 ### PEG extensions
 
@@ -243,3 +299,9 @@ Again, the angle brackets come to the rescue.  We simply use the angle brackets 
 #### Partial parsing mode
 
 #### Total parsing mode
+
+## Reference
+
+## Special Thanks
+
+## Practitioner's notes

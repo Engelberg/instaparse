@@ -205,7 +205,8 @@
     (:string :regexp :epsilon) []
     (:opt :plus :star :look :neg) (recur (:parser parser))
     (:alt :cat) (mapcat seq-nt (:parsers parser))
-    :ord (mapcat seq-nt (juxt [:parser1 :parser2] parser))))
+    :ord (mapcat seq-nt 
+                 [(:parser1 parser) (:parser2 parser)])))                 
     
 (defn check-grammar
   "Throw error if grammar uses any invalid non-terminals in its productions"

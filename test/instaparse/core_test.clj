@@ -64,6 +64,17 @@
      num = '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'"
     :output-format :enlive))
 
+(def ambiguous
+  (insta/parser
+    "S = A A
+     A = 'a'*"))
+
+(def ord-test
+  (insta/parser
+    "S = Even / Odd
+     Even = 'aa'*
+     Odd = 'a'+"))
+
 (deftest parsing-tutorial
   (are [x y] (= x y)
     (as-and-bs "aaaaabbbaaaabb")
@@ -114,6 +125,21 @@
       :plus +}
       (plus-e "1+2+3+4+5"))
     15    
+    
+    ((insta/parser "S = 'a' S | '' ") "aaaa")
+    [:S "a" [:S "a" [:S "a" [:S "a" [:S]]]]]
+    
+    ((insta/parser "S = S 'a' | Epsilon") "aaaa")
+    [:S [:S [:S [:S [:S] "a"] "a"] "a"] "a"]
+    
+    (set (insta/parses ambiguous "aaaaaa"))
+    (set ([:S [:A "a"] [:A "a" "a" "a" "a" "a"]]
+           [:S [:A "a" "a" "a" "a" "a" "a"] [:A]]
+           [:S [:A "a" "a"] [:A "a" "a" "a" "a"]]
+           [:S [:A "a" "a" "a"] [:A "a" "a" "a"]]
+           [:S [:A "a" "a" "a" "a"] [:A "a" "a"]]
+           [:S [:A "a" "a" "a" "a" "a"] [:A "a"]]
+           [:S [:A] [:A "a" "a" "a" "a" "a" "a"]]))
     
     ))
     
