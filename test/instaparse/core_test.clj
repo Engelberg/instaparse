@@ -84,6 +84,13 @@
      token = keyword / identifier
      "))
 
+(def eos
+  (insta/parser
+    "S = Even | Odd
+     eos = !#'.'
+     Even = 'aa'*
+     Odd = !(Even eos) 'a'+"))
+
 (deftest parsing-tutorial
   (are [x y] (= x y)
     (as-and-bs "aaaaabbbaaaabb")
