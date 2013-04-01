@@ -311,7 +311,7 @@ To better understand this point, contrast the above parser with this one:
 
 In this parser, the * is *inside* the regular expression, which means that it follows greedy regular expression semantics.  Therefore, the first A eats all the a's it can, leaving no a's for the second A.
 
-For this reason, it is wise to use regular expressions judiciously, mainly to express the patterns of your tokens, and leave the overall task of parsing to instaparse.
+For this reason, it is wise to use regular expressions judiciously, mainly to express the patterns of your tokens, and leave the overall task of parsing to instaparse.  Regular expressions can often be tortured and abused into serving as a crude parser, but don't do it!  There's no need; with instaparse, you now have an equally convenient but more expressive tool to bring to bear on parsing problems.
 
 Here is an example that I think is a tasteful use of regular expressions to split a sentence on whitespaces, categorizing the tokens as words or numbers:
 
