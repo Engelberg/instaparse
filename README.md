@@ -116,9 +116,10 @@ When you specify a grammar directly in your Clojure code as a double-quoted stri
 
 1. All `"` string and regex delimiters must be turned into `\"` or replaced with a single-quote `'`.
 
-2. All backslash characters in your strings and regexes `\` should be escaped and turned into `\\`.  (In some cases you can get away with not escaping the backslash, but it is best practice to always do it.)
+2. All backslash characters in your strings and regexes `\` should be escaped and turned into `\\`.  (In some cases you can get away with not escaping the backslash, but it is best practice to be consistent and always do it.)
 
 For example, the above grammar could be written in Clojure as:
+
 	(insta/parser "S = #'\\s*' 'a' #'\\s*'")
 
 It is unfortunate that this extra level of escaping is necessary.  Many programming languages provide some sort of facility for creating "raw strings" which are taken verbatim (e.g., Python's triple-quoted strings).  I don't understand why Clojure does not support raw strings, but it doesn't.
