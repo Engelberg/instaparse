@@ -186,7 +186,7 @@
     :alt (apply alt (map build-rule (contents tree)))
     :ord (apply ord (map build-rule (contents tree)))
     :paren (recur (content tree))
-    :hide (hide (nt (content tree)))
+    :hide (hide (build-rule (content tree)))
     :cat (apply cat (map build-rule (contents tree)))
     :string (string (process-string (content tree)))
     :regexp (regexp (process-regexp (content tree)))
