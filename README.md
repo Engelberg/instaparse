@@ -115,6 +115,7 @@ Putting your grammar in a separate resource file has an additional advantage -- 
 When you specify a grammar directly in your Clojure code as a double-quoted string, extra escape characters may be needed in the strings and regexes of your grammar:
 
 1. All `"` string and regex delimiters must be turned into `\"` or replaced with a single-quote `'`.
+
 2. All backslash characters in your strings and regexes `\` should be escaped and turned into `\\`.  (In some cases you can get away with not escaping the backslash, but it is best practice to always do it.)
 
 For example, the above grammar could be written in Clojure as:
@@ -272,6 +273,7 @@ This grammar is interesting because even though it specifies a repeated run of a
 However, we can do better.  First, I should point out that `(ambiguous "aaaaaa")` is really just shorthand for `(insta/parse ambiguous "aaaaaa")`.  Parsers are not actually functions, but are records that implement the function interface as a shorthand for calling the insta/parse function.
 
 `insta/parse` is the way you ask a parser to produce a single parse tree.  But there is another library function `insta/parses` that asks the parser to produce a lazy sequence of all parse trees.  Compare:
+
 	=> (insta/parse ambiguous "aaaaaa")
 	[:S [:A "a"] [:A "a" "a" "a" "a" "a"]]
 
@@ -285,7 +287,9 @@ However, we can do better.  First, I should point out that `(ambiguous "aaaaaa")
 	 [:S [:A] [:A "a" "a" "a" "a" "a" "a"]])
 
 You may wonder, why is this useful?  Two reasons:
+
 1. Sometimes it is difficult to remove ambiguity from a grammar, but the ambiguity doesn't really matter -- any parse tree will do.  In these situations, instaparse's ability to work with ambiguous grammars can be quite handy.
+
 2. Instaparse's ability to generate a sequence of all parses provides a powerful tool for debugging and thus *removing* ambiguity from an unintentionally ambiguous grammar.  It turns out that when designing a context-free grammar, it's all too easy to accidentally introduce some unintentional ambiguity.  Other parser tools often report ambiguities as cryptic "shift-reduce" messages, if at all.  It's rather empowering to see the precise parse that instaparse finds when multiple parses are possible.
 
 I generally test my parsers using the `insta/parses` function so I can immediately spot any ambiguities I've inadvertently introduced.  When I'm confident the parser is not ambiguous, I switch to `insta/parse` or, equivalently, just call the parser as if it were a function.
