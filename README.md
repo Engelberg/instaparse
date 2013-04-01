@@ -445,7 +445,11 @@ Each of our keywords not only fits the description of keyword, but also of ident
 	=> (insta/parses unambiguous-tokenizer "defn my cond")
 	([:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]])
 
+#### Ordered choice
 
+As I mentioned earlier, PEGs interpretation of `+`, `*`, and `|` are subtly different from the way those symbols are interpreted in CFGs.  `+` and `*` are interpreted greedily, just like regular expressions.  `|` proceeds in a rather strict order, trying the first alternative first, and only proceeding if that one fails.  To remind users that these multiple choices are strictly ordered, PEGs commonly use the forward slash `/` rather than `|`.
+
+Although the overall PEG paradigm of forced order is antithetical to instaparse's flexible parsing strategy, I got to thinking 
 
 ### Error messages
 
