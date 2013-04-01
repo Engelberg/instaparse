@@ -290,6 +290,37 @@ You may wonder, why is this useful?  Two reasons:
 
 I generally test my parsers using the `insta/parses` function so I can immediately spot any ambiguities I've inadvertently introduced.  When I'm confident the parser is not ambiguous, I switch to `insta/parse` or, equivalently, just call the parser as if it were a function.
 
+### Regular expressions: A word of warning
+
+As you can see from the above example, instaparse flexibly interprets * and +, trying all possible numbers of repetitions in order to create a parse tree.  It is easy to become spoiled by this, and then forget that regular expressions have different semantics.  Instaparse's regular expressions are just Clojure/Java regular expressions, which behave in a greedy manner.
+
+To better understand this point, contrast the above parser with this one:
+
+	(def not-ambiguous
+	  (insta/parser
+	    "S = A A
+	     A = #'a*'"))
+
+	=> (insta/parses not-ambiguous "aaaaaa")
+	([:S [:A "aaaaaa"] [:A ""]])
+
+In this parser, the * is *inside* the regular expression, which means that it follows greedy regular expression semantics.  Therefore, the first A eats all the a's it can, leaving no a's for the second A.
+
+For this reason, it is wise to use regular expressions judiciously, mainly to express the patterns of your tokens, and leave the overall task of parsing to instaparse.
+
+Here is an example that I think is a tasteful use of regular expressions to split a sentence on whitespaces, categorizing the tokens as words or numbers:
+
+	(def words-and-numbers
+	  (insta/parser
+	    "sentence = token (<whitespace> token)*
+	     <token> = word | number
+	     whitespace = #'\\s+'
+	     word = #'[a-zA-Z]+'
+	     number = #'[0-9]+'"))
+
+	=> (words-and-numbers "abc 123 def")
+	[:sentence [:word "abc"] [:number "123"] [:word "def"]]
+
 ### PEG extensions
 
 ### Error messages

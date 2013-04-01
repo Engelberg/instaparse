@@ -64,10 +64,23 @@
      num = '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'"
     :output-format :enlive))
 
+(def words-and-numbers
+  (insta/parser
+    "sentence = token (<whitespace> token)*
+     <token> = word | number
+     whitespace = #'\\s+'
+     word = #'[a-zA-Z]+'
+     number = #'[0-9]+'"))
+
 (def ambiguous
   (insta/parser
     "S = A A
      A = 'a'*"))
+
+(def not-ambiguous
+  (insta/parser
+    "S = A A
+     A = #'a*'"))
 
 (def ord-test
   (insta/parser
@@ -141,5 +154,7 @@
            [:S [:A "a" "a" "a" "a" "a"] [:A "a"]]
            [:S [:A] [:A "a" "a" "a" "a" "a" "a"]]))
     
+    (insta/parses not-ambiguous "aaaaaa")
+    ([:S [:A "aaaaaa"] [:A ""]])
     ))
     
