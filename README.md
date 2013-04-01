@@ -162,3 +162,27 @@ In Instaparse, you can use angle brackets `<>` to hide parsed elements, suppress
 Voila! The parens "(" and ")" tokens have been hidden.  Angle brackets are a powerful tool for hiding whitespace and other delimiters from the output.
 
 **** Hiding tags
+
+Continuing with the same example parser, let's say we decide that the :seq-of-A-or-B tag is also superfluous -- we'd rather not have that extra nesting level appear in the output tree.  
+
+We've already seen that one option is to simply lift the right-hand side of the seq-of-A-or-B rule into the paren-wrapped rule, as follows:
+
+	(def paren-ab-manually-flattened
+	  (insta/parser
+	    "paren-wrapped = <'('> ('a'|'b')* <')'>"))
+
+	=> (paren-ab-manually-flattened "(aba)")
+	[:paren-wrapped "a" "b" "a"]
+
+But sometimes, it is ugly or impractical to do this.  It would be nice to have a way to express the concept of "repeated sequence of a's and b's" as a separate rule, without necessarily introducing an additional level of nesting.
+
+Again, the angle brackets come to the rescue.  We simply use the angle brackets to hide the *name* of the rule.  Since each name corresponds to a level of nesting, hiding the name means the parsed contents of that rule will appear in the output tree without the tag and its associated new level of nesting.
+
+	(def paren-ab-hide-tag
+	  (insta/parser
+	    "paren-wrapped = <'('> seq-of-A-or-B <')'>
+	     <seq-of-A-or-B> = ('a' | 'b')*"))
+
+	=> (paren-ab-hide-tag "(aba)")
+	[:paren-wrapped "a" "b" "a"]
+

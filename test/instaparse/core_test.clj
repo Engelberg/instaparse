@@ -43,6 +43,16 @@
   (insta/parser
     "paren-wrapped = <'('> seq-of-A-or-B <')'>
      seq-of-A-or-B = ('a' | 'b')*"))
+
+(def paren-ab-manually-flattened
+  (insta/parser
+    "paren-wrapped = <'('> ('a' | 'b')* <')'>"))
+  
+(def paren-ab-hide-tag
+  (insta/parser
+    "paren-wrapped = <'('> seq-of-A-or-B <')'>
+     <seq-of-A-or-B> = ('a' | 'b')*"))
+
   
 
 (deftest parsing-tutorial
@@ -53,7 +63,7 @@
      [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]
     
     (as-and-bs-enlive "aaaaabbbaaaabb")
-    {:tag :S,
+    '{:tag :S,
      :content
      ({:tag :AB,
        :content
@@ -73,6 +83,15 @@
     [:S "a" "a" "a" "a" "a" "b" "b" "b" "a" "a" "a" "a" "b" "b"]
     
     (paren-ab "(aba)")
-    [:paren-wrapped "(" [:sequence-of-A-or-B "a" "b" "a"] ")"]
+    [:paren-wrapped "(" [:seq-of-A-or-B "a" "b" "a"] ")"]
+    
+    (paren-ab-hide-parens "(aba)")
+    [:paren-wrapped [:seq-of-A-or-B "a" "b" "a"]]
+    
+    (paren-ab-manually-flattened "(aba)")
+    [:paren-wrapped "a" "b" "a"]
+    
+    (paren-ab-hide-tag "(aba)")
+    [:paren-wrapped "a" "b" "a"]
     ))
     
