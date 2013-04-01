@@ -72,6 +72,18 @@
      word = #'[a-zA-Z]+'
      number = #'[0-9]+'"))
 
+;Value   ← [0-9.]+ / '(' Expr ')'
+;Product ← Expr (('*' / '/') Expr)*
+;Sum     ← Expr (('+' / '-') Expr)*
+;Expr    ← Product / Sum / Value
+
+(def arithmetic
+  (insta/parser
+    "expr = product / sum /value
+     value = #'[0-9]'+ | '(' expr ')'
+     sum = expr (('+' | '-') expr)*
+     product = expr (('*' | '/') expr)*"))
+
 (def ambiguous
   (insta/parser
     "S = A A

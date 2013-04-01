@@ -336,6 +336,8 @@ Here is an example that I think is a tasteful use of regular expressions to spli
 
 #### Total parsing mode
 
+## Performance notes
+
 ## Reference
 
 ## Special Thanks
