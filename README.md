@@ -1,6 +1,6 @@
 # Instaparse
 
-> *What if context-free grammars were as easy to use as regular expressions?*
+*What if context-free grammars were as easy to use as regular expressions?*
 
 ## Features
 
@@ -59,7 +59,7 @@ With instaparse, turning this grammar into an executable parser is as simple as 
 
 ### Alternative notations
 
-Instaparse supports most of the common notations for context-free grammars.  For example, a popular alternative to `*` is to surround the term with curly braces `{}`, and a popular alternative to `?` is to surround the term with square brackets `[]`.  Rules can be specified with `=`, `:`, `:=`, or `::=`.  Rules can optionally end with `;`.  Instaparse is very flexible in terms of how you use whitespace (as in Clojure, `,` is treated as whitespace) and you can liberally use parentheses for grouping.  Terminal strings can be enclosed in either single quotes or double quotes (however, since you are writing the grammar specification inside of a Clojure double-quoted strings, any uses of double-quotes would have to be escaped, therefore single-quotes are easier to read). All these notations can be mixed up in the same specification if you want.
+Instaparse supports most of the common notations for context-free grammars.  For example, a popular alternative to `*` is to surround the term with curly braces `{}`, and a popular alternative to `?` is to surround the term with square brackets `[]`.  Rules can be specified with `=`, `:`, `:=`, or `::=`.  Rules can optionally end with `;`.  Instaparse is very flexible in terms of how you use whitespace (as in Clojure, `,` is treated as whitespace) and you can liberally use parentheses for grouping.  Terminal strings can be enclosed in either single quotes or double quotes (however, since you are writing the grammar specification inside of a Clojure double-quoted strings, any uses of double-quotes would have to be escaped, therefore single-quotes are easier to read). Newlines are optional; you can put the entire grammar on one line if you desire.  In fact, all these notations can be mixed up in the same specification if you want.
 
 So here is an equally valid (but messier) way to write out the exact same grammar, just to illustrate the flexibility that you have:
 
@@ -69,6 +69,16 @@ So here is an equally valid (but messier) way to write out the exact same gramma
 	     AB ::= (A, B)
 	     A : \"a\" + ;
 	     B ='b' + ;"))
+
+Note that regardless of the notation you use in your specification, when you evaluate the parser at the REPL, the rules will be pretty-printed:
+
+	=> as-and-bs-alternative
+	S = AB*
+	AB = A B
+	A = "a"+
+	B = "b"+
+
+A table of the supported syntaxes
 
 ### Output format
 
@@ -112,16 +122,43 @@ To better understand this, take a look at these two variations of the same parse
 	  (insta/parser
 	    "S = AB*
 	     AB = 'a'+ 'b'+"))
-	     
+
 	=> (as-and-bs-variation1 "aaaaabbbaaaabb")
 	[:S
 	 [:AB "a" "a" "a" "a" "a" "b" "b" "b"]
 	 [:AB "a" "a" "a" "a" "b" "b"]]
-	
+
 	(def as-and-bs-variation2
 	  (insta/parser
 	    "S = ('a'+ 'b'+)*"))
-	
+
 	=> (as-and-bs-variation2 "aaaaabbbaaaabb")
 	[:S "a" "a" "a" "a" "a" "b" "b" "b" "a" "a" "a" "a" "b" "b"]
 
+**** Hiding content
+
+For this next example, let's consider a parser that looks for a sequence of a's or b's surrounded by parens.
+
+	(def paren-ab
+	  (insta/parser
+	    "paren-wrapped = '(' seq-of-A-or-B ')'
+	     seq-of-A-or-B = ('a' | 'b')*"))
+	
+	=> (paren-ab "(aba)")
+	[:paren-wrapped "(" [:seq-of-A-or-B "a" "b" "a"] ")"]
+
+It's very common in parsers to have elements that need to be present in the input and parsed, but we'd rather not have them appear in the output.    In the above example, the parens are essential to the grammar yet the tree would be much easier to read and manipulate if we could hide those parens; once the string has been parsed, the parens themselves carry no additional semantic value.
+
+In Instaparse, you can use angle brackets `<>` to hide parsed elements, suppressing them from the tree output.
+
+	(def paren-ab-hide-parens
+	  (insta/parser
+	    "paren-wrapped = <'('> seq-of-A-or-B <')'>
+	     seq-of-A-or-B = ('a' | 'b')*"))
+
+	=> (paren-ab-hide-parens "(aba)")
+	[:paren-wrapped [:seq-of-A-or-B "a" "b" "a"]]
+
+Voila! The parens "(" and ")" tokens have been hidden.  Angle brackets are a powerful tool for hiding whitespace and other delimiters from the output.
+
+**** Hiding tags
