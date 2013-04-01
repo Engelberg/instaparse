@@ -259,6 +259,15 @@ So, as is often the case in Clojure, use recursion judiciously in a way that wil
 	=> ((insta/parser "S = 'a'*") "aaaa")
 	[:S "a" "a" "a" "a"]
 	
+#### Infinite loops
+
+If you specify an unterminated recursive grammar, instaparse will handle that gracefully as well and terminate with an error, rather than getting caught in an infinite loop:
+
+=> ((insta/parser "S = S") "a")
+Parse error at line 1, column 1:
+a
+^
+
 ### Ambiguous grammars
 
 	(def ambiguous
@@ -351,16 +360,61 @@ That's a mouthful, and hard to understand in the abstract, so let's look at a co
 	  (insta/parser
 	    "S = &'ab' ('a' | 'b')+"))
 
-The `('a' | 'b')+` part should be familiar at this point, and you hopefully recognize this as a parser that ensures the text is a string entirely of a's and b's.  The other part, `&'ab'` is the lookahead.  Before processing the `('a' | 'b')+`, it looks ahead to verify that the `'ab'` parser could hypothetically be satisfied by the upcoming characters.  In other words, it will only accept strings that start off with the characters 'ab'.
+The `('a' | 'b')+` part should be familiar at this point, and you hopefully recognize this as a parser that ensures the text is a string entirely of a's and b's.  The other part, `&'ab'` is the lookahead.  Notice how the `&` precedes the expression it is operating on.  Before processing the `('a' | 'b')+`, it looks ahead to verify that the `'ab'` parser could hypothetically be satisfied by the upcoming characters.  In other words, it will only accept strings that start off with the characters `ab`.
 
-=> (lookahead-example "abaaaab")
-[:S "a" "b" "a" "a" "a" "a" "b"]
-=> (lookahead-example "bbaaaab")
-Parse error at line 1, column 1:
-bbaaaab
-^
-Expected:
-"ab"
+	=> (lookahead-example "abaaaab")
+	[:S "a" "b" "a" "a" "a" "a" "b"]
+	=> (lookahead-example "bbaaaab")
+	Parse error at line 1, column 1:
+	bbaaaab
+	^
+	Expected:
+	"ab"
+
+If you write something like `&'a'+` with no parens, this will be interpreted as `&('a'+)`.
+
+Here is my favorite example of lookahead, a parser that only succeeds on strings with a run of a's followed by a run of b's followed by a run of c's, where each of those runs must be the same length.  If you've ever taken an automata course, you may remember that there is a very elegant proof that it is impossible to express this set of constraints with a pure context-free grammar.  Well, with lookahead, it *is* possible:
+
+	(def abc
+	  (insta/parser
+	    "S = &(A 'c') 'a'+ B
+	     A = 'a' A? 'b'
+	     <B> = 'b' B? 'c'"))
+	
+	=> (abc "aaabbbccc")
+	[:S "a" "a" "a" "b" "b" "b" "c" "c" "c"]
+	
+This example succeeds because there are three a's followed by three b's followed by three c's.  Verifying that this parser fails for unequal runs and other mixes of letters is left as an exercise for the reader.
+
+#### Negative lookahead
+
+Negative lookahead uses the symbol `!`, and like `&`, it precedes the expression.  It does exactly what you'd expect -- it performs a lookahead and confirms that the parser is *not* satisfied by the upcoming characters in the screen.
+
+	(def negative-lookahead-example
+	  (insta/parser
+	    "S = !'ab' ('a' | 'b')+"))
+
+So this parser turns around the meaning of the previous example, accepting all strings of a's and b's that *don't* start off with `ab`.
+
+	=> (negative-lookahead-example "abaaaab")
+	Parse error at line 1, column 1:
+	abaaaab
+	^
+	Expected:
+	NOT "ab"
+	=> (negative-lookahead-example "bbaaaab")
+	[:S "b" "b" "a" "a" "a" "a" "b"]
+
+One issue with negative lookahead is that it introduces the possibility of paradoxes.  Consider:
+
+	S = !S 'a'
+	
+How should this parser behave on an input of "a"?  If S succeeds, it should fail, and if it fails it should succeed.
+
+PEGs simply don't allow this sort of grammar, but the whole spirit of instaparse is to flexibly allow recursive grammars, so I needed to find some way to handle it.  Basically, I've taken steps to make sure that a paradoxical grammar won't cause instaparse to go into an infinite loop.  It will terminate, but I make no promises about what the results will be.  If you specify a paradoxical grammar, it's a garbage-in-garbage-out kind of situation (although to be clear, instaparse won't return complete garbage; it will make some sort of reasonable judgment about how to interpret it).  If you're curious about how instaparse behaves with the above paradoxical example, here it is:
+
+	=> ((insta/parser "S = !S 'a'") "a")
+	[:S "a"]
 
 
 

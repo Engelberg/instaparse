@@ -86,6 +86,23 @@
   (insta/parser
     "S = &'ab' ('a' | 'b')+"))
 
+(def negative-lookahead-example
+  (insta/parser
+    "S = !'ab' ('a' | 'b')+"))
+
+;{:S (cat (look (cat (nt :A) (string "c")))
+;                        (plus (string "a"))
+;                        (nt :B)
+;                        (neg (ord (string "a") (string "b") (string "c"))))
+;                :A (cat (string "a") (opt (nt :A)) (string "b"))
+;                :B (hide-tag (cat (string "b") (opt (nt :B)) (string "c")))
+
+(def abc
+  (insta/parser
+    "S = &(A 'c') 'a'+ B
+     A = 'a' A? 'b'
+     <B> = 'b' B? 'c'"))
+
 (def ord-test
   (insta/parser
     "S = Even / Odd
@@ -160,5 +177,18 @@
     
     (insta/parses not-ambiguous "aaaaaa")
     ([:S [:A "aaaaaa"] [:A ""]])
+    
+    (lookahead-example "abaaaab")
+    [:S "a" "b" "a" "a" "a" "a" "b"]
+    
+    (insta/failure? (lookahead-example "bbaaaab"))
+    true
+    
+    (insta/failure? (negative-lookahead-example "abaaaab"))
+    true
+    
+    (negative-lookahead-example "bbaaaab")
+    [:S "b" "b" "a" "a" "a" "a" "b"]
+
     ))
     
