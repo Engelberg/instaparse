@@ -334,6 +334,31 @@ Here is an example that I think is a tasteful use of regular expressions to spli
 
 	=> (words-and-numbers "abc 123 def")
 	[:sentence [:word "abc"] [:number "123"] [:word "def"]]
+	
+### Partial parses
+
+By default, instaparse assumes you are looking for a parse tree that covers the entire input string.  However, sometimes it may be useful to look at all the partial parses that satisfy the grammar while consuming some initial portion of the input string.
+
+For this purpose, both `insta/parse` and `insta/parses` take a keyword argument, `:partial` that you simply set to true.
+
+	(def repeated-a
+	  (insta/parser
+	    "S = 'a'+"))
+
+	=> (insta/parses repeated-a "aaaaaa")
+	([:S "a" "a" "a" "a" "a" "a"])
+	=> (insta/parses repeated-a "aaaaaa" :partial true)
+	([:S "a"]
+	 [:S "a" "a"]
+	 [:S "a" "a" "a"]
+	 [:S "a" "a" "a" "a"]
+	 [:S "a" "a" "a" "a" "a"]
+	 [:S "a" "a" "a" "a" "a" "a"])
+
+Of course, using `:partial true` with `insta/parse` means that you'll only get the first parse result found.
+
+	 => (insta/parse repeated-a "aaaaaa" :partial true)
+	[:S "a"]
 
 ### PEG extensions
 
@@ -447,9 +472,34 @@ Each of our keywords not only fits the description of keyword, but also of ident
 
 #### Ordered choice
 
-As I mentioned earlier, PEGs interpretation of `+`, `*`, and `|` are subtly different from the way those symbols are interpreted in CFGs.  `+` and `*` are interpreted greedily, just like regular expressions.  `|` proceeds in a rather strict order, trying the first alternative first, and only proceeding if that one fails.  To remind users that these multiple choices are strictly ordered, PEGs commonly use the forward slash `/` rather than `|`.
+As I mentioned earlier, a PEG's interpretation of `+`, `*`, and `|` are subtly different from the way those symbols are interpreted in CFGs.  `+` and `*` are interpreted greedily, just as they are in regular expressions.  `|` proceeds in a rather strict order, trying the first alternative first, and only proceeding if that one fails.  To remind users that these multiple choices are strictly ordered, PEGs commonly use the forward slash `/` rather than `|`.
 
-Although the overall PEG paradigm of forced order is antithetical to instaparse's flexible parsing strategy, I got to thinking 
+Although the PEG paradigm of forced order is antithetical to instaparse's flexible parsing strategy, I decided to co-opt the `/` notation to express a preference of one alternative over another.
+
+With that in mind, let's look back at the `ambiguous-tokenizer` example from the previous section.  In that example, we found that our desired parse, in which the keywords were classified, ended up at the bottom of the heap:
+
+	=> (insta/parses ambiguous-tokenizer "defn my cond")
+	([:sentence [:identifier "defn"] [:identifier "my"] [:identifier "cond"]]
+	 [:sentence [:keyword "defn"] [:identifier "my"] [:identifier "cond"]]
+	 [:sentence [:identifier "defn"] [:identifier "my"] [:keyword "cond"]]
+	 [:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]])
+	 
+We've already seen one way to remove the ambiguity by using negative lookahead.  But now we have another tool in our toolbox, `/`, which will allow the ambiguity to remain, while bringing the desired parse result to the top of the list.
+
+	(def preferential-tokenizer
+	  (insta/parser
+	    "sentence = token (<whitespace> token)*
+	     <token> = keyword / identifier
+	     whitespace = #'\\s+'
+	     identifier = #'[a-zA-Z]+'
+	     keyword = 'cond' | 'defn'"))
+	
+	=> (insta/parses preferential-tokenizer "defn my cond")
+	([:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]] 
+	 [:sentence [:identifier "defn"] [:identifier "my"] [:keyword "cond"]]
+	 [:sentence [:keyword "defn"] [:identifier "my"] [:identifier "cond"]]
+	 [:sentence [:identifier "defn"] [:identifier "my"] [:identifier "cond"]])
+
 
 ### Error messages
 

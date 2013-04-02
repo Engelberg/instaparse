@@ -82,6 +82,10 @@
     "S = A A
      A = #'a*'"))
 
+(def repeated-a
+  (insta/parser
+    "S = 'a'+"))
+
 (def lookahead-example
   (insta/parser
     "S = &'ab' ('a' | 'b')+"))
@@ -112,6 +116,13 @@
      identifier = #'[a-zA-Z]+'
      keyword = 'cond' | 'defn'"))
 
+(def preferential-tokenizer
+  (insta/parser
+    "sentence = token (<whitespace> token)*
+     <token> = keyword / identifier
+     whitespace = #'\\s+'
+     identifier = #'[a-zA-Z]+'
+     keyword = 'cond' | 'defn'"))
 
 (def ord-test
   (insta/parser
@@ -227,5 +238,18 @@
     
     (insta/parses unambiguous-tokenizer "defn my cond")
     ([:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]])
+    
+    (insta/parses preferential-tokenizer "defn my cond")
+    ([:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]] [:sentence [:identifier "defn"] [:identifier "my"] [:keyword "cond"]] [:sentence [:keyword "defn"] [:identifier "my"] [:identifier "cond"]] [:sentence [:identifier "defn"] [:identifier "my"] [:identifier "cond"]])
+    
+    (insta/parses repeated-a "aaaaaa")
+    ([:S "a" "a" "a" "a" "a" "a"])
+
+    (insta/parse repeated-a "aaaaaa" :partial true)
+    [:S "a"]
+    
+    (insta/parses repeated-a "aaaaaa" :partial true)
+    ([:S "a"] [:S "a" "a"] [:S "a" "a" "a"] [:S "a" "a" "a" "a"] [:S "a" "a" "a" "a" "a"] [:S "a" "a" "a" "a" "a" "a"])
+
     ))
     
