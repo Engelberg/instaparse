@@ -55,6 +55,7 @@ With instaparse, turning this grammar into an executable parser is as simple as 
 	 [:AB [:A "a" "a" "a" "a" "a"] [:B "b" "b" "b"]]
 	 [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]
 
+At this point, if you know EBNF notation for context-free grammars, you probably know enough to dive in and start playing around.  However, instaparse is rich with features, so if you want to know the full scope of what it can do, read on...
 
 ## Tutorial
 
@@ -559,6 +560,11 @@ Note that this kind of total parse result is still considered a "failure", and w
 I find that the total parse mode is the most valuable diagnostic tool when the cause of the error is far away from the point where the parser actually fails.  A typical example might be a grammar where you are looking for phrases delimited by quotes, and the text neglects to include a closing quote mark around some phrase in the middle of the text.  The parser doesn't fail until it hits the end of the text without encountering a closing quote mark.
 
 In such a case, a quick look at the total parse tree will show you the context of the failure, making it easy to spot the location where the run-on phrase began.
+
+### Parsing from another start rule
+
+All keyword arguments can be freely mixed and matched and work with both `insta/parse` and `insta/parses`.
+
 
 ### Transforming the tree
 
