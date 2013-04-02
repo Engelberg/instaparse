@@ -483,7 +483,7 @@ With that in mind, let's look back at the `ambiguous-tokenizer` example from the
 	 [:sentence [:keyword "defn"] [:identifier "my"] [:identifier "cond"]]
 	 [:sentence [:identifier "defn"] [:identifier "my"] [:keyword "cond"]]
 	 [:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]])
-	 
+
 We've already seen one way to remove the ambiguity by using negative lookahead.  But now we have another tool in our toolbox, `/`, which will allow the ambiguity to remain, while bringing the desired parse result to the top of the list.
 
 	(def preferential-tokenizer
@@ -493,13 +493,18 @@ We've already seen one way to remove the ambiguity by using negative lookahead. 
 	     whitespace = #'\\s+'
 	     identifier = #'[a-zA-Z]+'
 	     keyword = 'cond' | 'defn'"))
-	
+
 	=> (insta/parses preferential-tokenizer "defn my cond")
-	([:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]] 
+	([:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]]
 	 [:sentence [:identifier "defn"] [:identifier "my"] [:keyword "cond"]]
 	 [:sentence [:keyword "defn"] [:identifier "my"] [:identifier "cond"]]
 	 [:sentence [:identifier "defn"] [:identifier "my"] [:identifier "cond"]])
 
+The ordered choice operator has its uses, but don't go overboard.  There are two main reasons why it is generally better to use the regular unordered alternation operator.
+
+1. When ordered choice interacts with a complex mix of recursion, other ordered choice operators, and indeterminate operators like `+` and `*`, it can quickly become difficult to reason about how the parsing will actually play out.
+
+2. The next version of instaparse will support multithreading.  In that version, every use of `|` will be an opportunity to exploit parallelism.  On the contrary, uses of `/` will create a bottleneck where options have to be pursued in a specific order.
 
 ### Error messages
 
