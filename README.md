@@ -518,7 +518,7 @@ The ordered choice operator has its uses, but don't go overboard.  There are two
 
 `(insta/get-failure result)` provides a unified way to extract the failure object in both these cases.  If the result is a failure object, then it is directly returned, and if the result is an empty list with the failure attached as metadata, then the failure object is retrieved from the metadata.
 
-### Total parsing mode
+### Total parse mode
 
 Sometimes knowing the point of failure is not enough and you need to know the entire context of the parse tree when it failed.  To help with these sorts of situations, instaparse offers a "total parse" mode inspired by Christophe Grand's parsley parser.  This total parse mode guarantees to parse the entire string; if the parser fails, it completes the parse anyway, embedding the failure point as a node in the parse tree.
 
@@ -562,7 +562,21 @@ In such a case, a quick look at the total parse tree will show you the context o
 
 ### Transforming the tree
 
+### Combinators
+
 ## Performance notes
+
+Some of the parsing libraries out there were written as a learning exercises; for example, writing parsers from monadic combinators is a great way to develop an appreciation for monads.  There's nothing wrong with taking the fruits of a learning exercise and making it available to the public, but there are enough Clojure parser libraries out there that it is getting to be hard to tell the difference between those that are "ready for primetime" and those that aren't.  For example, some of the libraries rely heavily on nested continuations, a strategy that is almost certain to cause a stack overflow on moderately large inputs.  Others rely heavily on memoization, but never bother to clear the cache between inputs, eventually exhausting all available memory if you use the parser repeatedly.
+
+I can't really make any precise performance guarantees -- the flexible, general nature of instaparse means that it is possible to write grammars that behave poorly.  Nevertheless, I want to convey that performance is something I have taken seriously.  I spent countless hours profiling instaparse's behavior on strange grammars and large inputs, using that data to improve performance.  Just as one example, I discovered that for a large class of grammars, the biggest bottleneck was Clojure's hashing strategy, so I implemented a wrapper around Clojure's vectors that use an alternative hashing strategy, successfully reducing running time on many parsers from quadratic to linear.  (A shout-out to Christophe Grand who provided me with valuable guidance on this particular improvement.)
+
+I've also worked to remove "performance surprises".  For example, both left-recursion and right-recursion have sufficiently similar performance that you really don't need to agonize over which one to use -- choose whichever style best fits the problem at hand.
+
+Instaparse is fairly memory-hungry, relying on extensive caching of intermediate results to keep the computational costs reasonable.  In this respect, it is similar to Packrat/PEG parsers and many recursive descent parsers.  Instaparse parsers do not hold onto the memory cache once the parse is complete -- that memory is made available for garbage collection.
+
+If, for some reason, you need to develop a blazingly fast parser that runs in a single linear pass over a file too large to fit into memory, then by all means, go study how to convert grammars into LL(*) gramamrs and use a tool like ANTLR to generate your parser.
+
+On the other hand, if you need to parse some unusual config file your boss just sent you, write down the grammar for the config file in any way that seems reasonable, and then reach for instaparse to turn your grammar into an executable parser.
 
 ## Reference
 
