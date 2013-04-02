@@ -29,11 +29,9 @@ Require instaparse in your namespace header:
 	(ns example.core
 	  (:require [instaparse.core :as insta])
 
-## Tutorial
-
 ### Creating your first parser
 
-Here's a typical example of a context-free grammar one might see in a textbook on automata and/or parsing:
+Here's a typical example of a context-free grammar one might see in a textbook on automata and/or parsing.  It is a common convention in many textbooks to use the capital letter `S` to indicate the starting rule, so for this example, we'll follow that convention:
 
 	S = AB*
 	AB = A B
@@ -56,6 +54,9 @@ With instaparse, turning this grammar into an executable parser is as simple as 
 	[:S
 	 [:AB [:A "a" "a" "a" "a" "a"] [:B "b" "b" "b"]]
 	 [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]
+
+
+## Tutorial
 
 ### Notation
 
@@ -83,6 +84,7 @@ Here's a quick guide to the syntax for defining context-free grammars:
 <table>
 <tr><th>Category</th><th>Notations</th><th>Example</th></tr>
 <tr><td>Rule</td><td>: := ::= =</td><td>S = A</td></tr>
+<tr><td>End of rule</td><td>; (optional)</td>S = A;<td></tr>
 <tr><td>Alternation</td><td>|</td><td>A | B</td></tr>
 <tr><td>Concatenation</td><td>whitespace</td><td>A B</td></tr>
 <tr><td>Grouping</td><td>()</td><td>(A | B) C</td></tr>
@@ -506,9 +508,59 @@ The ordered choice operator has its uses, but don't go overboard.  There are two
 
 2. The next version of instaparse will support multithreading.  In that version, every use of `|` will be an opportunity to exploit parallelism.  On the contrary, uses of `/` will create a bottleneck where options have to be pursued in a specific order.
 
-### Error messages
+### Parse errors
+
+`(insta/parse my-parser "parse this text")` will either return a parse tree or a failure object.  The failure object will pretty-print at the REPL, showing you the furthest point it got in parsing your text, and listing all the possible tokens that would have allowed it to proceed.
+
+`(insta/parses my-parser "parse this text")` will return a sequence of all the parse trees, so in the event that no parse can be found, it will simply return an empty list.  However, the failure object is still there, attached to the empty list as metadata.
+
+`(insta/failure? result)` will detect both these scenarios and return true if the result is either a failure object, or an empty list with a failure object attached as metdata.
+
+`(insta/get-failure result)` provides a unified way to extract the failure object in both these cases.  If the result is a failure object, then it is directly returned, and if the result is an empty list with the failure attached as metadata, then the failure object is retrieved from the metadata.
 
 ### Total parsing mode
+
+Sometimes knowing the point of failure is not enough and you need to know the entire context of the parse tree when it failed.  To help with these sorts of situations, instaparse offers a "total parse" mode inspired by Christophe Grand's parsley parser.  This total parse mode guarantees to parse the entire string; if the parser fails, it completes the parse anyway, embedding the failure point as a node in the parse tree.
+
+To demonstrate, let's revisit the ultra-simple `repeated-a` parser.
+
+	=> repeated-a
+	S = "a"+
+	=> (repeated-a "aaaaaaaa")
+	[:S "a" "a" "a" "a" "a" "a" "a" "a"]
+
+On a string with a valid parse, the total parse mode performs identically:
+
+	=> (repeated-a "aaaaaaaa" :total true)
+	[:S "a" "a" "a" "a" "a" "a" "a" "a"]
+
+On a failure, note the difference:
+
+	=> (repeated-a "aaaabaaa")
+	Parse error at line 1, column 5:
+	aaaabaaa
+	    ^
+	Expected:
+	"a"
+	=> (repeated-a "aaaabaaa" :total true)
+	[:S "a" "a" "a" "a" [:failure "baaa"]]
+
+Note that this kind of total parse result is still considered a "failure", and we can test for that and retrieve the failure object using `insta/failure?` and `insta/get-failure`, respectively.
+
+	=> (insta/failure? (repeated-a "aaaabaaa" :total true))
+	true
+	=> (insta/get-failure (repeated-a "aaaabaaa" :total true))
+	Parse error at line 1, column 5:
+	aaaabaaa
+	    ^
+	Expected:
+	"a"
+
+I find that the total parse mode is the most valuable diagnostic tool when the cause of the error is far away from the point where the parser actually fails.  A typical example might be a grammar where you are looking for phrases delimited by quotes, and the text neglects to include a closing quote mark around some phrase in the middle of the text.  The parser doesn't fail until it hits the end of the text without encountering a closing quote mark.
+
+In such a case, a quick look at the total parse tree will show you the context of the failure, making it easy to spot the location where the run-on phrase began.
+
+### Transforming the tree
 
 ## Performance notes
 

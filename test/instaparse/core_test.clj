@@ -139,7 +139,7 @@
      token = keyword / identifier
      "))
 
-(def eos
+(def even-odd
   (insta/parser
     "S = Even | Odd
      eos = !#'.'
@@ -204,7 +204,7 @@
     [:S [:S [:S [:S [:S] "a"] "a"] "a"] "a"]
     
     (set (insta/parses ambiguous "aaaaaa"))
-    (set ([:S [:A "a"] [:A "a" "a" "a" "a" "a"]]
+    (set '([:S [:A "a"] [:A "a" "a" "a" "a" "a"]]
            [:S [:A "a" "a" "a" "a" "a" "a"] [:A]]
            [:S [:A "a" "a"] [:A "a" "a" "a" "a"]]
            [:S [:A "a" "a" "a"] [:A "a" "a" "a"]]
@@ -213,7 +213,7 @@
            [:S [:A] [:A "a" "a" "a" "a" "a" "a"]]))
     
     (insta/parses not-ambiguous "aaaaaa")
-    ([:S [:A "aaaaaa"] [:A ""]])
+    '([:S [:A "aaaaaa"] [:A ""]])
     
     (lookahead-example "abaaaab")
     [:S "a" "b" "a" "a" "a" "a" "b"]
@@ -228,7 +228,7 @@
     [:S "b" "b" "a" "a" "a" "a" "b"]
 
     (insta/parses ambiguous-tokenizer "defn my cond")
-    ([:sentence
+    '([:sentence
       [:identifier "defn"]
       [:identifier "my"]
       [:identifier "cond"]]
@@ -237,19 +237,19 @@
       [:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]])
     
     (insta/parses unambiguous-tokenizer "defn my cond")
-    ([:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]])
+    '([:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]])
     
     (insta/parses preferential-tokenizer "defn my cond")
-    ([:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]] [:sentence [:identifier "defn"] [:identifier "my"] [:keyword "cond"]] [:sentence [:keyword "defn"] [:identifier "my"] [:identifier "cond"]] [:sentence [:identifier "defn"] [:identifier "my"] [:identifier "cond"]])
+    '([:sentence [:keyword "defn"] [:identifier "my"] [:keyword "cond"]] [:sentence [:identifier "defn"] [:identifier "my"] [:keyword "cond"]] [:sentence [:keyword "defn"] [:identifier "my"] [:identifier "cond"]] [:sentence [:identifier "defn"] [:identifier "my"] [:identifier "cond"]])
     
     (insta/parses repeated-a "aaaaaa")
-    ([:S "a" "a" "a" "a" "a" "a"])
+    '([:S "a" "a" "a" "a" "a" "a"])
 
     (insta/parse repeated-a "aaaaaa" :partial true)
     [:S "a"]
     
     (insta/parses repeated-a "aaaaaa" :partial true)
-    ([:S "a"] [:S "a" "a"] [:S "a" "a" "a"] [:S "a" "a" "a" "a"] [:S "a" "a" "a" "a" "a"] [:S "a" "a" "a" "a" "a" "a"])
+    '([:S "a"] [:S "a" "a"] [:S "a" "a" "a"] [:S "a" "a" "a" "a"] [:S "a" "a" "a" "a" "a"] [:S "a" "a" "a" "a" "a" "a"])
 
     ))
     
