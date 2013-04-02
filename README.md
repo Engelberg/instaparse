@@ -334,7 +334,7 @@ Here is an example that I think is a tasteful use of regular expressions to spli
 
 	=> (words-and-numbers "abc 123 def")
 	[:sentence [:word "abc"] [:number "123"] [:word "def"]]
-	
+
 ### Partial parses
 
 By default, instaparse assumes you are looking for a parse tree that covers the entire input string.  However, sometimes it may be useful to look at all the partial parses that satisfy the grammar while consuming some initial portion of the input string.
@@ -503,11 +503,7 @@ We've already seen one way to remove the ambiguity by using negative lookahead. 
 
 ### Error messages
 
-### Alternative parsing modes
-
-#### Partial parsing mode
-
-#### Total parsing mode
+### Total parsing mode
 
 ## Performance notes
 

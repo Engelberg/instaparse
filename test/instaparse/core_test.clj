@@ -68,7 +68,7 @@
   (insta/parser
     "sentence = token (<whitespace> token)*
      <token> = word | number
-     whitespace = #'\\s+'
+     whitespace = #\\s+'
      word = #'[a-zA-Z]+'
      number = #'[0-9]+'"))
 

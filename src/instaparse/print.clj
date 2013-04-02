@@ -22,7 +22,12 @@
     "\f" "\\f"
     "\r" "\\r"
     "\t" "\\t"
-    :else s)) 
+    s)) 
+
+(defn regexp->str [r]
+  (str/replace 
+    (str "#\"" (subs (str r) 1) "\"")
+    #"[\s]" regexp-replace))
 
 (defn parser->str
   "Stringifies a parser built from combinators"
@@ -38,9 +43,7 @@
               (paren-for-tags #{:alt} parser2))
     :cat (str/join " " (map (partial paren-for-tags #{:alt :ord}) parsers))
     :string (with-out-str (pr (:string p)))
-    :regexp (str/replace 
-              (str "#\"" (subs (str (:regexp p)) 1) "\"")
-              #"[\s]" regexp-replace)
+    :regexp (regexp->str (:regexp p))
     :nt (subs (str (:keyword p)) 1)
     :look (str "&" (paren-for-compound parser))
     :neg (str "!" (paren-for-compound parser))

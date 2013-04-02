@@ -1,6 +1,7 @@
 (ns instaparse.failure
-"Facilities for printing and manipulating error messages."
-(:import java.io.BufferedReader java.io.StringReader))
+  "Facilities for printing and manipulating error messages."
+  (:import java.io.BufferedReader java.io.StringReader)
+  (:require [instaparse.print :as print]))
 
 (defn index->line-column
   "Takes an index into text, and determines the line and column info"
@@ -37,6 +38,8 @@
     (:NOT r)
     (do (print "NOT ")    
       (println (:NOT r))),
+    (instance? java.util.regex.Pattern r)
+    (println (print/regexp->str r))
     :else
     (prn r)))
 
