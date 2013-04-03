@@ -1,5 +1,6 @@
 (ns instaparse.core-test
   (:use clojure.test)
+  (:require clojure.edn)
   (:require [instaparse.core :as insta]))
 
 (def as-and-bs
@@ -71,6 +72,21 @@
      whitespace = #'\\s+'
      word = #'[a-zA-Z]+'
      number = #'[0-9]+'"))
+
+(def words-and-numbers-one-character-at-a-time
+  (insta/parser
+    "sentence = token (<whitespace> token)*
+     <token> = word | number
+     whitespace = #'\\s+'
+     word = letter+
+     number = digit+ 
+     <letter> = #'[a-zA-Z]'
+     <digit> = #'[0-9]'"))
+
+(insta/transform 
+  {:word str, 
+   :number (comp clojure.edn/read-string str)}
+  (words-and-numbers-one-character-at-a-time "abc 123 def"))
 
 (def ambiguous
   (insta/parser
@@ -250,6 +266,9 @@
     
     (insta/parses repeated-a "aaaaaa" :partial true)
     '([:S "a"] [:S "a" "a"] [:S "a" "a" "a"] [:S "a" "a" "a" "a"] [:S "a" "a" "a" "a" "a"] [:S "a" "a" "a" "a" "a" "a"])
+
+    (words-and-numbers-one-character-at-a-time "abc 123 def")
+    [:sentence [:word "a" "b" "c"] [:number "1" "2" "3"] [:word "d" "e" "f"]]
 
     ))
     

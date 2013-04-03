@@ -408,7 +408,7 @@ Here is my favorite example of lookahead, a parser that only succeeds on strings
 	    "S = &(A 'c') 'a'+ B
 	     A = 'a' A? 'b'
 	     <B> = 'b' B? 'c'"))
-	
+
 	=> (abc "aaabbbccc")
 	[:S "a" "a" "a" "b" "b" "b" "c" "c" "c"]
 
@@ -563,10 +563,72 @@ In such a case, a quick look at the total parse tree will show you the context o
 
 ### Parsing from another start rule
 
-All keyword arguments can be freely mixed and matched and work with both `insta/parse` and `insta/parses`.
+Another valuable tool for interactive debugging is the ability to test out individual rules.  To demonstrate this, let's look back at our very first parser:
 
+	=> as-and-bs
+	S = AB*
+	AB = A B
+	A = "a"+
+	B = "b"+
+
+As we've seen throughout this tutorial, by default, instaparse assumes that the very first rule is your "starting production", the rule from which parsing initially proceeds.  But we can easily set other rules to be the starting production with the `:start` keyword argument.
+
+	=> (as-and-bs "aaa" :start :A)
+	[:A "a" "a" "a"]
+	=> (as-and-bs "aab" :start :A)
+	Parse error at line 1, column 3:
+	aab
+	  ^
+	Expected:
+	"a"
+	=> (as-and-bs "aabb" :start :AB)
+	[:AB [:A "a" "a"] [:B "b" "b"]]
+	=> (as-and-bs "aabbaabb" :start :AB)
+	Parse error at line 1, column 5:
+	aabbaabb
+	    ^
+	Expected:
+	"b"
+	
+The `insta/parser` function, which builds the parser from the specification, also accepts the :start keyword to set the default start rule to something other than the first rule listed.
+
+#### Review of keyword arguments
+
+At this point, you've seen all the keyword arguments that an instaparse-generated parser accepts, `:start :rule-name`, `:partial true`, and `:total true`. All these keyword arguments can be freely mixed and work with both `insta/parse` and `insta/parses`.
+
+You've also seen both keyword arguments that can be used when building the parser from the specification: `:output-format (:enlive or :hiccup)` and `:start :rule-name` to set a different default start rule than the first rule.
 
 ### Transforming the tree
+
+A parser's job is to turn a string into some kind of tree structure.  What you do with it from there is up to you.  It is delightfully easy to manipulate trees in Clojure.  There are wonderful tools available: enlive, zippers, match, and tree-seq.  But even without those tools, most tree manipulations are straightforward to perform in Clojure with recursion.
+
+Since tree transformations are already so easy to perform in Clojure, there's not much point in building a sophisticated transform library into instaparse.  Nevertheless, I did include one function, `insta/transform`, that addresses the most common transformation needs.
+
+`insta/transform` takes a map from tree tags to transform functions.  A transform function is defined as a function which takes the children of the tree node as inputs and returns a replacement node.  In other words, if you want to turn all nodes in your tree of the form `[:switch x y]` into `[:switch y x]`, then you'd call:
+
+	(insta/transform {:switch (fn [x y] [:switch y x])} 
+		my-tree)
+		
+Let's make this concrete with an example.  So far, throughout the tutorial, we were able to adequately express the tokens of our languages with strings or regular expressions.  But sometimes, regular expressions are not sufficient, and we want to bring the full power of context-free grammars to bear on the problem of processing the individual tokens.  When we do that, we end up with a bunch of individual characters where we really want a string or a number.
+
+To illustrate this, let's revisit the `words-and-numbers` example, but this time, we'll imagine that regular expressions aren't rich enough to specify the constraints on those tokens and we need our grammar to process the string one character at a time:
+
+	(def words-and-numbers-one-character-at-a-time
+	  (insta/parser
+	    "sentence = token (<whitespace> token)*
+	     <token> = word | number
+	     whitespace = #'\\s+'
+	     word = letter+
+	     number = digit+
+	     <letter> = #'[a-zA-Z]'
+	     <digit> = #'[0-9]'"))
+
+	=> (words-and-numbers-one-character-at-a-time "abc 123 def")
+	[:sentence [:word "a" "b" "c"] [:number "1" "2" "3"] [:word "d" "e" "f"]]
+
+We'd really like to simplify these `:word` and `:number` terminals.
+
+
 
 ### Combinators
 
@@ -574,11 +636,11 @@ All keyword arguments can be freely mixed and matched and work with both `insta/
 
 Some of the parsing libraries out there were written as a learning exercise -- monadic parser combinators, for example, are a great way to develop an appreciation for monads.  There's nothing wrong with taking the fruits of a learning exercise and making it available to the public, but there are enough Clojure parser libraries out there that it is getting to be hard to tell the difference between those that are "ready for primetime" and those that aren't.  For example, some of the libraries rely heavily on nested continuations, a strategy that is almost certain to cause a stack overflow on moderately large inputs.  Others rely heavily on memoization, but never bother to clear the cache between inputs, eventually exhausting all available memory if you use the parser repeatedly.
 
-I can't really make any precise performance guarantees -- the flexible, general nature of instaparse means that it is possible to write grammars that behave poorly.  Nevertheless, I want to convey that performance is something I have taken seriously.  I spent countless hours profiling instaparse's behavior on strange grammars and large inputs, using that data to improve performance.  Just as one example, I discovered that for a large class of grammars, the biggest bottleneck was Clojure's hashing strategy, so I implemented a wrapper around Clojure's vectors that use an alternative hashing strategy, successfully reducing running time on many parsers from quadratic to linear.  (A shout-out to Christophe Grand who provided me with valuable guidance on this particular improvement.)
+I'm not going to make any precise performance guarantees -- the flexible, general nature of instaparse means that it is possible to write grammars that behave poorly.  Nevertheless, I want to convey that performance is something I have taken seriously.  I spent countless hours profiling instaparse's behavior on strange grammars and large inputs, using that data to improve performance.  Just as one example, I discovered that for a large class of grammars, the biggest bottleneck was Clojure's hashing strategy, so I implemented a wrapper around Clojure's vectors that use an alternative hashing strategy, successfully reducing running time on many parsers from quadratic to linear.  (A shout-out to Christophe Grand who provided me with valuable guidance on this particular improvement.)
 
 I've also worked to remove "performance surprises".  For example, both left-recursion and right-recursion have sufficiently similar performance that you really don't need to agonize over which one to use -- choose whichever style best fits the problem at hand.  If you express your grammar in a natural way, odds are good that you'll find the performance of the generated parser to be satisfactory.  An additional performance boost in the form of multithreading is slated for the next release.
 
-One performance caveat: instaparse is fairly memory-hungry, relying on extensive caching of intermediate results to keep the computational costs reasonable.  In this respect, it is similar to Packrat/PEG parsers and many recursive descent parsers, where caching is commonplace.  As one would expect, instaparse parsers do not hold onto the memory cache once the parse is complete -- that memory is made available for garbage collection.
+One performance caveat: instaparse is fairly memory-hungry, relying on extensive caching of intermediate results to keep the computational costs reasonable.  This is not unusual -- caching is commonplace in many modern parsers, trading off space for time -- but it's worth bearing in mind.  Packrat/PEG parsers and many recursive descent parsers employ a similar memory-intensive strategy, but there are other alternatives out there if that kind of memory usage is unacceptable.  As one would expect, instaparse parsers do not hold onto the memory cache once the parse is complete; that memory is made available for garbage collection.
 
 ## Reference
 
