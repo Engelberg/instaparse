@@ -626,7 +626,73 @@ To illustrate this, let's revisit the `words-and-numbers` example, but this time
 	=> (words-and-numbers-one-character-at-a-time "abc 123 def")
 	[:sentence [:word "a" "b" "c"] [:number "1" "2" "3"] [:word "d" "e" "f"]]
 
-We'd really like to simplify these `:word` and `:number` terminals.
+We'd really like to simplify these `:word` and `:number` terminals.  So for `:word` nodes, we want to concatenate the strings with clojure's built-in `str` function, and for `:number` nodes, we want to concatenate the strings and convert the string to a number.  We can do this quite simply as follows:
+
+	=> (insta/transform
+	     {:word str,
+	      :number (comp clojure.edn/read-string str)}
+	     (words-and-numbers-one-character-at-a-time "abc 123 def"))
+	[:sentence "abc" 123 "def"]
+
+Or, if you're a fan of threading macros, try this version:
+
+	=> (->> (words-and-numbers-one-character-at-a-time "abc 123 def")
+	     (insta/transform
+	       {:word str,
+	        :number (comp clojure.edn/read-string str)}))
+
+The `insta/transform` function auto-detects whether you are using enlive or hiccup trees, and processes accordingly.
+
+`insta/transform` performs its transformations in a bottom-up manner, which means that taken to an extreme, `insta/transform` can be used not only to rearrange a tree, but to evaluate it.  Including a grammar for infix arithmetic math expressions has become nearly obligatory in parser tutorials, so I might as well use that in order to demonstrate evaluation.  I've leveraged instaparse's principle of "one rule per node type" and the hide notation `<>` to get a nice clean unambiguous tree that includes only the relevant information for evaluation.
+
+	(def arithmetic
+	  (insta/parser
+	    "expr = add-sub
+	     <add-sub> = mul-div | add | sub
+	     add = add-sub <'+'> mul-div
+	     sub = add-sub <'-'> mul-div
+	     <mul-div> = term | mul | div
+	     mul = mul-div <'*'> term
+	     div = mul-div <'/'> term
+	     <term> = number | <'('> expr <')'>
+	     number = #'[0-9]+'"))
+
+	=> (arithmetic "1-2/(3-4)+5*6")
+	[:expr
+	 [:add
+	  [:sub
+	   [:number "1"]
+	   [:div [:number "2"] [:expr [:sub [:number "3"] [:number "4"]]]]]
+	  [:mul [:number "5"] [:number "6"]]]]
+
+With the tree in this shape, it's trivial to evaluate it:
+
+	=> (->> (arithmetic "1-2/(3-4)+5*6")
+	     (insta/transform
+	       {:add +, :sub -, :mul *, :div /,
+	        :number clojure.edn/read-string :expr identity}))
+	33
+
+You might wonder what would happen if we hid the top-level `:expr` tag from the grammar as well.  We can answer this question by just starting the parser from the hidden add-sub tag:
+
+	=> (arithmetic "1-2/(3-4)+5*6" :start :add-sub)
+	([:add
+	  [:sub
+	   [:number "1"]
+	   [:div [:number "2"] [:expr [:sub [:number "3"] [:number "4"]]]]]
+	  [:mul [:number "5"] [:number "6"]]])
+
+Note that when there is no top-level tag, the parser just returns a list of children.  Sometimes that can be useful, but as you can see, with no top-level tag, the output is not really a proper hiccup tree, so the `insta/transform` function cannot be used on it.
+
+	=> (->> (arithmetic "1-2/(3-4)+5*6" :start :add-sub)
+	     (insta/transform
+	       {:add +, :sub -, :mul *, :div /,
+	        :number clojure.edn/read-string :expr identity}))
+	IllegalArgumentException Invalid parse-tree, not recognized
+	as either enlive or hiccup format.
+	instaparse.core/transform (core.clj:167)
+
+### Serialization
 
 
 

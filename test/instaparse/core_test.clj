@@ -83,6 +83,17 @@
      <letter> = #'[a-zA-Z]'
      <digit> = #'[0-9]'"))
 
+(def words-and-numbers-enlive
+  (insta/parser
+    "sentence = token (<whitespace> token)*
+     <token> = word | number
+     whitespace = #'\\s+'
+     word = letter+
+     number = digit+ 
+     <letter> = #'[a-zA-Z]'
+     <digit> = #'[0-9]'"
+    :output-format :enlive))
+
 (insta/transform 
   {:word str, 
    :number (comp clojure.edn/read-string str)}
@@ -161,6 +172,24 @@
      eos = !#'.'
      Even = 'aa'*
      Odd = !(Even eos) 'a'+"))
+
+(def arithmetic
+  (insta/parser
+    "expr = add-sub
+     <add-sub> = mul-div | add | sub
+     add = add-sub <'+'> mul-div
+     sub = add-sub <'-'> mul-div
+     <mul-div> = term | mul | div
+     mul = mul-div <'*'> term
+     div = mul-div <'/'> term     
+     <term> = number | <'('> expr <')'>
+     number = #'[0-9]+'")) 
+
+(->> (arithmetic "1-2/(3-4)+5*6")
+  (insta/transform
+    {:add +, :sub -, :mul *, :div /, 
+     :number clojure.edn/read-string :expr identity}))
+
 
 (deftest parsing-tutorial
   (are [x y] (= x y)
@@ -270,5 +299,25 @@
     (words-and-numbers-one-character-at-a-time "abc 123 def")
     [:sentence [:word "a" "b" "c"] [:number "1" "2" "3"] [:word "d" "e" "f"]]
 
+    (insta/transform 
+     {:word str, 
+      :number (comp clojure.edn/read-string str)}
+     (words-and-numbers-one-character-at-a-time "abc 123 def"))
+    [:sentence "abc" 123 "def"]
+    
+    (->> (words-and-numbers-enlive "abc 123 def")
+      (insta/transform
+        {:word str,
+         :number (comp clojure.edn/read-string str)}))
+    [:sentence "abc" 123 "def"]
+    
+    (arithmetic "1-2/(3-4)+5*6")
+    [:expr
+     [:add
+      [:sub
+       [:number "1"]
+     [:div [:number "2"] [:expr [:sub [:number "3"] [:number "4"]]]]]
+      [:mul [:number "5"] [:number "6"]]]]
+    
     ))
     

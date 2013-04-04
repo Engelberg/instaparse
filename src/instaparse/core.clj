@@ -3,8 +3,8 @@
             [instaparse.cfg :as cfg]
             [instaparse.failure :as fail]
             [instaparse.print :as print]
-            [instaparse.reduction :as red])
-  (:use clojure.tools.trace))
+            [instaparse.reduction :as red]))
+  ;(:use clojure.tools.trace)
 
 (def ^:dynamic *default-output-format* :hiccup)
 (defn set-default-output-format!
@@ -150,7 +150,7 @@
       transform
       (apply transform (map (partial hiccup-transform transform-map)
                             (next parse-tree)))
-      (seq? parse-tree)
+      (and (sequential? parse-tree) (seq parse-tree))
       (into [(first parse-tree)]
             (map (partial hiccup-transform transform-map) 
                  (next parse-tree)))
