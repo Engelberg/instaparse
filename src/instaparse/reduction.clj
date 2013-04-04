@@ -28,23 +28,28 @@
         (flattenable? fs) (concat (nt-flatten fs) (nt-flatten (next s)))
         :else             (lazy-seq (cons fs (nt-flatten (next s))))))))
 
-(defn raw-non-terminal-reduction [& parse-result] 
-  (if parse-result
-    (make-flattenable parse-result)
-    nil)) 
+(defrecord RawNonTerminalReduction []
+  clojure.lang.IFn
+  (applyTo [self parse-result]
+    (if parse-result
+      (make-flattenable parse-result)
+      nil)) )
 
-(defn hiccup-non-terminal-reduction [key] 
-  (fn [& parse-result]
-    ;(cons key parse-result)))
+(def raw-non-terminal-reduction (RawNonTerminalReduction.))
+
+(defrecord HiccupNonTerminalReduction [key]
+  clojure.lang.IFn
+  (applyTo [self parse-result]
     (into [key] parse-result)))
 
-(defn enlive-non-terminal-reduction [key] 
-  (fn [& parse-result]
+(defrecord EnliveNonTerminalReduction [key] 
+  clojure.lang.IFn
+  (applyTo [self parse-result]
     {:tag key, :content parse-result}))
 
 (def ^:constant reduction-types 
-  {:hiccup hiccup-non-terminal-reduction
-   :enlive enlive-non-terminal-reduction})
+  {:hiccup ->HiccupNonTerminalReduction
+   :enlive ->EnliveNonTerminalReduction})
                     
 (def ^:constant node-builders
   ; A map of functions for building a node that only has one item

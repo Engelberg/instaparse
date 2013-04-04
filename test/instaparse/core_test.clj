@@ -309,7 +309,7 @@
       (insta/transform
         {:word str,
          :number (comp clojure.edn/read-string str)}))
-    [:sentence "abc" 123 "def"]
+    {:tag :sentence, :content ["abc" 123 "def"]}
     
     (arithmetic "1-2/(3-4)+5*6")
     [:expr
