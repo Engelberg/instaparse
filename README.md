@@ -679,7 +679,7 @@ You might wonder what would happen if we hid the top-level `:expr` tag from the 
 	([:add
 	  [:sub
 	   [:number "1"]
-	   [:div [:number "2"] [:expr [:sub [:number "3"] [:number "4"]]]]]
+	   [:div [:number "2"] [:sub [:number "3"] [:number "4"]]]]
 	  [:mul [:number "5"] [:number "6"]]])
 
 Note that when there is no top-level tag, the parser just returns a list of children.  Sometimes that can be useful, but as you can see, with no top-level tag, the output is not really a proper hiccup tree, so the `insta/transform` function cannot be used on it.
