@@ -266,10 +266,10 @@ So, as is often the case in Clojure, use recursion judiciously in a way that wil
 
 If you specify an unterminated recursive grammar, instaparse will handle that gracefully as well and terminate with an error, rather than getting caught in an infinite loop:
 
-=> ((insta/parser "S = S") "a")
-Parse error at line 1, column 1:
-a
-^
+	=> ((insta/parser "S = S") "a")
+	Parse error at line 1, column 1:
+	a
+	^
 
 ### Ambiguous grammars
 
