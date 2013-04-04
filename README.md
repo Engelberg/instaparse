@@ -608,7 +608,7 @@ Since tree transformations are already so easy to perform in Clojure, there's no
 
 	(insta/transform {:switch (fn [x y] [:switch y x])} 
 		my-tree)
-		
+
 Let's make this concrete with an example.  So far, throughout the tutorial, we were able to adequately express the tokens of our languages with strings or regular expressions.  But sometimes, regular expressions are not sufficient, and we want to bring the full power of context-free grammars to bear on the problem of processing the individual tokens.  When we do that, we end up with a bunch of individual characters where we really want a string or a number.
 
 To illustrate this, let's revisit the `words-and-numbers` example, but this time, we'll imagine that regular expressions aren't rich enough to specify the constraints on those tokens and we need our grammar to process the string one character at a time:
@@ -692,9 +692,92 @@ Note that when there is no top-level tag, the parser just returns a list of chil
 	as either enlive or hiccup format.
 	instaparse.core/transform (core.clj:167)
 
+### Combinators
+
+I truly believe that ordinary EBNF notation is the clearest, most concise way to express a context-free grammar.  Nevertheless, there may be times where it is useful to build parsers with parser combinators.  If you want to use instaparse in this way, you'll need to use the `instaparse.combinators` namespace.  If you are not interested in the combinator interface, feel free to skip this section -- the combinators provide no additional power or expressiveness over the string representation.
+
+Each construct you've seen from the string specification has a corresponding parser combinator.  Most are straightforward, but the last few lines of the table will require some additional explanation.
+
+<table>
+<tr><th>String syntax</th><th>Combinator</th><th>Mnemonic</th></tr>
+<tr><td>Epsilon</td><td>Epsilon</td><td>Epsilon</td></tr>
+<tr><td>A | B | C</td><td>(alt A B C)</td><td>Alternation</td></tr>
+<tr><td>A B C</td><td>(cat A B C)</td><td>Concatenation</td></tr>
+<tr><td>A?</td><td>(opt A)</td><td>Optional</td></tr>
+<tr><td>A+</td><td>(plus A)</td><td>Plus</td></tr>
+<tr><td>A*</td><td>(star A)</td><td>Star</td></tr>
+<tr><td>A / B / C</td><td>(ord A B C)</td><td>Ordered Choice</td></tr>
+<tr><td>&A</td><td>(look A)</td><td>Lookahead</td></tr>
+<tr><td>!A</td><td>(neg A)</td><td>Negative lookahead</td></tr>
+<tr><td>&lt;A&gt;</td><td>(hide A)</td><td>Hide</td></tr>
+<tr><td>"string"</td><td>(string "string")</td><td>String</td></tr>
+<tr><td>#"regexp"</td><td>(regexp "regexp")</td><td>Regular Expression</td></tr>
+<tr><td>A non-terminal</td><td>(nt :non-terminal)</td><td>Non-terminal</td></tr>
+<tr><td>&lt;S&gt; = ...</td><td>{:S (hide-tag ...)}</td><td>Hide tag</td></tr>
+</table>
+
+When using combinators, instead of building a string, your goal is to build a *grammar map*.  So a spec that looks like this:
+
+	S = ...
+	A = ...
+	B = ...
+
+becomes
+
+	{:S ... combinators describing right-hand-side of S rule ...
+	 :A ... combinators describing right-hand-side of A rule ...
+	 :B ... combinators describing right-hand-side of B rule ...}
+
+You can also build it as a vector:
+
+	[:S ... combinators describing right-hand-side of S rule ...
+	 :A ... combinators describing right-hand-side of A rule ...
+	 :B ... combinators describing right-hand-side of B rule ...]
+
+The main difference is that if you use the map representation, you'll eventually need to specify the start rule, but if you use the vector, instaparse will assume the first rule is the start rule.  Either way, I'm going to refer to the above structure as a *grammar map*.
+
+Most of the combinators, if you consult the above table, are pretty obvious.  Here are a few additional things to keep in mind, and then a concrete example will follow:
+
+1. Literal strings must be wrapped in a call to the `string` combinator.
+
+2. Regular expressions must be wrapped in a call to the `regexp` combinator.
+
+3. Any reference on the right-hand side of a rule to a non-terminal (i.e., a name of another rule) must be wrapped in a call to the `nt` combinator.
+
+4. Angle brackets on the right-hand side of a rule correspond to the `hide` combinator.
+
+5. Even though the notation for hiding a rule name is to put angle brackets around the name (on the left-hand side), this is implemented by wrapping the `hide-tag` combinator around the entire *right-hand side* of the rule expressed as combinators.
+
+Hopefully this will all be clarified with an example.  Do you remember the parser that looks for equal numbers of a's followed by b's followed by c's?
+
+	S = &(A 'c') 'a'+ B
+    A = 'a' A? 'b'
+    <B> = 'b' B? 'c'
+
+Well, here's the corresponding grammar map:
+
+	(use 'instaparse.combinators)
+
+	(def abc-grammar-map
+	  {:S (cat (look (cat (nt :A) (string "c")))
+	           (plus (string "a"))
+	           (nt :B))
+	   :A (cat (string "a") (opt (nt :A)) (string "b"))
+	   :B (hide-tag (cat (string "b") (opt (nt :B)) (string "c")))})
+
+Once you've built your grammar map, you turn it into an executable parser by calling `insta/parser`.  As I mentioned before, if you use map notation, you'll need to specify the start rule.
+
+	(insta/parser abc-grammar-map :start :S)
+
+The result is a parser that is the same as the one built from the string specification.
+
+To my eye, the string is dramatically more readable, but if you need or want to use the combinator approach, it's there for you to utilize.
+
 ### Serialization
 
-### Combinators
+You can serialize an instaparse parser with `print-dup`, and deserialize it with `read`.  (You can't use `clojure.edn/read` because edn does not support regular expressions.)
+
+Typically, it is more convenient to store and/or transmit the string specification used to generate the parser.  The string specification allows the parser to rebuilt with a different output format; `print-dup` captures the state of the parser after the output format has been "baked in".  However, if you have built the parser with the combinators, rather than via a string spec, or if you are storing the parser inside of other Clojure data structures that need to be serialized, then `print-dup` may be your best option.
 
 ## Performance notes
 
@@ -707,6 +790,49 @@ I've also worked to remove "performance surprises".  For example, both left-recu
 One performance caveat: instaparse is fairly memory-hungry, relying on extensive caching of intermediate results to keep the computational costs reasonable.  This is not unusual -- caching is commonplace in many modern parsers, trading off space for time -- but it's worth bearing in mind.  Packrat/PEG parsers and many recursive descent parsers employ a similar memory-intensive strategy, but there are other alternatives out there if that kind of memory usage is unacceptable.  As one would expect, instaparse parsers do not hold onto the memory cache once the parse is complete; that memory is made available for garbage collection.
 
 ## Reference
+
+=> (doc insta/parser)
+-------------------------
+instaparse.core/parser
+([grammar-specification & {:as options}])
+  Takes a string specification of a context-free grammar,
+   or a URI for a text file containing such a specification,
+   or a map of parser combinators and returns a parser for that grammar.
+
+   Optional keyword arguments:
+   :output-format :enlive
+   or
+   :output-format :hiccup
+   
+   :start :keyword (where :keyword is name of starting production rule)
+
+=> (doc insta/parse)
+-------------------------
+instaparse.core/parse
+([parser text & {:as options}])
+  Use parser to parse the text.  Returns first parse tree found
+   that completely parses the text.  If no parse tree is possible, returns
+   a Failure object.
+
+   Optional keyword arguments:
+   :start :keyword  (where :keyword is name of starting production rule)
+   :partial true    (parses that don't consume the whole string are okay)
+   :total true      (if parse fails, embed failure node in tree)
+
+=> (doc insta/parses)
+-------------------------
+instaparse.core/parses
+([parser text & {:as options}])
+  Use parser to parse the text.  Returns lazy seq of all parse trees
+   that completely parse the text.  If no parse tree is possible, returns
+   () with a Failure object attached as metadata.
+
+   Optional keyword arguments:
+   :start :keyword  (where :keyword is name of starting production rule)
+   :partial true    (parses that don't consume the whole string are okay)
+   :total true      (if parse fails, embed failure node in tree)
+
+
 
 ## Special Thanks
 

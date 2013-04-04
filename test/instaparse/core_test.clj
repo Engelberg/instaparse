@@ -1,7 +1,8 @@
 (ns instaparse.core-test
   (:use clojure.test)
   (:require clojure.edn)
-  (:require [instaparse.core :as insta]))
+  (:require [instaparse.core :as insta])
+  (:use instaparse.combinators))
 
 (def as-and-bs
   (insta/parser
@@ -54,12 +55,12 @@
     "paren-wrapped = <'('> seq-of-A-or-B <')'>
      <seq-of-A-or-B> = ('a' | 'b')*"))
 
-(def plus
+(def addition
   (insta/parser
     "plus = plus <'+'> plus | num
      num = '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'"))
 
-(def plus-e
+(def addition-e
   (insta/parser
     "plus = plus <'+'> plus | num
      num = '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'"
@@ -126,6 +127,13 @@
     "S = &(A 'c') 'a'+ B
      A = 'a' A? 'b'
      <B> = 'b' B? 'c'"))
+
+(def abc-grammar-map
+  {:S (cat (look (cat (nt :A) (string "c")))
+           (plus (string "a"))
+           (nt :B))
+   :A (cat (string "a") (opt (nt :A)) (string "b"))
+   :B (hide-tag (cat (string "b") (opt (nt :B)) (string "c")))})
 
 (def ambiguous-tokenizer
   (insta/parser
@@ -233,13 +241,13 @@
     (insta/transform
       {:num read-string
        :plus +}
-      (plus "1+2+3+4+5"))
+      (addition "1+2+3+4+5"))
     15
 
     (insta/transform
       {:num read-string
       :plus +}
-      (plus-e "1+2+3+4+5"))
+      (addition-e "1+2+3+4+5"))
     15    
     
     ((insta/parser "S = 'a' S | '' ") "aaaa")

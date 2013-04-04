@@ -13,7 +13,7 @@
   {:pre [(#{:hiccup :enlive} type)]}
   (alter-var-root #'*default-output-format* (constantly type)))
     
-(defn parse [parser text &{:keys [partial total] :as options}]
+(defn parse 
   "Use parser to parse the text.  Returns first parse tree found
    that completely parses the text.  If no parse tree is possible, returns
    a Failure object.
@@ -22,6 +22,7 @@
    :start :keyword  (where :keyword is name of starting production rule)
    :partial true    (parses that don't consume the whole string are okay)
    :total true      (if parse fails, embed failure node in tree)"
+  [parser text &{:as options}]
   (let [start-production 
         (get options :start (:start-production parser)),
         
@@ -36,7 +37,7 @@
       :else
       (gll/parse (:grammar parser) start-production text partial?))))
   
-(defn parses [parser text &{:keys [partial total] :as options}]
+(defn parses 
   "Use parser to parse the text.  Returns lazy seq of all parse trees
    that completely parse the text.  If no parse tree is possible, returns
    () with a Failure object attached as metadata.
@@ -45,6 +46,7 @@
    :start :keyword  (where :keyword is name of starting production rule)
    :partial true    (parses that don't consume the whole string are okay)
    :total true      (if parse fails, embed failure node in tree)"
+  [parser text &{:as options}]
   (let [start-production 
         (get options :start (:start-production parser)),
         
@@ -159,7 +161,7 @@
 
 (defn transform
   "Takes a transform map and a parse tree.
-   A transform map is mapping from tags to 
+   A transform map is a mapping from tags to 
    functions that take a node's contents and return
    a replacement for the node."
   [transform-map parse-tree]
