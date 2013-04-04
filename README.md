@@ -791,48 +791,75 @@ One performance caveat: instaparse is fairly memory-hungry, relying on extensive
 
 ## Reference
 
-=> (doc insta/parser)
--------------------------
-instaparse.core/parser
-([grammar-specification & {:as options}])
-  Takes a string specification of a context-free grammar,
-   or a URI for a text file containing such a specification,
-   or a map of parser combinators and returns a parser for that grammar.
+All the functionality you've seen in this tutorial is packed into an API of just 7 functions.  Here are the doc strings
 
-   Optional keyword arguments:
-   :output-format :enlive
-   or
-   :output-format :hiccup
-   
-   :start :keyword (where :keyword is name of starting production rule)
-
-=> (doc insta/parse)
--------------------------
-instaparse.core/parse
-([parser text & {:as options}])
-  Use parser to parse the text.  Returns first parse tree found
-   that completely parses the text.  If no parse tree is possible, returns
-   a Failure object.
-
-   Optional keyword arguments:
-   :start :keyword  (where :keyword is name of starting production rule)
-   :partial true    (parses that don't consume the whole string are okay)
-   :total true      (if parse fails, embed failure node in tree)
-
-=> (doc insta/parses)
--------------------------
-instaparse.core/parses
-([parser text & {:as options}])
-  Use parser to parse the text.  Returns lazy seq of all parse trees
-   that completely parse the text.  If no parse tree is possible, returns
-   () with a Failure object attached as metadata.
-
-   Optional keyword arguments:
-   :start :keyword  (where :keyword is name of starting production rule)
-   :partial true    (parses that don't consume the whole string are okay)
-   :total true      (if parse fails, embed failure node in tree)
-
-
+	=> (doc insta/parser)
+	-------------------------
+	instaparse.core/parser
+	([grammar-specification & {:as options}])
+	  Takes a string specification of a context-free grammar,
+	   or a URI for a text file containing such a specification,
+	   or a map of parser combinators and returns a parser for that grammar.
+	
+	   Optional keyword arguments:
+	   :output-format :enlive
+	   or
+	   :output-format :hiccup
+	   
+	   :start :keyword (where :keyword is name of starting production rule)
+	
+	=> (doc insta/parse)
+	-------------------------
+	instaparse.core/parse
+	([parser text & {:as options}])
+	  Use parser to parse the text.  Returns first parse tree found
+	   that completely parses the text.  If no parse tree is possible, returns
+	   a Failure object.
+	
+	   Optional keyword arguments:
+	   :start :keyword  (where :keyword is name of starting production rule)
+	   :partial true    (parses that don't consume the whole string are okay)
+	   :total true      (if parse fails, embed failure node in tree)
+	
+	=> (doc insta/parses)
+	-------------------------
+	instaparse.core/parses
+	([parser text & {:as options}])
+	  Use parser to parse the text.  Returns lazy seq of all parse trees
+	   that completely parse the text.  If no parse tree is possible, returns
+	   () with a Failure object attached as metadata.
+	
+	   Optional keyword arguments:
+	   :start :keyword  (where :keyword is name of starting production rule)
+	   :partial true    (parses that don't consume the whole string are okay)
+	   :total true      (if parse fails, embed failure node in tree)
+	
+	=> (doc insta/set-default-output-format!)
+	-------------------------
+	instaparse.core/set-default-output-format!
+	([type])
+	  Changes the default output format.  Input should be :hiccup or :enlive
+	
+	=> (doc insta/failure?)
+	-------------------------
+	instaparse.core/failure?
+	([result])
+	  Tests whether a parse result is a failure.
+	
+	=> (doc insta/get-failure)
+	-------------------------
+	instaparse.core/get-failure
+	([result])
+	  Extracts failure object from failed parse result.
+	
+	=> (doc insta/transform)
+	-------------------------
+	instaparse.core/transform
+	([transform-map parse-tree])
+	  Takes a transform map and a parse tree.
+	   A transform map is a mapping from tags to
+	   functions that take a node's contents and return
+	   a replacement for the node.
 
 ## Special Thanks
 
