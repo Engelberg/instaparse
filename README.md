@@ -694,8 +694,6 @@ Note that when there is no top-level tag, the parser just returns a list of chil
 
 ### Serialization
 
-
-
 ### Combinators
 
 ## Performance notes

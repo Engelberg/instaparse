@@ -319,5 +319,11 @@
      [:div [:number "2"] [:expr [:sub [:number "3"] [:number "4"]]]]]
       [:mul [:number "5"] [:number "6"]]]]
     
+    (->> (arithmetic "1-2/(3-4)+5*6")
+     (insta/transform
+       {:add +, :sub -, :mul *, :div /, 
+        :number clojure.edn/read-string :expr identity}))
+    33
+    
     ))
     
