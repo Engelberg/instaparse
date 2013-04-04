@@ -654,7 +654,7 @@ The `insta/transform` function auto-detects whether you are using enlive or hicc
 	     <mul-div> = term | mul | div
 	     mul = mul-div <'*'> term
 	     div = mul-div <'/'> term
-	     <term> = number | <'('> expr <')'>
+	     <term> = number | <'('> add-sub <')'>
 	     number = #'[0-9]+'"))
 
 	=> (arithmetic "1-2/(3-4)+5*6")
@@ -662,7 +662,7 @@ The `insta/transform` function auto-detects whether you are using enlive or hicc
 	 [:add
 	  [:sub
 	   [:number "1"]
-	   [:div [:number "2"] [:expr [:sub [:number "3"] [:number "4"]]]]]
+	   [:div [:number "2"] [:sub [:number "3"] [:number "4"]]]]
 	  [:mul [:number "5"] [:number "6"]]]]
 
 With the tree in this shape, it's trivial to evaluate it:
