@@ -163,7 +163,9 @@
   "Takes a transform map and a parse tree.
    A transform map is a mapping from tags to 
    functions that take a node's contents and return
-   a replacement for the node."
+   a replacement for the node, i.e.,
+   {:node-tag (fn [child1 child2 ...] node-replacement),
+    :another-node-tag (fn [child1 child2 ...] node-replacement)}"
   [transform-map parse-tree]
   ; Detect what kind of tree this is
   (cond
