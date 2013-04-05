@@ -84,17 +84,21 @@
    or
    :output-format :hiccup
    
-   :start :keyword (where :keyword is name of starting production rule)"
+   :start :keyword (where :keyword is name of starting production rule)
+
+   :transform transform-map 
+	 (see instaparse.core/transform for transform-map example)"
   [grammar-specification &{:as options}]
   (let [output-format (get options :output-format *default-output-format*)
-        start (get options :start nil)]    
+        start (get options :start nil)
+        transforms (get options :transform {})]    
     (cond
       (string? grammar-specification)
       (let [parser
             (try (let [spec (slurp grammar-specification)]
-                   (cfg/build-parser spec output-format))
+                   (cfg/build-parser spec output-format transforms))
               (catch java.io.FileNotFoundException e 
-                (cfg/build-parser grammar-specification output-format)))]
+                (cfg/build-parser grammar-specification output-format transforms)))]
         (if start (map->Parser (assoc parser :start-production start))
           (map->Parser parser)))
       
@@ -102,6 +106,7 @@
       (let [parser
             (cfg/build-parser-from-combinators grammar-specification
                                                output-format
+                                               transforms
                                                start)]
         (map->Parser parser))
       
@@ -110,6 +115,7 @@
             parser
             (cfg/build-parser-from-combinators (apply hash-map grammar-specification)
                                                output-format
+                                               transforms
                                                start)]
         (map->Parser parser)))))
         
@@ -163,7 +169,9 @@
   "Takes a transform map and a parse tree.
    A transform map is a mapping from tags to 
    functions that take a node's contents and return
-   a replacement for the node."
+   a replacement for the node, i.e.,
+   {:node-tag (fn [child1 child2 ...] node-replacement),
+    :another-node-tag (fn [child1 child2 ...] node-replacement)}"
   [transform-map parse-tree]
   ; Detect what kind of tree this is
   (cond

@@ -589,14 +589,8 @@ As we've seen throughout this tutorial, by default, instaparse assumes that the 
 	    ^
 	Expected:
 	"b"
-	
+
 The `insta/parser` function, which builds the parser from the specification, also accepts the :start keyword to set the default start rule to something other than the first rule listed.
-
-#### Review of keyword arguments
-
-At this point, you've seen all the keyword arguments that an instaparse-generated parser accepts, `:start :rule-name`, `:partial true`, and `:total true`. All these keyword arguments can be freely mixed and work with both `insta/parse` and `insta/parses`.
-
-You've also seen both keyword arguments that can be used when building the parser from the specification: `:output-format (:enlive or :hiccup)` and `:start :rule-name` to set a different default start rule than the first rule.
 
 ### Transforming the tree
 
@@ -692,6 +686,42 @@ Note that when there is no top-level tag, the parser just returns a list of chil
 	as either enlive or hiccup format.
 	instaparse.core/transform (core.clj:167)
 
+#### Baked-in transforms
+
+For optimal flexibility, it is best to separate the process of parsing and transformation.  However, sometimes you know that you're always going to apply the same transform map to the parse output, and psychologically, you consider the transform to be an integral part of the parsing process.
+
+Instaparse allows you to build the transform directly into the parser, simply by using the `:transform` keyword.
+
+For example, the above infix arithmetic parser could be written like this:
+
+	(def arithmetic-parser-with-transform
+	  (insta/parser
+	    "expr = add-sub
+	     <add-sub> = mul-div | add | sub
+	     add = add-sub <'+'> mul-div
+	     sub = add-sub <'-'> mul-div
+	     <mul-div> = term | mul | div
+	     mul = mul-div <'*'> term
+	     div = mul-div <'/'> term
+	     <term> = number | <'('> add-sub <')'>
+	     number = #'[0-9]+'"
+
+	    :transform {:add +, :sub -, :mul *, :div /,
+	                :number clojure.edn/read-string :expr identity}))
+
+	=> (arithmetic-parser-with-transform "1+2*3")
+	7
+
+Use of the `:transform` keyword while building the parser is not just syntactic sugar over the `insta/transform` function.  On the contrary, a "baked-in" transform executes at parse time while the tree is being built, which is usually more efficient.
+
+The main downside of using the `:transform` keyword is that by building transformation functions directly into the parser, the parser is no longer serializable (because aribtrary functions can't be serialized).
+
+#### Review of keyword arguments
+
+At this point, you've seen all the keyword arguments that an instaparse-generated parser accepts, `:start :rule-name`, `:partial true`, and `:total true`. All these keyword arguments can be freely mixed and work with both `insta/parse` and `insta/parses`.
+
+You've also seen all the keyword arguments that can be used when building the parser from the specification: `:output-format (:enlive or :hiccup)`, `:start :rule-name` to set a different default start rule than the first rule, and `:transform transform-map` to embed transforms into the parser.
+
 ### Combinators
 
 I truly believe that ordinary EBNF notation is the clearest, most concise way to express a context-free grammar.  Nevertheless, there may be times where it is useful to build parsers with parser combinators.  If you want to use instaparse in this way, you'll need to use the `instaparse.combinators` namespace.  If you are not interested in the combinator interface, feel free to skip this section -- the combinators provide no additional power or expressiveness over the string representation.
@@ -779,6 +809,8 @@ You can serialize an instaparse parser with `print-dup`, and deserialize it with
 
 Typically, it is more convenient to store and/or transmit the string specification used to generate the parser.  The string specification allows the parser to rebuilt with a different output format; `print-dup` captures the state of the parser after the output format has been "baked in".  However, if you have built the parser with the combinators, rather than via a string spec, or if you are storing the parser inside of other Clojure data structures that need to be serialized, then `print-dup` may be your best option.
 
+Exception: Parsers with baked-in transforms can't be serialized.
+
 ## Performance notes
 
 Some of the parsing libraries out there were written as a learning exercise -- monadic parser combinators, for example, are a great way to develop an appreciation for monads.  There's nothing wrong with taking the fruits of a learning exercise and making it available to the public, but there are enough Clojure parser libraries out there that it is getting to be hard to tell the difference between those that are "ready for primetime" and those that aren't.  For example, some of the libraries rely heavily on nested continuations, a strategy that is almost certain to cause a stack overflow on moderately large inputs.  Others rely heavily on memoization, but never bother to clear the cache between inputs, eventually exhausting all available memory if you use the parser repeatedly.
@@ -800,14 +832,17 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	  Takes a string specification of a context-free grammar,
 	   or a URI for a text file containing such a specification,
 	   or a map of parser combinators and returns a parser for that grammar.
-	
+
 	   Optional keyword arguments:
 	   :output-format :enlive
 	   or
 	   :output-format :hiccup
-	   
+
 	   :start :keyword (where :keyword is name of starting production rule)
-	
+
+	   :transform transform-map
+	   (see instaparse.core/transform for transform-map example)
+
 	=> (doc insta/parse)
 	-------------------------
 	instaparse.core/parse
@@ -815,12 +850,12 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	  Use parser to parse the text.  Returns first parse tree found
 	   that completely parses the text.  If no parse tree is possible, returns
 	   a Failure object.
-	
+
 	   Optional keyword arguments:
 	   :start :keyword  (where :keyword is name of starting production rule)
 	   :partial true    (parses that don't consume the whole string are okay)
 	   :total true      (if parse fails, embed failure node in tree)
-	
+
 	=> (doc insta/parses)
 	-------------------------
 	instaparse.core/parses
@@ -839,7 +874,7 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	instaparse.core/set-default-output-format!
 	([type])
 	  Changes the default output format.  Input should be :hiccup or :enlive
-	
+
 	=> (doc insta/failure?)
 	-------------------------
 	instaparse.core/failure?
@@ -859,7 +894,9 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	  Takes a transform map and a parse tree.
 	   A transform map is a mapping from tags to
 	   functions that take a node's contents and return
-	   a replacement for the node.
+	   a replacement for the node, i.e.,
+	   {:node-tag (fn [child1 child2 ...] node-replacement),
+	    :another-node-tag (fn [child1 child2 ...] node-replacement)}
 
 ## Special Thanks
 
