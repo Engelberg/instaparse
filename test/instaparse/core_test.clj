@@ -358,7 +358,7 @@
     (abc-combinator "aaabbbccc")
     [:S "a" "a" "a" "b" "b" "b" "c" "c" "c"]
     
-    (arithmetic-transform "8*3-1")
+    (arithmetic-parser-with-transform "8*3-1")
     23    
     ))
     
