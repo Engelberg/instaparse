@@ -7,7 +7,7 @@
 Instaparse aims to be the simplest way to build parsers in Clojure.
 
 + Turns *standard EBNF notation* for context-free grammars into an executable parser that takes a string as an input and produces a parse tree for that string.
-+ Works for *any* context-free grammar, including *left-recursive*, *right-recursive*, and *ambiguous* grammars.  Instaparse's unofficial motto: *No Grammar Left Behind*.
++ *No Grammar Left Behind*: Works for *any* context-free grammar, including *left-recursive*, *right-recursive*, and *ambiguous* grammars. 
 + Extends the power of context-free grammars with PEG-like syntax for lookahead and negative lookahead.
 + Supports both of Clojure's most popular tree formats (hiccup and enlive) as an output target.
 + Detailed reporting of parse errors.
@@ -825,7 +825,7 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	   :output-format :hiccup
 	   
 	   :start :keyword (where :keyword is name of starting production rule)
-	
+
 	=> (doc insta/parse)
 	-------------------------
 	instaparse.core/parse
