@@ -685,33 +685,30 @@ With the tree in this shape, it's trivial to evaluate it:
 	        :number clojure.edn/read-string :expr identity}))
 	33
 
-`insta/transform` is designed to play nicely with all the possible outputs of `insta/parse` and `insta/parses`.  So if the input is a sequence of parse trees, it will return a sequence of transformed parse trees.  If the input is a Failure object, then the Failure object is passed through unchanged.  This means it safely composes without taking special cases.  To demonstrate this, let's look at a simpler, but more ambiguous variation on the arithmetic grammar:
+`insta/transform` is designed to play nicely with all the possible outputs of `insta/parse` and `insta/parses`.  So if the input is a sequence of parse trees, it will return a sequence of transformed parse trees.  If the input is a Failure object, then the Failure object is passed through unchanged.  This means you can safely chain a transform to your parser without taking special cases.  To demonstrate this, let's look back at the `ambiguous` parser from earlier in the tutorial:
 
-	(def addition
+	(def ambiguous
 	  (insta/parser
-	    "plus = plus <'+'> plus | num
-	     num = #'[0-9]'+"))
-	
-	=> (insta/parses addition "1+2+3")
-	([:plus
-	  [:plus [:num "1"]]
-	  [:plus [:plus [:num "2"]] [:plus [:num "3"]]]]
+	    "S = A A
+	     A = 'a'*"))
 
-	 [:plus
-	  [:plus [:plus [:num "1"]] [:plus [:num "2"]]]
-	  [:plus [:num "3"]]])
+	=> (->> (insta/parses ambiguous "aaaaaa")
+	     (insta/transform {:A str}))
+	([:S "a" "aaaaa"]
+	 [:S "aaaaaa" ""]
+	 [:S "aa" "aaaa"]
+	 [:S "aaa" "aaa"]
+	 [:S "aaaa" "aa"]
+	 [:S "aaaaa" "a"]
+	 [:S "" "aaaaaa"])
 
-	=> (->> (insta/parses addition "1+2+3")
-	     (insta/transform {:plus +, :num clojure.edn/read-string}))
-	(6 6)
-
-	=> (->> (addition "1+2+")
-	     (insta/transform {:plus +, :num clojure.edn/read-string}))
-	Parse error at line 1, column 5:
-	1+2+
-	    ^
+	 => (->> (ambiguous "aabaaa")
+	     (insta/transform {:A str}))
+	Parse error at line 1, column 3:
+	aabaaa
+	  ^
 	Expected:
-	#"[0-9]"
+	"a"
 
 ### Combinators
 
@@ -841,7 +838,7 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	   :start :keyword  (where :keyword is name of starting production rule)
 	   :partial true    (parses that don't consume the whole string are okay)
 	   :total true      (if parse fails, embed failure node in tree)
-	
+
 	=> (doc insta/parses)
 	-------------------------
 	instaparse.core/parses
