@@ -235,7 +235,7 @@ Again, the angle brackets come to the rescue.  We simply use the angle brackets 
 	=> (paren-ab-hide-tag "(aba)")
 	[:paren-wrapped "a" "b" "a"]
 
-You might wonder what would happen if you hid the top-level root tag as well.  Let's take a look:
+You might wonder what would happen if we hid the root tag as well.  Let's take a look:
 
 	(def paren-ab-hide-both-tags
 	  (insta/parser
@@ -245,7 +245,7 @@ You might wonder what would happen if you hid the top-level root tag as well.  L
 	=> (paren-ab-hide-both-tags "(aba)")
 	("a" "b" "a")
 
-So as you can see, with no root tag the parser just returns a sequence of children.  Sometimes that's what you want, but it's good practice to include a root tag, so the output is a well-formed tree.
+With no root tag, the parser just returns a sequence of children.  So in the above example where *all* the tags are hidden, you just get a sequence of parsed elements.  Sometimes that's what you want, but in general, I recommend that you don't hide the root tag, ensuring the output is a well-formed tree.
 
 ### No Grammar Left Behind
 
@@ -618,7 +618,7 @@ Since tree transformations are already so easy to perform in Clojure, there's no
 
 `insta/transform` takes a map from tree tags to transform functions.  A transform function is defined as a function which takes the children of the tree node as inputs and returns a replacement node.  In other words, if you want to turn all nodes in your tree of the form `[:switch x y]` into `[:switch y x]`, then you'd call:
 
-	(insta/transform {:switch (fn [x y] [:switch y x])} 
+	(insta/transform {:switch (fn [x y] [:switch y x])}
 		my-tree)
 
 Let's make this concrete with an example.  So far, throughout the tutorial, we were able to adequately express the tokens of our languages with strings or regular expressions.  But sometimes, regular expressions are not sufficient, and we want to bring the full power of context-free grammars to bear on the problem of processing the individual tokens.  When we do that, we end up with a bunch of individual characters where we really want a string or a number.
