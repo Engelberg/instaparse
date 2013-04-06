@@ -159,8 +159,11 @@
       :else
       parse-tree)))
 
+(defn- map-preserving-meta [f l]
+  (with-meta (map f l) (meta l)))
+
 (defn transform
-  "Takes a transform map and a parse tree.
+  "Takes a transform map and a parse tree (or seq of parse-trees).
    A transform map is a mapping from tags to 
    functions that take a node's contents and return
    a replacement for the node, i.e.,
@@ -176,6 +179,15 @@
     (vector? parse-tree)
     ; This is a hiccup tree-seq
     (hiccup-transform transform-map parse-tree)
+    
+    (seq? parse-tree)
+    ; This is either a sequence of parse results, or a tree
+    ; with a hidden root tag.
+    (map-preserving-meta (partial transform transform-map) parse-tree)
+    
+    (instance? instaparse.gll.Failure parse-tree)
+    ; pass failures through unchanged
+    parse-tree
     
     :else
     (throw (IllegalArgumentException. "Invalid parse-tree, not recognized as either enlive or hiccup format."))))

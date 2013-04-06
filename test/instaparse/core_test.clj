@@ -55,10 +55,15 @@
     "paren-wrapped = <'('> seq-of-A-or-B <')'>
      <seq-of-A-or-B> = ('a' | 'b')*"))
 
+(def paren-ab-hide-both-tags
+  (insta/parser
+    "<paren-wrapped> = <'('> seq-of-A-or-B <')'>
+     <seq-of-A-or-B> = ('a' | 'b')*"))
+
 (def addition
   (insta/parser
     "plus = plus <'+'> plus | num
-     num = '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'"))
+     num = #'[0-9]'+"))
 
 (def addition-e
   (insta/parser
@@ -193,12 +198,6 @@
      <term> = number | <'('> add-sub <')'>
      number = #'[0-9]+'")) 
 
-(->> (arithmetic "1-2/(3-4)+5*6")
-  (insta/transform
-    {:add +, :sub -, :mul *, :div /, 
-     :number clojure.edn/read-string :expr identity}))
-
-
 (deftest parsing-tutorial
   (are [x y] (= x y)
     (as-and-bs "aaaaabbbaaaabb")
@@ -243,6 +242,12 @@
        :plus +}
       (addition "1+2+3+4+5"))
     15
+    
+    (insta/transform
+      {:num read-string
+       :plus +}
+      (insta/parses addition "1+2+3+4+5"))
+    (repeat 14 15)
 
     (insta/transform
       {:num read-string
@@ -332,6 +337,9 @@
        {:add +, :sub -, :mul *, :div /, 
         :number clojure.edn/read-string :expr identity}))
     33
+    
+    (paren-ab-hide-both-tags "(aba)")
+    '("a" "b" "a")
     
     ))
     

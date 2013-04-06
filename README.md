@@ -22,7 +22,7 @@ Instaparse requires Clojure v1.5.1 or later.  (It may work with earlier versions
 
 Add the following line to your leiningen dependencies:
 
-	[instaparse "0.9.0"]
+	[instaparse "0.9.1"]
 
 Require instaparse in your namespace header:
 
@@ -234,6 +234,18 @@ Again, the angle brackets come to the rescue.  We simply use the angle brackets 
 
 	=> (paren-ab-hide-tag "(aba)")
 	[:paren-wrapped "a" "b" "a"]
+
+You might wonder what would happen if you hid the top-level root tag as well.  Let's take a look:
+
+	(def paren-ab-hide-both-tags
+	  (insta/parser
+	    "<paren-wrapped> = <'('> seq-of-A-or-B <')'>
+	     <seq-of-A-or-B> = ('a' | 'b')*"))
+
+	=> (paren-ab-hide-both-tags "(aba)")
+	("a" "b" "a")
+
+So as you can see, with no root tag the parser just returns a sequence of children.  Sometimes that's what you want, but it's good practice to include a root tag, so the output is a well-formed tree.
 
 ### No Grammar Left Behind
 
@@ -673,24 +685,33 @@ With the tree in this shape, it's trivial to evaluate it:
 	        :number clojure.edn/read-string :expr identity}))
 	33
 
-You might wonder what would happen if we hid the top-level `:expr` tag from the grammar as well.  We can answer this question by just starting the parser from the hidden add-sub tag:
+`insta/transform` is designed to play nicely with all the possible outputs of `insta/parse` and `insta/parses`.  So if the input is a sequence of parse trees, it will return a sequence of transformed parse trees.  If the input is a Failure object, then the Failure object is passed through unchanged.  This means it safely composes without taking special cases.  To demonstrate this, let's look at a simpler, but more ambiguous variation on the arithmetic grammar:
 
-	=> (arithmetic "1-2/(3-4)+5*6" :start :add-sub)
-	([:add
-	  [:sub
-	   [:number "1"]
-	   [:div [:number "2"] [:sub [:number "3"] [:number "4"]]]]
-	  [:mul [:number "5"] [:number "6"]]])
+	(def addition
+	  (insta/parser
+	    "plus = plus <'+'> plus | num
+	     num = #'[0-9]'+"))
+	
+	=> (insta/parses addition "1+2+3")
+	([:plus
+	  [:plus [:num "1"]]
+	  [:plus [:plus [:num "2"]] [:plus [:num "3"]]]]
 
-Note that when there is no top-level tag, the parser just returns a list of children.  Sometimes that can be useful, but as you can see, with no top-level tag, the output is not really a proper hiccup tree, so the `insta/transform` function cannot be used on it.
+	 [:plus
+	  [:plus [:plus [:num "1"]] [:plus [:num "2"]]]
+	  [:plus [:num "3"]]])
 
-	=> (->> (arithmetic "1-2/(3-4)+5*6" :start :add-sub)
-	     (insta/transform
-	       {:add +, :sub -, :mul *, :div /,
-	        :number clojure.edn/read-string :expr identity}))
-	IllegalArgumentException Invalid parse-tree, not recognized
-	as either enlive or hiccup format.
-	instaparse.core/transform (core.clj:167)
+	=> (->> (insta/parses addition "1+2+3")
+	     (insta/transform {:plus +, :num clojure.edn/read-string}))
+	(6 6)
+
+	=> (->> (addition "1+2+")
+	     (insta/transform {:plus +, :num clojure.edn/read-string}))
+	Parse error at line 1, column 5:
+	1+2+
+	    ^
+	Expected:
+	#"[0-9]"
 
 ### Combinators
 
@@ -856,13 +877,13 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	-------------------------
 	instaparse.core/transform
 	([transform-map parse-tree])
-	  Takes a transform map and a parse tree.
+	  "Takes a transform map and a parse tree (or seq of parse-trees).
 	   A transform map is a mapping from tags to
 	   functions that take a node's contents and return
 	   a replacement for the node, i.e.,
 	   {:node-tag (fn [child1 child2 ...] node-replacement),
 	    :another-node-tag (fn [child1 child2 ...] node-replacement)}
-	    
+
 ## Special Thanks
 
 My interest in this project began while watching a video of Matt Might's *Parsing with Derivatives* talk.  That video convinced me that the world would be a better place if building parsers were as easy as working with regular expressions, and that the ability to handle arbitrary, possibly-ambiguous grammars was essential to that goal.
