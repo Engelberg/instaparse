@@ -1,4 +1,4 @@
-(defproject instaparse "0.9.1"
+(defproject instaparse "1.0.0"
   :description "Instaparse: No grammar left behind"
   :url "https://github.com/Engelberg/instaparse"
   :license {:name "Eclipse Public License"
@@ -7,4 +7,6 @@
   :dev-dependencies [[lein-marginalia "0.7.1"]
                      [enlive "1.1.1"]
                      [org.clojure/tools.trace "0.7.5"]
-                     [criterium "0.3.1"]])
+                     [criterium "0.3.1"]]
+  :scm {:name "git"
+        :url "https://github.com/Engelberg/instaparse"})
