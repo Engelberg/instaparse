@@ -883,14 +883,14 @@ All the functionality you've seen in this tutorial is packed into an API of just
 
 ## Special Thanks
 
-My interest in this project began while watching a video of Matt Might's *Parsing with Derivatives* talk.  That video convinced me that the world would be a better place if building parsers were as easy as working with regular expressions, and that the ability to handle arbitrary, possibly-ambiguous grammars was essential to that goal.
+My interest in this project began while watching a video of Matt Might's [*Parsing with Derivatives*](http://www.youtube.com/watch?v=ZzsK8Am6dKU) talk.  That video convinced me that the world would be a better place if building parsers were as easy as working with regular expressions, and that the ability to handle arbitrary, possibly-ambiguous grammars was essential to that goal.
 
-Matt Might has published a paper about a specific approach to achieving that goal, but I had difficulty getting his *Parsing with Derivatives* technique to work in a performant way.
+Matt Might has published a [paper](http://matt.might.net/papers/might2011derivatives.pdf) about a specific approach to achieving that goal, but I had difficulty getting his *Parsing with Derivatives* technique to work in a performant way.
 
-I probably would have given up, but then Danny Yoo released the Ragg parser generator for the Racket language.  The Ragg library was a huge inspiration -- a model for what I wanted instaparse to become.  I asked Danny what technique he used, and he gave me more information about the algorithm he used.  However, he told me that if he were to do it again from scratch, he'd probably choose to use a GLL algorithm by Adrian Johnstone and Elizabeth Scott, and he pointed me to a fantastic article about it by Vegard Øye, posted on Github with source code in Racket.
+I probably would have given up, but then Danny Yoo released the [Ragg parser generator](http://hashcollision.org/ragg/index.html) for the Racket language.  The Ragg library was a huge inspiration -- a model for what I wanted instaparse to become.  I asked Danny what technique he used, and he gave me more information about the algorithm he used.  However, he told me that if he were to do it again from scratch, he'd probably choose to use a [GLL algorithm](http://ldta.info/2009/ldta2009proceedings.pdf) by Adrian Johnstone and Elizabeth Scott, and he pointed me to a fantastic article about it by Vegard Øye, [posted on Github with source code in Racket](https://github.com/epsil/gll).
 
-That article had a link to a paper and Scala code by Daniel Spiewak, which was also extremely helpful.
+That article had a link to a [paper](http://www.cs.uwm.edu/%7Edspiewak/papers/generalized-parser-combinators.pdf) and [Scala code](https://github.com/djspiewak/gll-combinators) by Daniel Spiewak, which was also extremely helpful.
 
 Alex Engelberg coded the first version of instaparse, proving the capabilities of the GLL algorithm.  He encouraged me to take his code and build and document a user-friendly API around it.
 
-I studied a number of other Clojure parser generators to help frame my ideas about what the API should look like.  I communicated with Eric Normand (squarepeg) and Christophe Grand (parsley), both of whom provided useful advice and encouraged me to pursue my vision.
+I studied a number of other Clojure parser generators to help frame my ideas about what the API should look like.  I communicated with Eric Normand ([squarepeg](https://github.com/ericnormand/squarepeg)) and Christophe Grand ([parsley](https://github.com/cgrand/parsley)), both of whom provided useful advice and encouraged me to pursue my vision.
