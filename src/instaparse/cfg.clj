@@ -5,10 +5,10 @@
   (:use [instaparse.gll :only [parse]])
   (:require [clojure.string :as str]))
 
-(def single-quoted-string #"'(?:[^']|(?<=\\)')*'")
-(def single-quoted-regexp #"#'(?:[^']|(?<=\\)')*'")
-(def double-quoted-string #"\"(?:[^\"]|(?<=\\)\")*\"")
-(def double-quoted-regexp #"#\"(?:[^\"]|(?<=\\)\")*\"")
+(def single-quoted-string #"'[^'\\]*(?:\\.[^'\\]*)*'")
+(def single-quoted-regexp #"#'[^'\\]*(?:\\.[^'\\]*)*'")
+(def double-quoted-string #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
+(def double-quoted-regexp #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
 
