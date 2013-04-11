@@ -5,10 +5,10 @@
   (:use [instaparse.gll :only [parse]])
   (:require [clojure.string :as str]))
 
-(def single-quoted-string #"'[^'\\]*(?:\\.[^'\\]*)*'")
-(def single-quoted-regexp #"#'[^'\\]*(?:\\.[^'\\]*)*'")
-(def double-quoted-string #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
-(def double-quoted-regexp #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
+(def single-quoted-string #"'[^'\\]*(?:\\.[^'\\]*)*'(?x) #Single-quoted string")
+(def single-quoted-regexp #"#'[^'\\]*(?:\\.[^'\\]*)*'(?x) #Single-quoted regexp")
+(def double-quoted-string #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"(?x) #Double-quoted string")
+(def double-quoted-regexp #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"(?x) #Double-quoted regexp")
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
 
@@ -17,8 +17,8 @@
     :hiccup    ; use the hiccup output format 
     {:rules (hide-tag (cat opt-whitespace
                            (plus (nt :rule))))
-     :whitespace (regexp "[,\\s]+")
-     :opt-whitespace (regexp "[,\\s]*")
+     :whitespace (regexp "[,\\s]+(?x) #whitespace")
+     :opt-whitespace (regexp "[,\\s]*(?x) #optional whitespace")
      :rule-separator (alt (string ":")
                           (string ":=")
                           (string "::=")
@@ -30,10 +30,10 @@
                 opt-whitespace
                 (nt :alt-or-ord)
                 (hide (alt (nt :opt-whitespace)
-                           (regexp "\\s*[.;]\\s*"))))          
+                           (regexp "\\s*[.;]\\s*(?x) #rule separator"))))          
      :nt (cat
            (neg (nt :epsilon))
-           (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+"))
+           (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+(?x) #Non-terminal"))
           :hide-nt (cat (hide (string "<"))
                         opt-whitespace
                         (nt :nt)
