@@ -4,7 +4,7 @@
 
 ### Enhancements
 
-* Improved error messages
+* Added comments to regexes used by context-free grammar.
 
 ### Bug Fixes
 
