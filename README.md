@@ -95,6 +95,7 @@ Here's a quick guide to the syntax for defining context-free grammars:
 <tr><td>String terminal</td><td>"" ''</td><td>'a' "a"</td></tr>
 <tr><td>Regex terminal</td><td>#"" #''</td><td>#'a' #"a"</td></tr>
 <tr><td>Epsilon</td><td>Epsilon epsilon EPSILON eps &#949; "" ''</td><td>S = 'a' S | Epsilon</td></tr>
+<tr><td>Comment</td><td>(* *)</td><td>(* This is a comment *)</td></tr>
 </table>
 
 As is the norm in EBNF notation, concatenation has a higher precedence than alternation, so in the absence of parentheses, something like `A B | C D` means `(A B) | (C D)`.

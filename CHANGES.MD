@@ -4,6 +4,7 @@
 
 ### Enhancements
 
+* Comments now supported in CFGs.  Use (* and *) notation.
 * Added comments to regexes used by context-free grammar.
 
 ### Bug Fixes

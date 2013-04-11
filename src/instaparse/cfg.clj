@@ -9,6 +9,8 @@
 (def single-quoted-regexp #"#'[^'\\]*(?:\\.[^'\\]*)*'(?x) #Single-quoted regexp")
 (def double-quoted-string #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"(?x) #Double-quoted string")
 (def double-quoted-regexp #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"(?x) #Double-quoted regexp")
+(def inside-comment #"(?s)(?:(?!(?:\(\*|\*\))).)*(?x) #Comment text")
+(def ws "[,\\s]*(?x) #optional whitespace")
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
 
@@ -17,8 +19,13 @@
     :hiccup    ; use the hiccup output format 
     {:rules (hide-tag (cat opt-whitespace
                            (plus (nt :rule))))
-     :whitespace (regexp "[,\\s]+(?x) #whitespace")
-     :opt-whitespace (regexp "[,\\s]*(?x) #optional whitespace")
+     :comment (cat (string "(*") (nt :inside-comment) (string "*)"))
+     :inside-comment (cat (regexp inside-comment)
+                          (star (cat (nt :comment)
+                                     (regexp inside-comment))))
+     :opt-whitespace (cat (regexp ws)
+                          (star (cat (nt :comment)
+                                     (regexp ws))))
      :rule-separator (alt (string ":")
                           (string ":=")
                           (string "::=")

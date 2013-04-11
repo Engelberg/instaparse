@@ -1,5 +1,5 @@
 (ns instaparse.specs
-  (:use clojure.test))
+  (:use clojure.test instaparse.core))
 
 (def cfg1 "S = 'a'")
 (def cfg2 
@@ -45,3 +45,9 @@
   "S = A ('a' | 'b')+
    A = !B
    B = 'a' !'b'")
+(def cfg20
+  "(* A comment about this grammar 
+   *split* (across) lines *)
+   (* And some (* nested *) comments *)
+   S = (A*)
+   A = 'a'")
