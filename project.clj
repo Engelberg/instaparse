@@ -1,4 +1,4 @@
-(defproject instaparse "1.1.0-SNAPSHOT"
+(defproject instaparse "1.0.1"
   :description "Instaparse: No grammar left behind"
   :url "https://github.com/Engelberg/instaparse"
   :license {:name "Eclipse Public License"

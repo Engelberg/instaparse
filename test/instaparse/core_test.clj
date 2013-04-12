@@ -65,6 +65,16 @@
     "plus = plus <'+'> plus | num
      num = #'[0-9]'+"))
 
+(def addition2
+  (insta/parser
+    "plus = num <'+'> plus | num
+     num = #'[0-9]'+"))
+
+(def addition3
+  (insta/parser
+    "plus = plus <'+'> num | num
+     num = #'[0-9]'+"))
+
 (def addition-e
   (insta/parser
     "plus = plus <'+'> plus | num
@@ -196,7 +206,7 @@
      mul = mul-div <'*'> term
      div = mul-div <'/'> term     
      <term> = number | <'('> add-sub <')'>
-     number = #'[0-9]+'")) 
+     number = #'[0-9]+'"))
 
 (deftest parsing-tutorial
   (are [x y] (= x y)
