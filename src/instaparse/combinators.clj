@@ -1,72 +1,24 @@
 (ns instaparse.combinators
-  (:use instaparse.reduction))
+  (:require [instaparse.combinators-source :as c])
+  (:require [instaparse.cfg :as cfg])
+  (:use potemkin))
 
-;; Ways to build parsers
+;; The actual source is in combinators-source.
+;; This was necessary to avoid a cyclical dependency in the namespaces.
 
-(def Epsilon {:tag :epsilon})
+(import-def c/Epsilon)
+(import-fn c/opt)
+(import-fn c/plus)
+(import-fn c/star)
+(import-fn c/alt) 
+(import-fn c/ord)
+(import-fn c/cat)
+(import-fn c/string)
+(import-fn c/regexp)
+(import-fn c/nt)
+(import-fn c/look)
+(import-fn c/neg)
+(import-fn c/hide)
+(import-fn c/hide-tag)
 
-(defn opt [parser] 
-  (if (= parser Epsilon) Epsilon
-    {:tag :opt :parser parser}))
-
-(defn plus [parser]
-  (if (= parser Epsilon) Epsilon
-    {:tag :plus :parser parser}))
-
-(defn star [parser] 
-  (if (= parser Epsilon) Epsilon
-    {:tag :star :parser parser}))
-
-(defn alt [& parsers] 
-  (cond
-    (every? (partial = Epsilon) parsers) Epsilon
-    (singleton? parsers) (first parsers)
-    :else {:tag :alt :parsers parsers}))
-
-;(declare neg)
-(defn- ord2 [parser1 parser2]
-  (cond
-    (= parser1 Epsilon) Epsilon
-    (= parser2 Epsilon) parser1
-    :else
-    ;(alt parser1 (cat (neg parser1) parser2))))
-    {:tag :ord :parser1 parser1 :parser2 parser2}))
-
-(defn ord [& parsers]
-  (if (seq parsers)
-    (ord2 (first parsers) (apply ord (rest parsers)))
-    Epsilon))
-
-(defn cat [& parsers]
-  (if (every? (partial = Epsilon) parsers) Epsilon
-    (let [parsers (remove #{Epsilon} parsers)]
-      (if (singleton? parsers) (first parsers) ; apply vector reduction
-        {:tag :cat :parsers parsers}))))
-
-(defn string [s] 
-  (if (= s "") Epsilon
-    {:tag :string :string s}))
-
-(defn regexp [r]
-  (let [s (str \^ r)]
-    (if (= s "^") Epsilon
-      {:tag :regexp :regexp (re-pattern s)})))
-
-(defn nt [s] {:tag :nt :keyword s})
-
-(defn look [parser] {:tag :look :parser parser}) 
-
-(defn neg [parser] {:tag :neg :parser parser})
-
-(defn hide [parser] (assoc parser :hide true))
-
-(defn hide-tag [parser]
-  (red parser raw-non-terminal-reduction))
-
-
-
-
-
-
-
-
+(import-fn cfg/ebnf)

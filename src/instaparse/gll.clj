@@ -16,7 +16,7 @@
   (:require [instaparse.reduction :as red])
   
   ;; Two of the public combinators are needed.
-  (:require [instaparse.combinators :refer [Epsilon nt]])
+  (:require [instaparse.combinators-source :refer [Epsilon nt]])
   
   ;; Need a way to convert parsers into strings for printing and error messages.
   (:require [instaparse.print :as print]))

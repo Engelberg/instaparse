@@ -1,6 +1,6 @@
 (ns instaparse.cfg
   "This is the context free grammar that recognizes context free grammars."
-  (:use instaparse.combinators)
+  (:use instaparse.combinators-source)
   (:use [instaparse.reduction :only [apply-standard-reductions]])
   (:use [instaparse.gll :only [parse]])
   (:require [clojure.string :as str]))
@@ -232,7 +232,7 @@
         {:grammar (check-grammar (apply-standard-reductions output-format (into {} productions)))
          :start-production start-production
          :output-format output-format}))))
-  
+
 (defn build-parser-from-combinators [grammar-map output-format start-production]
   (if (nil? start-production)
     (throw (IllegalArgumentException. 
@@ -240,3 +240,21 @@
     {:grammar (check-grammar (apply-standard-reductions output-format grammar-map))
      :start-production start-production
      :output-format output-format}))
+
+(defn ebnf
+  "Takes an EBNF grammar specification and returns the combinator version of the grammar.  
+Useful for combining with other combinators."
+  [spec]
+  (let [rules (parse cfg :rules spec false)]
+    (if (instance? instaparse.gll.Failure rules)
+      (let [rhs (parse cfg :alt-or-ord spec false)]
+        (if (instance? instaparse.gll.Failure rhs)
+          (throw (RuntimeException. (str "First tried to interpret the specification as a series of rules and got this error:\n"                                         
+                                         (with-out-str (println rules))
+                                         \newline
+                                         "Then tried to interpret it as a rule fragment and got this error:\n"
+                                         (with-out-str (println rhs)))))
+          (build-rule rhs)))
+      (into {} (map build-rule rules)))))
+        
+  
