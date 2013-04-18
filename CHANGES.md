@@ -2,10 +2,14 @@
 
 ## 1.1.0
 
+### Breaking Changes
+
+* When you run a parser in "total" mode, the failure node is no longer tagged with `:failure`, but instead is tagged with `:instaparse/failure`.
+
 ### Enhancements
 
 * Comments now supported in CFGs.  Use (* and *) notation.
-* Added comments to regexes used by context-free grammar.
+* Added comments to regexes used by the parser that processes the context-free grammar syntax, improving the readability of error messages if you have a faulty grammar specification.
 
 ### Bug Fixes
 

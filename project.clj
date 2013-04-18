@@ -7,5 +7,6 @@
   :profiles {:dev {:dependencies 
                    [[org.clojure/tools.trace "0.7.5"]
                     [criterium "0.3.1"]]}}
+  :test-paths ["test"]
   :scm {:name "git"
         :url "https://github.com/Engelberg/instaparse"})

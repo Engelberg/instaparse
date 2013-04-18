@@ -557,7 +557,7 @@ On a failure, note the difference:
 	Expected:
 	"a"
 	=> (repeated-a "aaaabaaa" :total true)
-	[:S "a" "a" "a" "a" [:failure "baaa"]]
+	[:S "a" "a" "a" "a" [:instaparse/failure "baaa"]]
 
 Note that this kind of total parse result is still considered a "failure", and we can test for that and retrieve the failure object using `insta/failure?` and `insta/get-failure`, respectively.
 

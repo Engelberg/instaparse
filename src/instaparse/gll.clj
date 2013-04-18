@@ -262,7 +262,7 @@
   (dprintln "Fail index" (:fail-index tramp))
   (when (= index (:fail-index tramp))
     (success tramp node-key 
-             ((:node-builder tramp) :failure (subs (:text tramp) index)) 
+             ((:node-builder tramp) :instaparse/failure (subs (:text tramp) index)) 
              (count (:text tramp)))))
 
 ;; Stack helper functions
@@ -635,7 +635,7 @@
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       all-parses
-      (node-builder start (node-builder :failure text)))))      
+      (node-builder start (node-builder :instaparse/failure text)))))      
 
 (defn parses-total 
   [grammar start text partial? node-builder]
@@ -657,7 +657,7 @@
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       (first all-parses)
-      (node-builder start (node-builder :failure text)))))
+      (node-builder start (node-builder :instaparse/failure text)))))
 
 (defn parse-total 
   [grammar start text partial? node-builder]
