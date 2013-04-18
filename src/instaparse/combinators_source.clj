@@ -77,7 +77,7 @@
   [parser] 
   (assoc parser :hide true))
 
-(defn hide-tag "Hide the tag associated with this right-hand-side.  
+(defn hide-tag "Hide the tag associated with this rule.  
   Wrap this combinator around the entire right-hand side."  
   [parser]
   (red parser raw-non-terminal-reduction))
