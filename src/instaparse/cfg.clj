@@ -254,7 +254,7 @@ Useful for combining with other combinators."
                                          \newline
                                          "Then tried to interpret it as a rule fragment and got this error:\n"
                                          (with-out-str (println rhs)))))
-          (build-rule rhs)))
+          (build-rule (first rhs))))
       (into {} (map build-rule rules)))))
         
   
