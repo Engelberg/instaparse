@@ -242,7 +242,9 @@
      :output-format output-format}))
 
 (defn ebnf
-  "Takes an EBNF grammar specification and returns the combinator version of the grammar.  
+  "Takes an EBNF grammar specification string and returns the combinator version.
+If you give it the right-hand side of a rule, it will return the combinator equivalent.
+If you give it a series of rules, it will give you back a grammar map.   
 Useful for combining with other combinators."
   [spec]
   (let [rules (parse cfg :rules spec false)]
@@ -255,6 +257,4 @@ Useful for combining with other combinators."
                                          "Then tried to interpret it as a rule fragment and got this error:\n"
                                          (with-out-str (println rhs)))))
           (build-rule (first rhs))))
-      (into {} (map build-rule rules)))))
-        
-  
+      (into {} (map build-rule rules)))))        

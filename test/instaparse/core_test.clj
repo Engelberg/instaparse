@@ -185,7 +185,7 @@
      eos = !#'.'
      Even = 'aa'*
      Odd = !(Even eos) 'a'+"))
-
+     
 (def arithmetic
   (insta/parser
     "expr = add-sub
@@ -197,6 +197,14 @@
      div = mul-div <'/'> term     
      <term> = number | <'('> add-sub <')'>
      number = #'[0-9]+'")) 
+
+(def combo-build-example
+  (insta/parser
+    (merge
+      {:S (alt (nt :A) (nt :B))}
+      (ebnf "A = 'a'*")
+      {:B (ebnf "'b'+")})
+    :start :S))
 
 (deftest parsing-tutorial
   (are [x y] (= x y)
@@ -340,6 +348,12 @@
     
     (paren-ab-hide-both-tags "(aba)")
     '("a" "b" "a")
+    
+    (combo-build-example "aaaaa")
+    [:S [:A "a" "a" "a" "a" "a"]]
+    
+    (combo-build-example "bbbbb")
+    [:S [:B "b" "b" "b" "b" "b"]]
     
     ))
     

@@ -10,6 +10,7 @@
 
 * Comments now supported in CFGs.  Use (* and *) notation.
 * Added comments to regexes used by the parser that processes the context-free grammar syntax, improving the readability of error messages if you have a faulty grammar specification.
+* Added `ebnf` combinator to the `instaparse/combinators` namespace.  This new combinator converts string specifications to the combinator-built equivalent.  See combinator section of the updated tutorial for details.
 
 ### Bug Fixes
 

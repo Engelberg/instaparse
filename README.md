@@ -792,6 +792,35 @@ The result is a parser that is the same as the one built from the string specifi
 
 To my eye, the string is dramatically more readable, but if you need or want to use the combinator approach, it's there for you to utilize.
 
+#### String to combinator conversion
+
+Shortly after I published the first version of instaparse, I received a question, "String specifications can be combined with `clojure.string/join` and combinator grammar maps can be combined with `merge` --- is there any way to mix and match string and combinator grammar representations?"  At the time, there wasn't, but now there is.  As of version 1.1, there is a new function `ebnf` in the `instaparse.combinators` namespace which *converts* EBNF strings into the same underlying structure that is built by the combinator library, thus allowing for further manipulation by combinators.  For example,
+
+	(ebnf "'a'* | 'b'+")
+
+produces the same structure as if you had typed the combinator version
+
+	(alt (star (string "a")) (plus (string "b")))
+
+You can also pass entire rules to `ebnf` and you'll get back the corresponding grammar map:
+
+	(ebnf "A = 'a'*; B = 'b'+")
+
+produces
+
+	{:A (star (string "a"))
+	 :B (plus (string "b"))}
+
+This opens up the possibility of building a grammar from a mixture of combinators, and strings that have been converted to combinators.  Here's a contrived example:
+
+	(def combo-build-example
+	  (insta/parser
+	    (merge
+	      {:S (alt (nt :A) (nt :B))}
+	      (ebnf "A = 'a'*")
+	      {:B (ebnf "'b'+")})
+	    :start :S))
+
 ### Serialization
 
 You can serialize an instaparse parser with `print-dup`, and deserialize it with `read`.  (You can't use `clojure.edn/read` because edn does not support regular expressions.)
