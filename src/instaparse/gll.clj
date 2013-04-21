@@ -180,6 +180,11 @@
         (swap! nodes assoc node-key node)
         node))))
 
+(defn safe-vary-meta [obj & variances]
+  (if (instance? clojure.lang.IObj obj)
+    (apply vary-meta obj variances)
+    obj))
+
 (defn push-result
   "Pushes a result into the trampoline's node.
    Categorizes as either result or full-result.
@@ -194,9 +199,11 @@
                  (assoc result :result nil)
                  result)
         result (if-let [reduction-function (:red parser)]
-                 (assoc result :result 
-                        (red/apply-reduction reduction-function
-                                           (:result result)))
+                 (make-success  
+                   (safe-vary-meta 
+                     (red/apply-reduction reduction-function (:result result))
+                     assoc :start-index (node-key 0) :end-index (:index result))
+                   (:index result))                 
                  result)              
         total? (total-success? tramp result)
         results (if total? (:full-results node) (:results node))]
@@ -251,6 +258,7 @@
 (defmacro success [tramp node-key result end]
   `(push-result ~tramp ~node-key (make-success ~result ~end)))
 
+(declare build-node-with-meta)
 (defn fail [tramp node-key index reason]  
   (swap! (:failure tramp) 
          (fn [failure] 
@@ -262,7 +270,9 @@
   (dprintln "Fail index" (:fail-index tramp))
   (when (= index (:fail-index tramp))
     (success tramp node-key 
-             ((:node-builder tramp) :instaparse/failure (subs (:text tramp) index)) 
+             (build-node-with-meta
+               (:node-builder tramp) :instaparse/failure (subs (:text tramp) index)
+               index (count (:text tramp)))
              (count (:text tramp)))))
 
 ;; Stack helper functions
@@ -627,6 +637,21 @@
       (first all-parses) 
       (fail/augment-failure @(:failure tramp) text))))
 
+;; The node builder function is what we use to build the failure nodes
+;; but we want to include start and end metadata as well.
+
+(defn build-node-with-meta [node-builder tag content start end]
+  (with-meta
+    (node-builder tag content)
+    {:start-index start :end-index end}))
+
+(defn build-total-failure-node [node-builder start text]
+  (let [build-failure-node
+        (build-node-with-meta node-builder :instaparse/failure text 0 (count text)),            
+        build-start-node
+        (build-node-with-meta node-builder start build-failure-node 0 (count text))]
+    build-start-node))
+
 (defn parses-total-after-fail 
   [grammar start text fail-index partial? node-builder]
   (dprintln "Parses-total-after-fail")  
@@ -635,15 +660,21 @@
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       all-parses
-      (node-builder start (node-builder :instaparse/failure text)))))      
+      (list (build-total-failure-node node-builder start text)))))
 
+(defn merge-meta
+  "A variation on with-meta that merges the existing metamap into the new metamap,
+rather than overwriting the metamap entirely."
+  [obj metamap]
+  (with-meta obj (merge metamap (meta obj))))
+      
 (defn parses-total 
   [grammar start text partial? node-builder]
   (debug (clear!))
   (let [all-parses (parses grammar start text partial?)]
     (if (seq all-parses)
       all-parses
-      (with-meta
+      (merge-meta
         (parses-total-after-fail grammar start text 
                                  (:index (meta all-parses)) 
                                  partial? node-builder)
@@ -657,7 +688,7 @@
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       (first all-parses)
-      (node-builder start (node-builder :instaparse/failure text)))))
+      (build-total-failure-node node-builder start text))))
 
 (defn parse-total 
   [grammar start text partial? node-builder]
@@ -665,7 +696,7 @@
   (let [result (parse grammar start text partial?)]
     (if-not (instance? Failure result)
       result
-      (with-meta        
+      (merge-meta        
         (parse-total-after-fail grammar start text 
                                 (:index result) 
                                 partial? node-builder)
