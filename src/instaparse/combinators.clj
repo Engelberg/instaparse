@@ -21,6 +21,7 @@
 (defclone opt c/opt)
 (defclone plus c/plus)
 (defclone star c/star)
+(defclone rep c/rep)
 (defclone alt c/alt) 
 (defclone ord c/ord)
 (defclone cat c/cat)

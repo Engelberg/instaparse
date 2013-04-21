@@ -131,6 +131,21 @@
 
 ;;;; Helper functions for reading strings and regexes
 
+(defn escape
+  "Converts escaped single-quotes to unescaped, and unescaped double-quotes to escaped"
+  [s]
+  (loop [sq (seq s), v []]
+    (if-let [c (first sq)]
+      (case c
+        \\ (if-let [c2 (second sq)]
+             (if (= c2 \')
+               (recur (drop 2 sq) (conj v c2))
+               (recur (drop 2 sq) (conj v c c2)))
+             (throw (RuntimeException. (format "Encountered backslash character at end of string: %s" s))))
+        \" (recur (next sq) (conj v \\ \"))
+        (recur (next sq) (conj v c)))
+      (apply str v))))                     
+
 ;(defn safe-read-string [s]
 ;  (binding [*read-eval* false]
 ;    (read-string s)))
@@ -154,7 +169,7 @@
   (let [stripped
         (subs s 1 (dec (count s)))
         remove-escaped-single-quotes
-        (str/replace stripped "\\'" "'")
+        (escape stripped)
         final-string
         (safe-read-string (str remove-escaped-single-quotes \"))]            
 
@@ -167,7 +182,7 @@
   (let [stripped
         (subs s 2 (dec (count s)))
         remove-escaped-single-quotes
-        (str/replace stripped "\\'" "'")
+        (escape stripped)
         final-string
         (re-pattern remove-escaped-single-quotes)]
 ;        (safe-read-regexp (str remove-escaped-single-quotes \"))]
@@ -207,7 +222,7 @@
   (case (:tag parser)
     :nt [(:keyword parser)]
     (:string :regexp :epsilon) []
-    (:opt :plus :star :look :neg) (recur (:parser parser))
+    (:opt :plus :star :look :neg :rep) (recur (:parser parser))
     (:alt :cat) (mapcat seq-nt (:parsers parser))
     :ord (mapcat seq-nt 
                  [(:parser1 parser) (:parser2 parser)])))                 

@@ -21,6 +21,11 @@
   (if (= parser Epsilon) Epsilon
     {:tag :star :parser parser}))
 
+(defn rep "Between m and n repetitions"
+  [m n parser]
+  (if (= parser Epsilon) Epsilon
+    {:tag :rep :parser parser :min m :max n}))
+
 (defn alt "Alternation, i.e., parser1 | parser2 | parser3 | ..."
   [& parsers] 
   (cond
