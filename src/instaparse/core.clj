@@ -154,9 +154,8 @@ something that can have a metamap attached."
                               (:content parse-tree)))
         (meta parse-tree))
       (:tag parse-tree)
-      (with-meta (assoc parse-tree :content (map (partial enlive-transform transform-map)
-                                                 (:content parse-tree)))
-        (meta parse-tree))      
+      (assoc parse-tree :content (map (partial enlive-transform transform-map)
+                                      (:content parse-tree)))        
       :else
       parse-tree)))
 
