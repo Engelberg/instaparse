@@ -222,7 +222,7 @@
   (case (:tag parser)
     :nt [(:keyword parser)]
     (:string :regexp :epsilon) []
-    (:opt :plus :star :look :neg) (recur (:parser parser))
+    (:opt :plus :star :look :neg :rep) (recur (:parser parser))
     (:alt :cat) (mapcat seq-nt (:parsers parser))
     :ord (mapcat seq-nt 
                  [(:parser1 parser) (:parser2 parser)])))                 
