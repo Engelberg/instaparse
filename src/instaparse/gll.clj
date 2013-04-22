@@ -373,8 +373,9 @@
 (defn PlusListener [results-so-far parser prev-index node-key tramp]
   (fn [result]
     (let [{parsed-result :result continue-index :index} result]
-      (when (> continue-index prev-index)
-        ;(dprintln "PLUS" (type results-so-far))
+      (if (= continue-index prev-index)
+        (when (zero? (count results-so-far)) 
+          (success tramp node-key nil continue-index))        
         (let [new-results-so-far (conj results-so-far parsed-result)]
           (push-listener tramp [continue-index parser]
                          (PlusListener new-results-so-far parser continue-index
@@ -384,8 +385,9 @@
 (defn PlusFullListener [results-so-far parser prev-index node-key tramp]
   (fn [result]
     (let [{parsed-result :result continue-index :index} result]
-      (when (> continue-index prev-index)
-        ;(dprintln "plusfull" (type parsed-result))
+      (if (= continue-index prev-index)
+        (when (zero? (count results-so-far))
+          (success tramp node-key nil continue-index))
         (let [new-results-so-far (conj results-so-far parsed-result)]
           (if (= continue-index (count (:text tramp)))
             (success tramp node-key new-results-so-far continue-index)
