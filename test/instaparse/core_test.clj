@@ -355,5 +355,4 @@
     (combo-build-example "bbbbb")
     [:S [:B "b" "b" "b" "b" "b"]]
     
-    ))
-    
+    ))    
