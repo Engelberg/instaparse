@@ -19,3 +19,4 @@
 
 * Backslashes in front of quotation mark were escaping the quotation mark, even if the backslash itself was escaped.
 * Unescaped double-quote marks weren't properly handled, e.g., (parser "A = '\"'").
+* Nullable Plus: ((parser "S = ('a'?)+") "") previously returned a failure, now returns [:S]
