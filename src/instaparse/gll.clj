@@ -37,7 +37,7 @@
 
 (declare alt-parse cat-parse string-parse epsilon-parse non-terminal-parse
          opt-parse plus-parse star-parse regexp-parse lookahead-parse
-         negative-lookahead-parse ordered-alt-parse)
+         rep-parse negative-lookahead-parse ordered-alt-parse)
 (defn -parse [parser index tramp]
   (dprintln "-parse" index (:tag parser))
   (case (:tag parser)
@@ -48,6 +48,7 @@
     :epsilon (epsilon-parse index tramp)
     :opt (opt-parse parser index tramp)
     :plus (plus-parse parser index tramp)
+    :rep (rep-parse parser index tramp)
     :star (star-parse parser index tramp)
     :regexp (regexp-parse parser index tramp)
     :look (lookahead-parse parser index tramp)
@@ -56,7 +57,7 @@
 
 (declare alt-full-parse cat-full-parse string-full-parse epsilon-full-parse 
          non-terminal-full-parse opt-full-parse plus-full-parse star-full-parse
-         regexp-full-parse lookahead-full-parse ordered-alt-full-parse)
+         rep-full-parse regexp-full-parse lookahead-full-parse ordered-alt-full-parse)
 (defn -full-parse [parser index tramp]
   (dprintln "-full-parse" index (:tag parser))
   (case (:tag parser)
@@ -67,6 +68,7 @@
     :epsilon (epsilon-full-parse index tramp)
     :opt (opt-full-parse parser index tramp)
     :plus (plus-full-parse parser index tramp)
+    :rep (rep-full-parse parser index tramp)
     :star (star-full-parse parser index tramp)
     :regexp (regexp-full-parse parser index tramp)
     :look (lookahead-full-parse parser index tramp)
@@ -322,7 +324,7 @@
 
 ;; Listeners
 
-; There are five kinds of listeners that receive notifications
+; There are six kinds of listeners that receive notifications
 ; The first kind is a NodeListener which simply listens for a completed parse result
 ; Takes the node-key of the parser which is awaiting this result.
 
@@ -381,8 +383,9 @@
 (defn PlusListener [results-so-far parser prev-index node-key tramp]
   (fn [result]
     (let [{parsed-result :result continue-index :index} result]
-      (when (> continue-index prev-index)
-        ;(dprintln "PLUS" (type results-so-far))
+      (if (= continue-index prev-index)
+        (when (zero? (count results-so-far)) 
+          (success tramp node-key nil continue-index))        
         (let [new-results-so-far (conj results-so-far parsed-result)]
           (push-listener tramp [continue-index parser]
                          (PlusListener new-results-so-far parser continue-index
@@ -392,15 +395,43 @@
 (defn PlusFullListener [results-so-far parser prev-index node-key tramp]
   (fn [result]
     (let [{parsed-result :result continue-index :index} result]
-      (when (> continue-index prev-index)
-        ;(dprintln "plusfull" (type parsed-result))
+      (if (= continue-index prev-index)
+        (when (zero? (count results-so-far))
+          (success tramp node-key nil continue-index))
         (let [new-results-so-far (conj results-so-far parsed-result)]
           (if (= continue-index (count (:text tramp)))
             (success tramp node-key new-results-so-far continue-index)
             (push-listener tramp [continue-index parser]
                            (PlusFullListener new-results-so-far parser continue-index 
                                              node-key tramp))))))))
-                        
+
+; The fifth kind of listener is a RepListener, which wants between m and n repetitions of a parser
+
+(defn RepListener [results-so-far parser m n prev-index node-key tramp]
+  (fn [result]
+    (let [{parsed-result :result continue-index :index} result]      
+      ;(dprintln "Rep" (type results-so-far))
+      (let [new-results-so-far (conj results-so-far parsed-result)]
+        (when (<= m (count new-results-so-far) n)
+          (success tramp node-key new-results-so-far continue-index))
+        (when (< (count new-results-so-far) n)
+          (push-listener tramp [continue-index parser]
+                         (RepListener new-results-so-far parser m n continue-index
+                                       node-key tramp)))))))                   
+
+(defn RepFullListener [results-so-far parser m n prev-index node-key tramp]
+  (fn [result]
+    (let [{parsed-result :result continue-index :index} result]
+      ;(dprintln "RepFull" (type parsed-result))
+      (let [new-results-so-far (conj results-so-far parsed-result)]        
+        (if (= continue-index (count (:text tramp)))
+          (when (<= m (count new-results-so-far) n)
+            (success tramp node-key new-results-so-far continue-index))
+          (when (< (count new-results-so-far) n)
+            (push-listener tramp [continue-index parser]
+                           (RepFullListener new-results-so-far parser m n continue-index 
+                                             node-key tramp))))))))
+
 ; The top level listener is the final kind of listener
 
 (defn TopListener [tramp] 
@@ -487,6 +518,34 @@
    (let [parser (:parser this)]
      (push-listener tramp [index parser] 
                     (PlusFullListener empty-cat-result parser index [index this] tramp))))       
+
+ (defn rep-parse
+   [this index tramp]
+   (let [parser (:parser this),
+         m (:min this),
+         n (:max this)]     
+     (if (zero? m)
+       (do 
+         (success tramp [index this] nil index)
+         (when (>= n 1)
+           (push-listener tramp [index parser]
+                          (RepListener empty-cat-result parser 1 n index [index this] tramp))))
+       (push-listener tramp [index parser]
+                      (RepListener empty-cat-result parser m n index [index this] tramp)))))
+ 
+ (defn rep-full-parse
+   [this index tramp]
+   (let [parser (:parser this),
+         m (:min this),
+         n (:max this)]
+     (if (zero? m)
+       (do 
+         (success tramp [index this] nil index)
+         (when (>= n 1)
+           (push-listener tramp [index parser]
+                          (RepFullListener empty-cat-result parser 1 n index [index this] tramp))))
+       (push-listener tramp [index parser]
+                      (RepFullListener empty-cat-result parser m n index [index this] tramp)))))                 
  
  (defn star-parse
 	  [this index tramp]

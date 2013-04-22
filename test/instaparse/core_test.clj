@@ -355,5 +355,7 @@
     (combo-build-example "bbbbb")
     [:S [:B "b" "b" "b" "b" "b"]]
     
-    ))
+    ((insta/parser "S = ('a'?)+") "")
+    [:S]
     
+    ))    

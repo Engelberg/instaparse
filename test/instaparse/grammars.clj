@@ -1,6 +1,7 @@
 (ns instaparse.grammars
   (:use clojure.test)
   (:use instaparse.combinators instaparse.reduction)
+  (:require [instaparse.core :as insta])
   (:require [instaparse.gll :as gll]))
 
 (defn- parse [grammar start text]
@@ -8,6 +9,13 @@
 
 (defn- parses [grammar start text]
   (gll/parses (apply-standard-reductions grammar) start text false))
+
+(defn- eparse [grammar start text]
+  (gll/parse (apply-standard-reductions :enlive grammar) start text false))
+
+(defn- eparses [grammar start text]
+  (gll/parses (apply-standard-reductions :enlive grammar) start text false))
+
 
 ;; Grammars built with combinators
 
@@ -66,10 +74,6 @@
                         (string "b"))})
 (def grammar28 {:s (regexp "a[0-9]b+c")})
 (def grammar29 {:s (plus (opt (string "a")))})
-(def paren-grammar 
-  {:a (red (cat (string "(") (opt (nt :a)) (string ")"))
-           (fn ([_ _] ())
-             ([_ l _] (list l))))})
 (def grammar30 {:s (alt (nt :a) (nt :b))
                 :a (plus (cat (string "a") (string "b")))
                 :b (plus (cat (string "a") (string "b")))})
@@ -211,3 +215,259 @@
                 :a (cat (neg (string "b")) (string "c"))})
 (def grammar70 {:s (cat (neg (nt :a)) (string "abc"))
                 :a (cat (neg (string "b")) (string "a"))})
+
+(deftest testing-grammars
+  (are [x y] (= x y)
+       (parse grammar1 :s "a") [:s "a"]
+       (parse grammar1 :s "aa") [:s "aa"]
+       (parse grammar1 :s "aaa") [:s "aaa"]
+       (insta/failure? (parse grammar1 :s "b")) true
+       (parse grammar2 :s "b") [:s "b"]
+       
+       (parse grammar3 :s "aaaaa")
+       [:s "a" [:s "a" [:s "a" [:s "a" [:s "a" [:s]]]]]]
+       
+       (eparse grammar3 :s "aaa")
+       '{:tag :s, :content ("a" {:tag :s, :content ("a" {:tag :s, :content ("a" {:tag :s, :content nil})})})}
+       
+       (parse grammar4 :x "ab")
+       [:x "a" [:y "b"]]
+       
+       (parse grammar5 :s "abc")
+       [:s "a" "b" "c"]
+       
+       (eparse grammar5 :s "abc")
+       '{:tag :s, :content ("a" "b" "c")}
+       
+       (parse grammar6 :s "aaaa")
+       [:s "a" [:s "a" [:s "a" [:s "a"]]]]
+       
+       (parse grammar7 :s "aaaa")
+       [:s "a" [:s "a" [:s "a" [:s "a" [:s]]]]]
+       
+       (parses grammar8 :s "aaaaa")
+       '([:s "a" [:s "a" [:s "a" [:s "a" [:s "a"]]]]])
+       
+       (eparse grammar9 :s "aaa")
+       '{:tag :s, :content ("a" {:tag :s, :content ("a" {:tag :s, :content ("a" {:tag :s, :content nil})})})}
+       
+       (parse grammar9 :s "bbb")
+       [:s "b" [:s "b" [:s "b" [:s]]]]
+
+       (parses grammar10 :s "aaaa")
+       '([:s [:s [:s [:s [:s] "a"] "a"] "a"] "a"])
+       
+       (eparses grammar10 :s "bb")
+       '({:tag :s, :content ({:tag :s, :content ({:tag :s, :content nil} "b")} "b")})
+       
+       (parses grammar11 :s "aaaa")
+       '([:s [:s [:s [:s "a"] "a"] "a"] "a"])
+       
+       (parses grammar12 :s "aaa")
+       '([:s [:a [:s [:a [:s [:a "a"]] "a"]] "a"]])
+       
+       (parses grammar13 :s "aaa")
+       '([:s [:a [:s [:a [:s [:a "a"]] "a"]] "a"]])
+
+       (parses amb-grammar :s "b")
+       '([:s "b"])
+
+       (parses amb-grammar :s "bb")
+       '([:s [:s "b"] [:s "b"]])
+       
+       (parses amb-grammar :s "bbb")
+       '([:s [:s "b"] [:s [:s "b"] [:s "b"]]] [:s [:s "b"] [:s "b"] [:s "b"]] [:s [:s [:s "b"] [:s "b"]] [:s "b"]])
+
+       (parses amb-grammar :s "bbbb")
+       '([:s [:s "b"] [:s [:s "b"] [:s [:s "b"] [:s "b"]]]] [:s [:s [:s "b"] [:s "b"]] [:s "b"] [:s "b"]] [:s [:s [:s "b"] [:s [:s "b"] [:s "b"]]] [:s "b"]] [:s [:s "b"] [:s [:s "b"] [:s "b"]] [:s "b"]] [:s [:s "b"] [:s "b"] [:s [:s "b"] [:s "b"]]] [:s [:s [:s "b"] [:s "b"]] [:s [:s "b"] [:s "b"]]] [:s [:s "b"] [:s [:s "b"] [:s "b"] [:s "b"]]] [:s [:s [:s "b"] [:s "b"] [:s "b"]] [:s "b"]] [:s [:s [:s [:s "b"] [:s "b"]] [:s "b"]] [:s "b"]] [:s [:s "b"] [:s [:s [:s "b"] [:s "b"]] [:s "b"]]])
+       
+       (parses paren-grammar :s "(()())()")
+       '([:s [:s "(" [:s [:s "(" ")"] [:s "(" ")"]] ")"] [:s "(" ")"]])
+       
+       (parse non-ll-grammar :s "aabb")
+       [:s [:a "a" [:a "a" [:a] "b"] "b"]]
+       
+       (insta/failure? (parse non-ll-grammar :s "aabbb"))
+       true
+       
+       (parse non-ll-grammar :s "aabbbb")
+       [:s [:b "a" [:b "a" [:b] "bb"] "bb"]]
+       
+       (parse grammar14 :s "b")
+       [:s "b"]
+       (parse grammar14 :s "ab")
+       [:s "a" "b"]
+       
+       (parse grammar15 :s "ab")
+       [:s "a" "b"]
+       (parse grammar15 :s "b")
+       [:s "b"]
+       (parse grammar15 :s "")
+       [:s]
+       
+       (parse grammar16 :s "aaaa")
+       [:s "a" "a" "a" "a"]
+
+       (parses grammar17 :s "aaaab")
+       '([:s "a" "a" "a" "a" "b"])
+       
+       (parses grammar18 :s "aaaa")
+       '([:s "a" "a" "a" "a"])
+
+       (parse grammar19 :s "abbcbc")
+       [:s "a" "b" "b" "c" "b" "c"]
+       
+       (parse grammar20 :s "abcbcbc")
+       [:s "a" "b" "c" "b" "c" "b" "c"]
+       (insta/failure? (parse grammar20 :s "a"))
+       true
+       
+       (parse grammar22 :s "")
+       [:s]
+       (parse grammar22 :s "aaa")
+       [:s "a" "a" "a"]
+       
+       (parse grammar23 :s "b")
+       [:s "b"]
+       (parse grammar23 :s "aab")
+       [:s "a" "a" "b"]
+       
+       (parse grammar24 :s "a")
+       [:s "a"]
+       (parse grammar24 :s "aaa")
+       [:s "a" "a" "a"]
+       
+       (parse grammar25 :s "a")
+       [:s "a"]
+       (parse grammar25 :s "abbc")
+       [:s "a" "b" "b" "c"]
+       (parse grammar26 :s "a")
+       [:s "a"]
+       (parse grammar26 :s "abc")
+       [:s "a" "b" "c"]
+       
+       (parse grammar28 :s "a4bbbc")
+       [:s "a4bbbc"]
+       
+       (parses grammar29 :s "aaaaa")
+       '([:s "a" "a" "a" "a" "a"])
+       
+       (parses grammar30 :s "ababab")
+       '([:s [:b "a" "b" "a" "b" "a" "b"]] [:s [:a "a" "b" "a" "b" "a" "b"]])
+       
+       (count (parses equal-zeros-ones :equal "00110110"))
+       448
+       
+       (parse grammar31 :equal "00110110")
+       [:equal [:equal "0" [:equal [:equal "0" [:equal] "1"] [:equal "1" [:equal] "0"]] "1"] [:equal "1" [:equal] "0"]]
+
+       (parse grammar32 :s "0000")
+       [:s [:s "0"] [:s [:s "0"] [:s [:s "0"] [:s "0"]]]]
+       
+       (insta/failure? (parse grammar33 :s "0000"))
+       true
+       (insta/failure? (parse grammar34 :s "0000"))
+       true
+       (insta/failure? (parse grammar35 :s "0000"))
+       true       
+       (insta/failure? (parse grammar36 :s "0000"))
+       true
+       (insta/failure? (parse grammar37 :s "0000"))
+       true       
+       (parse grammar33 :s "")
+       [:s]       
+       (parse grammar34 :s "")
+       [:s]
+       (parse grammar35 :s "")
+       [:s]
+       (insta/failure? (parse grammar36 :s ""))
+       true
+       (insta/failure? (parse grammar37 :s ""))
+       true
+       (parse grammar38 :s "a2bcbc")
+       [:s "a2bcbc"]
+       (parse grammar39 :s "012")
+       [:s "0" "2"]
+       (eparse grammar39 :s "012")
+       '{:tag :s, :content ("0" "2")}
+       
+       (parse grammar40 :s "aaa")
+       [:s "a" "a" "a"]
+       (eparse grammar40 :s "aaa")
+       '{:tag :s, :content ("a" "a" "a")}
+       (parse grammar41 :s "baaaa")
+       [:s "b" "a" "a" "a" "a"]
+       (parse grammar42 :s "baaaa")
+       [:s "b" "a" "a" "a" "a"]
+       (insta/failure? (parse grammar41 :s "b"))
+       true
+       (parse grammar42 :s "b")
+       [:s "b"]
+       (parse grammar43 :s "b")
+       [:s "b"]
+       (parse grammar43 :s "ab")
+       [:s "a" "b"]
+       (parse grammar44 :s "abbab")
+       [:s [:ab "a" "b" "b" "a" "b"]]
+       (insta/failure? (parse grammar44 :s "bbab"))
+       true
+       (parse grammar46 :s "babaab")
+       [:s [:ab "b" "a" "b" "a" "a" "b"]]
+       (insta/failure? (parse grammar45 :s "babaab"))
+       true
+       (parse grammar47 :s "babaab")
+       [:s [:ab "b" "a" "b" "a" "a" "b"]]
+       (insta/failure? (parse grammar47 :s "abbab"))
+       true
+       (parse grammar48 :s "abab")
+       [:s [:ab "a" "b" "a" "b"]]
+       (insta/failure? (parse grammar49 :s "ababa"))
+       true
+       (parse grammar50 :s "aaa")
+       [:s "a" [:s "a"] "a"]
+       (insta/failure? (parse grammar50 :s "aa"))
+       true
+       (parse grammar51 :s "aaa")
+       '("a" "a" "a")
+       (eparse grammar51 :s "aaa")
+       '("a" "a" "a")       
+       (eparse grammar52 :s "aab")
+       '("a" "a" "b")
+       (eparse grammar53 :s "aba")
+       '("a" "b" "a")
+       (parse grammar54 :s "aaa")
+       [:s "a" "aa"]
+       
+       (parses grammar55 :s "aaa")
+       '([:s "a" [:s "a"] "a"] [:s "a" [:s "a" [:s "a"]]])
+       (parses grammar56 :s "aaa")
+       '([:s "a" [:s "a"] "a"])
+       
+       (parses grammar57 :s "aaaa")
+       '([:s "aa" "aa"] [:s "a" "a" "a" "a"])
+       (parses grammar57 :s "aaaaa")
+       '([:s "a" "a" "a" "a" "a"])
+       
+       (parses grammar58 :s "aaaab")
+       '([:s "aa" "aa" "b"] [:s "a" "a" "a" "a" "b"])
+       (parses grammar58 :s "aaaaab")
+       '([:s "a" "a" "a" "a" "a" "b"])
+       (parses grammar59 :S "aaabbbccc")
+       '([:S "a" "a" "a" "b" "b" "b" "c" "c" "c"])
+       
+       (parses grammar65 :s "aaaab")
+       '([:s "aa" "aa" "b"])
+       (parses grammar65 :s "aaaaab")
+       '()
+       (parses grammar67 :s "0")
+       '([:s "0"])
+       (parses grammar68 :s "0")
+       '()
+       
+       (parses grammar69 :s "abc")
+       '([:s "abc"])
+       (parses grammar70 :s "abc")
+       ()
+       
+       ))
+       
