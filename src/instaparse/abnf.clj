@@ -3,6 +3,26 @@
   (:use instaparse.core)
   (:use instaparse.combinators))
 
+(def abnf-basic
+  "
+ALPHA = #'[a-zA-Z]';
+BIT = '0' | '1';
+CHAR = #'[\u0001-\u007F]';
+CR = '\u000D';
+CRLF = CR LF;
+CTL = #'[\u0000-\u001F|\u007F]';
+DIGIT = #'[0-9]';
+DQUOTE = '\u0022';
+HEXDIG = DIGIT | 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+HTAB = '\u0009';
+LF = '\u000A';
+LWSP = (WSP | CRLF WSP)*;
+OCTET = #'[\u0000-\u00FF]';
+SP = '\u0020';
+VCHAR = #'[\u0021-\u007E]';
+WSP = SP | HTAB;
+")
+
 (def abnf
   "
 rulelist = (rule | <(c-wsp* c-nl)>)+
@@ -82,8 +102,9 @@ NUM = DIGIT+
 
 (def abnf-transformer
   {:rulelist (fn [& rules]
-               (parser (apply merge-with alt rules)
-                       :start (key (first (first rules)))))
+               (-> (apply merge-with alt rules)
+                 (into (ebnf abnf-basic))
+                 (parser :start (key (first (first rules))))))
    :rule hash-map
    :rulename-left #(keyword (clojure.string/upper-case (apply str %&)))
    :rulename-right #(nt (keyword (clojure.string/upper-case (apply str %&))))
