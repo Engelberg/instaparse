@@ -3,7 +3,7 @@
   (:use instaparse.core)
   (:use instaparse.combinators))
 
-(def abnf-basic
+(def abnf-core-ebnf
   "
 ALPHA = #'[a-zA-Z]';
 BIT = '0' | '1';
@@ -23,6 +23,45 @@ VCHAR = #'[\u0021-\u007E]';
 WSP = SP | HTAB;
 ")
 
+(def abnf-core-abnf
+  "ALPHA          =  %x41-5A / %x61-7A   ; A-Z / a-z
+BIT            =  \"0\" / \"1\"
+CHAR           =  %x01-7F
+                                ; any 7-bit US-ASCII character,
+                                ;  excluding NUL
+CR             =  %x0D
+                                ; carriage return
+CRLF           =  CR LF
+                                ; Internet standard newline
+CTL            =  %x00-1F / %x7F
+                                ; controls
+DIGIT          =  %x30-39
+                                ; 0-9
+DQUOTE         =  %x22
+                                ; \" (Double Quote)
+HEXDIG         =  DIGIT / \"A\" / \"B\" / \"C\" / \"D\" / \"E\" / \"F\"
+HTAB           =  %x09
+                                ; horizontal tab
+LF             =  %x0A
+                                ; linefeed
+LWSP           =  *(WSP / CRLF WSP)
+                                ; Use of this linear-white-space rule
+                                ;  permits lines containing only white
+                                ;  space that are no longer legal in
+                                ;  mail headers and have caused
+                                ;  interoperability problems in other
+                                ;  contexts.
+                                ; Do not use when defining mail
+                                ;  headers and use with caution in
+                                ;  other contexts.
+OCTET          =  %x00-FF
+                                ; 8 bits of data
+SP             =  %x20
+VCHAR          =  %x21-7E
+                                ; visible (printing) characters
+WSP            =  SP / HTAB
+                                ; white space
+")
 (def abnf
   "
 rulelist = (rule | <(c-wsp* c-nl)>)+
@@ -45,7 +84,7 @@ repeat = NUM | (NUM? '*' NUM?)
 <element> = rulename-right | group | option | char-val | num-val | <prose-val>
 <group> = <'(' c-wsp*> alternation <c-wsp* ')'>
 option = <'[' c-wsp*> alternation <c-wsp* ']'>
-char-val = <DQUOTE> (SP | VCHAR)* <DQUOTE>
+char-val = <DQUOTE> #'[\u0020-\u0021\u0023-\u007E]'* <DQUOTE>
 <num-val> = <'%'> (bin-val | dec-val | hex-val)
 bin-val = <'b'> bin-char
           [ (<'.'> bin-char)+ | ('-' bin-char) ]
@@ -57,7 +96,7 @@ dec-char = DIGIT+
 hex-val = <'x'> hex-char
           [ (<'.'> hex-char)+ | ('-' hex-char) ]
 hex-char = HEXDIG+
-prose-val = <'<'> (SP | VCHAR)* <'>'>
+prose-val = <'<'> #'[\u0020-\u003D\u003F-\u007E]'* <'>'>
           (* bracketed string of SP and VCHAR without angles
              prose description, to be used as last resort *)
 NUM = DIGIT+
@@ -81,9 +120,6 @@ NUM = DIGIT+
 <WSP> = SP | HTAB
    (* white space *)
 ")
-
-(def abnf-parser (parser abnf))
-
 (defn char-range
   "Takes two chars and returns a combinator representing a range of characters."
   [char1 char2]
@@ -100,10 +136,19 @@ NUM = DIGIT+
         (apply alt (for [n v]
                      (string (str (char n)))))))))
 
+(defn re-escape
+  [s]
+  (let [bad-chars (set "[]{}-!@#$%^&*()")]
+    (apply str
+           (for [c s]
+             (if (bad-chars c)
+               (str "\\" c)
+               c)))))
+
 (def abnf-transformer
   {:rulelist (fn [& rules]
                (-> (apply merge-with alt rules)
-                 (into (ebnf abnf-basic))
+                 ;(into (ebnf abnf-basic))
                  (parser :start (key (first (first rules))))))
    :rule hash-map
    :rulename-left #(keyword (clojure.string/upper-case (apply str %&)))
@@ -133,9 +178,15 @@ NUM = DIGIT+
                ; case insensitive string
                (regexp (apply str
                               (for [c cs]
-                                (str "[" (clojure.string/upper-case c)
-                                     "|" (clojure.string/lower-case c)
-                                     "]")))))
+                                (let [low (clojure.string/lower-case c)
+                                      high (clojure.string/upper-case c)]
+                                  (if (= low high)
+                                    (re-escape c)
+                                    (str "["
+                                         (re-escape low)
+                                         "|"
+                                         (re-escape high)
+                                         "]")))))))
    :bin-char (fn [& cs]
                (Integer/parseInt (apply str cs) 2))
    :dec-char (fn [& cs]
@@ -147,6 +198,13 @@ NUM = DIGIT+
    :hex-val get-char-combinator
    :NUM #(Integer/parseInt (apply str %&))})
 
+(def abnf-parser (parser abnf ;:transform abnf-transformer
+                         ))
+
+
 (defn make-abnf-parser
   [s]
-  (transform abnf-transformer (parse abnf-parser s)))
+  (->>
+    (str s abnf-core-abnf)
+    (parse abnf-parser)
+    (transform abnf-transformer)))
