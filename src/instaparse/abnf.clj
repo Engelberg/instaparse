@@ -6,20 +6,20 @@
 (def abnf-core-ebnf
   "
 ALPHA = #'[a-zA-Z]';
-BIT = '0' | '1';
-CHAR = #'[\u0001-\u007F]';
-CR = '\u000D';
-CRLF = CR LF;
-CTL = #'[\u0000-\u001F|\u007F]';
+BIT = #'[01]';
+CHAR = #'[\\u0001-\\u007F]';
+CR = '\\u000D';
+CRLF = '\\u000D\\u0009';
+CTL = #'[\\u0000-\\u001F|\\u007F]';
 DIGIT = #'[0-9]';
-DQUOTE = '\u0022';
-HEXDIG = DIGIT | 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
-HTAB = '\u0009';
-LF = '\u000A';
+DQUOTE = '\\u0022';
+HEXDIG = #'[0-9A-F]'
+HTAB = '\\u0009';
+LF = '\\u000A';
 LWSP = (WSP | CRLF WSP)*;
-OCTET = #'[\u0000-\u00FF]';
-SP = '\u0020';
-VCHAR = #'[\u0021-\u007E]';
+OCTET = #'[\\u0000-\\u00FF]';
+SP = '\\u0020';
+VCHAR = #'[\\u0021-\\u007E]';
 WSP = SP | HTAB;
 ")
 
@@ -62,6 +62,27 @@ VCHAR          =  %x21-7E
 WSP            =  SP / HTAB
                                 ; white space
 ")
+
+(def abnf-core-abnf-without-comments
+  "ALPHA          =  %x41-5A / %x61-7A
+BIT            =  \"0\" / \"1\"
+CHAR           =  %x01-7F
+CR             =  %x0D
+CRLF           =  CR LF
+CTL            =  %x00-1F / %x7F
+DIGIT          =  %x30-39
+DQUOTE         =  %x22
+HEXDIG         =  DIGIT / \"A\" / \"B\" / \"C\" / \"D\" / \"E\" / \"F\"
+HTAB           =  %x09
+LF             =  %x0A
+LWSP           =  *(WSP / CRLF WSP)
+OCTET          =  %x00-FF
+SP             =  %x20
+VCHAR          =  %x21-7E
+WSP            =  SP / HTAB
+")
+
+
 (def abnf
   "
 rulelist = (rule | <(c-wsp* c-nl)>)+
@@ -104,11 +125,11 @@ NUM = DIGIT+
 <BIT> = '0' | '1'
 <CHAR> = #'[\u0001-\u007F]'
     (* any 7-bit US-ASCII character, excluding NUL *)
-<CR> = '\u000D'
+<CR> = '\\u000D'
     (* carriage return *)
 <CRLF> = CR? LF
     (* newline (modified for instaparse) *)
-<CTL> = #'[\u0000-\u001F\u007F]'
+<CTL> = #'[\\u0000-\\u001F\\u007F]'
 <DIGIT> = #'[0-9]'
 <DQUOTE> = \"\\\"\"
 <HEXDIG> = DIGIT | 'A' | 'B' | 'C' | 'D' | 'E' | 'F'
@@ -129,7 +150,7 @@ NUM = DIGIT+
   ([num1]
     (string (str (char num1))))
   ([num1 num2 & nums]
-    (let [v (concat [num1 num2] nums)]
+    (let [v (vec (concat [num1 num2] nums))]
       (if (= (v 1) "-")
         (char-range (char (v 0))
                     (char (v 2)))
@@ -208,3 +229,14 @@ NUM = DIGIT+
     (str s abnf-core-abnf)
     (parse abnf-parser)
     (transform abnf-transformer)))
+
+(require '[instaparse.gll :as gll])
+(defn get-lines [t n]
+  (str (clojure.string/join "\n" (take n (clojure.string/split t #"\r?\n"))) "\n"))
+  
+(defn test-abnf [n]
+  (let [t (get-lines (slurp "test/instaparse/abnf_uri.txt") n)
+        m (abnf-parser t)]
+    [(count t) @gll/stats]))
+                
+                

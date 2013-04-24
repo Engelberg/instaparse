@@ -21,12 +21,12 @@
   ;; Need a way to convert parsers into strings for printing and error messages.
   (:require [instaparse.print :as print]))
     
-(def DEBUG nil)
+(def DEBUG true)
 (defmacro debug [& body]
   (when DEBUG
     `(do ~@body)))
-(defmacro dprintln [& body]
-  `(debug (println ~@body)))
+(defmacro dprintln [& body] nil)
+  ;`(debug (println ~@body)))
 
 (debug (def stats (atom {})))
 (debug (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
