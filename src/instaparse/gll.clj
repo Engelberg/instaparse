@@ -19,14 +19,21 @@
   (:require [instaparse.combinators-source :refer [Epsilon nt]])
   
   ;; Need a way to convert parsers into strings for printing and error messages.
-  (:require [instaparse.print :as print]))
+  (:require [instaparse.print :as print])
+  
+  (:use clojure.pprint)
+  )
     
 (def DEBUG true)
+(def PRINT false)
 (defmacro debug [& body]
   (when DEBUG
     `(do ~@body)))
-(defmacro dprintln [& body] nil)
-  ;`(debug (println ~@body)))
+(defmacro dprintln [& body]  
+  (when PRINT `(println ~@body)))
+(defmacro dpprint [& body]  
+  (when PRINT `(pprint ~@body)))
+
 
 (debug (def stats (atom {})))
 (debug (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
@@ -132,10 +139,11 @@
         i (:index result)
         k [listener i]
         c (get @cache k 0)
-        f #(listener result)]    
-    #_(dprintln "push-message" i c @(:generation tramp) (count @(:stack tramp))
+        f #(listener result)]
+    (debug (add! :push-message))    
+    (dprintln "push-message" i c @(:generation tramp) (count @(:stack tramp))
              (count @(:next-stack tramp)))
-    #_(dprintln "listener result" listener result)
+    (dprintln "push-message: listener result" listener result)
     (if (> c @(:generation tramp))
       (swap! (:next-stack tramp) conj f)
       (swap! (:stack tramp) conj f))
@@ -216,6 +224,7 @@
    Schedules notification to listener of all existing results.
    Initiates parse if necessary"
   [tramp node-key listener]
+  (dprintln "push-listener" [(node-key 1) (node-key 0)] (type listener))
   (let [listener-already-exists? (listener-exists? tramp node-key)
         node (node-get tramp node-key)
         listeners (:listeners node)]
@@ -261,7 +270,7 @@
                1 (Failure. index [reason])
                0 (Failure. index (conj (:reason failure) reason))
                -1  failure))))
-  (dprintln "Fail index" (:fail-index tramp))
+  #_(dprintln "Fail index" (:fail-index tramp))
   (when (= index (:fail-index tramp))
     (success tramp node-key 
              ((:node-builder tramp) :instaparse/failure (subs (:text tramp) index)) 
@@ -320,7 +329,7 @@
 
 (defn NodeListener [node-key tramp]  
   (fn [result]
-    (dprintln "Listener" [(node-key 0) (:tag (node-key 1))] "result" result)
+    (dprintln "Node Listener received" [(node-key 0) (:tag (node-key 1))] "result" result)
     (push-result tramp node-key result)))
 
 ; The second kind of listener handles lookahead.
@@ -335,10 +344,10 @@
 ; that needs to know the overall result of the cat parser.
 
 (defn CatListener [results-so-far parser-sequence node-key tramp]
-;  (pprint {:tag :CatListener
-;           :results-so-far results-so-far
-;           :parser-sequence (map :tag parser-sequence)
-;           :node-key [(node-key 0) (:tag (node-key 1))]})
+  (dpprint {:tag :CatListener
+           :results-so-far results-so-far
+           :parser-sequence (map :tag parser-sequence)
+           :node-key [(node-key 0) (:tag (node-key 1))]})
   (fn [result] 
     (let [{parsed-result :result continue-index :index} result
           new-results-so-far (conj results-so-far parsed-result)]
@@ -348,7 +357,7 @@
         (success tramp node-key new-results-so-far continue-index)))))
 
 (defn CatFullListener [results-so-far parser-sequence node-key tramp]
-;  (pprint {:tag :CatFullListener
+;  (dpprint {:tag :CatFullListener
 ;           :results-so-far results-so-far
 ;           :parser-sequence (map :tag parser-sequence)
 ;           :node-key [(node-key 0) (:tag (node-key 1))]})
@@ -398,7 +407,7 @@
 ; The fifth kind of listener is a RepListener, which wants between m and n repetitions of a parser
 
 (defn RepListener [results-so-far parser m n prev-index node-key tramp]
-  (fn [result]
+  (fn [result]    
     (let [{parsed-result :result continue-index :index} result]      
       ;(dprintln "Rep" (type results-so-far))
       (let [new-results-so-far (conj results-so-far parsed-result)]
