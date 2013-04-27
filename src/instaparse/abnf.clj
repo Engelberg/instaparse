@@ -82,6 +82,31 @@ VCHAR          =  %x21-7E
 WSP            =  SP / HTAB
 ")
 
+(def abnf-core-only-comments
+  "                                ; any 7-bit US-ASCII character,
+                                ;  excluding NUL
+                                ; carriage return
+                                ; Internet standard newline
+                                ; controls
+                                ; 0-9
+                                ; \" (Double Quote)
+                                ; horizontal tab
+                                ; linefeed
+                                ; Use of this linear-white-space rule
+                                ;  permits lines containing only white
+                                ;  space that are no longer legal in
+                                ;  mail headers and have caused
+                                ;  interoperability problems in other
+                                ;  contexts.
+                                ; Do not use when defining mail
+                                ;  headers and use with caution in
+                                ;  other contexts.
+                                ; 8 bits of data
+                                ; visible (printing) characters
+                                ; white space
+")
+
+
 
 (def abnf
   "
@@ -234,9 +259,9 @@ NUM = DIGIT+
 (defn get-lines [t n]
   (str (clojure.string/join "\n" (take n (clojure.string/split t #"\r?\n"))) "\n"))
   
-(defn test-abnf [n]
-  (let [t (get-lines (slurp "test/instaparse/abnf_uri.txt") n)
-        m (abnf-parser t)]
-    [(count t) @gll/stats]))
+;(defn test-abnf [n]
+;  (let [t (get-lines (slurp "test/instaparse/abnf_uri.txt") n)
+;        m (abnf-parser t)]
+;    [(count t) @gll/stats]))
                 
                 
