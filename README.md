@@ -894,3 +894,9 @@ That article had a link to a [paper](http://www.cs.uwm.edu/%7Edspiewak/papers/ge
 Alex Engelberg coded the first version of instaparse, proving the capabilities of the GLL algorithm.  He encouraged me to take his code and build and document a user-friendly API around it.
 
 I studied a number of other Clojure parser generators to help frame my ideas about what the API should look like.  I communicated with Eric Normand ([squarepeg](https://github.com/ericnormand/squarepeg)) and Christophe Grand ([parsley](https://github.com/cgrand/parsley)), both of whom provided useful advice and encouraged me to pursue my vision.
+
+YourKit is kindly supporting open source projects with its full-featured Java Profiler.
+YourKit, LLC is the creator of innovative and intelligent tools for profiling
+Java and .NET applications. Take a look at YourKit's leading software products:
+[YourKit Java Profiler](http://www.yourkit.com/java/profiler/index.jsp) and
+[YourKit .NET Profiler](http://www.yourkit.com/.net/profiler/index.jsp).
