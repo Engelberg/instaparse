@@ -87,10 +87,26 @@ whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments'
                (str "\\" c)
                c)))))
 
+(defn project
+  "Restricts map to certain keys"
+  [m ks]
+  (into {}
+        (for [k ks
+              :when (contains? m k)]
+          [k (m k)])))
+          
+(defn merge-core
+  "Merges abnf-core map in with parsed grammar map"
+  [grammar-map]
+  (merge
+    (project abnf-core (distinct (mapcat cfg/seq-nt (vals grammar-map))))
+    grammar-map))
+  
+
 (def abnf-transformer
   {
    :rulelist (fn [& rules]
-               (-> (merge abnf-core (apply merge-with alt rules))                 
+               (-> (merge-core (apply merge-with alt rules))                 
                  (insta/parser :start (key (first (first rules))))))
    :rule hash-map
    :rulename-left #(keyword (clojure.string/upper-case (apply str %&)))
