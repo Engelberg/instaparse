@@ -1,7 +1,8 @@
 (ns instaparse.combinators
   "The combinator public API for instaparse"
   (:require [instaparse.combinators-source :as c])
-  (:require [instaparse.cfg :as cfg]))
+  (:require [instaparse.cfg :as cfg])
+  (:require [instaparse.abnf :as abnf]))
 
 ;; The actual source is in combinators-source.
 ;; This was necessary to avoid a cyclical dependency in the namespaces.
@@ -35,4 +36,5 @@
 (defclone hide-tag c/hide-tag)
 
 (defclone ebnf cfg/ebnf)
+(defclone abnf abnf/abnf)
        
