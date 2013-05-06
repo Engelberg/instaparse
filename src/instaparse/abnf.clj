@@ -1,8 +1,9 @@
 (ns instaparse.abnf
   "This is the context free grammar that recognizes ABNF notation."
   (:require [instaparse.core :as insta]
-            [instaparse.cfg :as cfg])
-  (:use instaparse.combinators))
+            [instaparse.cfg :as cfg]
+            [instaparse.reduction :as red])
+  (:use instaparse.combinators-source))
 
 (def abnf-core
   {:ALPHA (regexp "[a-zA-Z]")
@@ -27,39 +28,41 @@
             
 (def abnf-grammar
   "
-rulelist = <opt-whitespace> rule+
-rule = rulename-left <defined-as> elements
-rulename-left = rulename
-rulename-right = rulename
-<rulename> = #'[a-zA-Z][-a-zA-Z0-9]*(?x) #identifier'
-defined-as = <opt-whitespace> ('=' | '=/') <opt-whitespace>
-<elements> = alternation <opt-whitespace>
-alternation = concatenation (<opt-whitespace '/' opt-whitespace> concatenation)*
-concatenation = repetition (<whitespace> repetition)*
-repetition = [repeat] <opt-whitespace> element
-repeat = NUM | (NUM? '*' NUM?)
-<element> = rulename-right | group | option | char-val | num-val
-<group> = <'(' opt-whitespace> alternation <opt-whitespace ')'>
-option = <'[' opt-whitespace> alternation <opt-whitespace ']'>
-char-val = <DQUOTE> #'[\\u0020-\\u0021\\u0023-\\u007E]'* <DQUOTE>
-<num-val> = <'%'> (bin-val | dec-val | hex-val)
+rulelist = <opt-whitespace> (rule | hide-tag-rule)+;
+rule = rulename-left <defined-as> elements;
+hide-tag-rule = hide-tag <defined-as> elements;
+rulename-left = rulename;
+rulename-right = rulename;
+<rulename> = #'[a-zA-Z][-a-zA-Z0-9]*(?x) #identifier';
+<hide-tag> = <'<' opt-whitespace> rulename-left <opt-whitespace '>'>;
+defined-as = <opt-whitespace> ('=' | '=/') <opt-whitespace>;
+<elements> = alternation <opt-whitespace>;
+alternation = concatenation (<opt-whitespace '/' opt-whitespace> concatenation)*;
+concatenation = repetition (<whitespace> repetition)*;
+repetition = [repeat] <opt-whitespace> element;
+repeat = NUM | (NUM? '*' NUM?);
+<element> = rulename-right | group | hide | option | char-val | num-val;
+<group> = <'(' opt-whitespace> alternation <opt-whitespace ')'>;
+option = <'[' opt-whitespace> alternation <opt-whitespace ']'>;
+hide = <'<' opt-whitespace> alternation <opt-whitespace '>'>;
+char-val = <DQUOTE> #'[\\u0020-\\u0021\\u0023-\\u007E]'* <DQUOTE>;
+<num-val> = <'%'> (bin-val | dec-val | hex-val);
 bin-val = <'b'> bin-char
-          [ (<'.'> bin-char)+ | ('-' bin-char) ]
-          (* series of contatenated bit values or single ONEOF range *)
-bin-char = BIT+
+          [ (<'.'> bin-char)+ | ('-' bin-char) ];
+bin-char = BIT+;
 dec-val = <'d'> dec-char
-          [ (<'.'> dec-char)+ | ('-' dec-char) ]
-dec-char = DIGIT+
+          [ (<'.'> dec-char)+ | ('-' dec-char) ];
+dec-char = DIGIT+;
 hex-val = <'x'> hex-char
-          [ (<'.'> hex-char)+ | ('-' hex-char) ]
-hex-char = HEXDIG+
-NUM = DIGIT+
-<BIT> = '0' | '1'
-<DIGIT> = #'[0-9]'
-<DQUOTE> = '\\u0022'
-<HEXDIG> = #'[0-9A-Fa-f]'
-opt-whitespace = #'\\s*(?:;.*?\\u000D?\\u000A\\s*)*(?x) # optional whitespace or comments'
-whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments'
+          [ (<'.'> hex-char)+ | ('-' hex-char) ];
+hex-char = HEXDIG+;
+NUM = DIGIT+;
+<BIT> = '0' | '1';
+<DIGIT> = #'[0-9]';
+<DQUOTE> = '\\u0022';
+<HEXDIG> = #'[0-9A-Fa-f]';
+opt-whitespace = #'\\s*(?:;.*?\\u000D?\\u000A\\s*)*(?x) # optional whitespace or comments';
+whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments';
 ")
 
 (defn char-range
@@ -92,14 +95,32 @@ whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments'
   (merge
     (project abnf-core (distinct (mapcat cfg/seq-nt (vals grammar-map))))
     grammar-map))
-  
 
+(defn hide-tag?
+  "Tests whether parser was constructed with hide-tag"
+  [p]
+  (= (:red p) red/raw-non-terminal-reduction))
+
+(defn alt-preserving-hide-tag [p1 p2]
+  (let [hide-tag-p1? (hide-tag? p1)
+        hide-tag-p2? (hide-tag? p2)]
+    (cond
+      (and hide-tag-p1? hide-tag-p2?)
+      (hide-tag (alt (dissoc p1 :red) (dissoc p2 :red)))
+      hide-tag-p1?
+      (hide-tag (alt (dissoc p1 :red) p2))
+      hide-tag-p2?
+      (hide-tag (alt p1 (dissoc p2 :red)))
+      :else
+      (alt p1 p2))))
+        
 (def abnf-transformer
   {
    :rulelist (fn [& rules]
-               (-> (merge-core (apply merge-with alt rules))                 
+               (-> (merge-core (apply merge-with alt-preserving-hide-tag rules))                 
                  (insta/parser :start (key (first (first rules))))))
    :rule hash-map
+   :hide-tag-rule (fn [tag rule] {tag (hide-tag rule)})
    :rulename-left #(keyword (clojure.string/upper-case (apply str %&)))
    :rulename-right #(nt (keyword (clojure.string/upper-case (apply str %&))))
    ; since rulenames are case insensitive, convert it to upper case internally to be consistent
@@ -124,6 +145,7 @@ whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments'
                  ([element]
                    element))
    :option opt
+   :hide hide
    :char-val (fn [& cs]
                ; case insensitive string
                (string-ci (apply str cs)))
