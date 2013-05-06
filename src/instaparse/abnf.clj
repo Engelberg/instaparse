@@ -165,5 +165,16 @@ whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments';
 (defn make-abnf-parser
   [s]
   (insta/transform abnf-transformer
-                   (insta/parse abnf-parser s :total true)))
+                   (insta/parse abnf-parser s)))
 
+(defn abnf
+  "Takes an ABNF grammar specification string and returns the combinator version.
+If you give it the right-hand side of a rule, it will return the combinator equivalent.
+If you give it a series of rules, it will give you back a grammar map.   
+Useful for combining with other combinators."
+  [spec]
+  (if (re-find #"=" spec)
+    (insta/parse abnf-parser)
+    (insta/parse abnf-parser :start :elements)))      
+          
+        

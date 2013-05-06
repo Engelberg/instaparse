@@ -262,14 +262,8 @@ If you give it the right-hand side of a rule, it will return the combinator equi
 If you give it a series of rules, it will give you back a grammar map.   
 Useful for combining with other combinators."
   [spec]
-  (let [rules (parse cfg :rules spec false)]
-    (if (instance? instaparse.gll.Failure rules)
-      (let [rhs (parse cfg :alt-or-ord spec false)]
-        (if (instance? instaparse.gll.Failure rhs)
-          (throw (RuntimeException. (str "First tried to interpret the specification as a series of rules and got this error:\n"                                         
-                                         (with-out-str (println rules))
-                                         \newline
-                                         "Then tried to interpret it as a rule fragment and got this error:\n"
-                                         (with-out-str (println rhs)))))
-          (build-rule (first rhs))))
-      (into {} (map build-rule rules)))))        
+  (if (re-find #"[:=]" spec)
+    (let [rules (parse cfg :rules spec false)]
+      (into {} (map build-rule rules)))
+    (let [rhs (parse cfg :alt-or-ord spec false)]
+      (build-rule (first rhs)))))      
