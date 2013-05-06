@@ -78,15 +78,6 @@ whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments'
         (apply alt (for [n v]
                      (string (str (char n)))))))))
 
-(defn re-escape
-  [s]
-  (let [bad-chars (set "[]{}-!@#$%^&*()")]
-    (apply str
-           (for [c s]
-             (if (bad-chars c)
-               (str "\\" c)
-               c)))))
-
 (defn project
   "Restricts map to certain keys"
   [m ks]
