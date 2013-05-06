@@ -135,17 +135,7 @@ whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments'
    :option opt
    :char-val (fn [& cs]
                ; case insensitive string
-               (regexp (apply str
-                              (for [c cs]
-                                (let [low (clojure.string/lower-case c)
-                                      high (clojure.string/upper-case c)]
-                                  (if (= low high)
-                                    (re-escape c)
-                                    (str "["
-                                         (re-escape low)
-                                         "|"
-                                         (re-escape high)
-                                         "]")))))))
+               (string-ci (apply str cs)))
    :bin-char (fn [& cs]
                (Integer/parseInt (apply str cs) 2))
    :dec-char (fn [& cs]

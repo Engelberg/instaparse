@@ -44,7 +44,8 @@
 
 (declare alt-parse cat-parse string-parse epsilon-parse non-terminal-parse
          opt-parse plus-parse star-parse regexp-parse lookahead-parse
-         rep-parse negative-lookahead-parse ordered-alt-parse)
+         rep-parse negative-lookahead-parse ordered-alt-parse
+         string-case-insensitive-parse)
 (defn -parse [parser index tramp]
   (dprintln "-parse" index (:tag parser))
   (case (:tag parser)
@@ -52,6 +53,7 @@
     :alt (alt-parse parser index tramp)
     :cat (cat-parse parser index tramp)
     :string (string-parse parser index tramp)
+    :string-ci (string-case-insensitive-parse parser index tramp)
     :epsilon (epsilon-parse index tramp)
     :opt (opt-parse parser index tramp)
     :plus (plus-parse parser index tramp)
@@ -64,7 +66,8 @@
 
 (declare alt-full-parse cat-full-parse string-full-parse epsilon-full-parse 
          non-terminal-full-parse opt-full-parse plus-full-parse star-full-parse
-         rep-full-parse regexp-full-parse lookahead-full-parse ordered-alt-full-parse)
+         rep-full-parse regexp-full-parse lookahead-full-parse ordered-alt-full-parse
+         string-case-insensitive-full-parse)
 (defn -full-parse [parser index tramp]
   (dprintln "-full-parse" index (:tag parser))
   (case (:tag parser)
@@ -72,6 +75,7 @@
     :alt (alt-full-parse parser index tramp)
     :cat (cat-full-parse parser index tramp)
     :string (string-full-parse parser index tramp)
+    :string-ci (string-case-insensitive-full-parse parser index tramp)
     :epsilon (epsilon-full-parse index tramp)
     :opt (opt-full-parse parser index tramp)
     :plus (plus-full-parse parser index tramp)
@@ -457,6 +461,28 @@
         end (min (count text) (+ index (count string)))
         head (subs text index end)]      
     (if (and (= end (count text)) (= string head))
+      (success tramp [index this] string end)
+      (fail tramp [index this] index
+            {:tag :string :expecting string :full true}))))
+
+(defn string-case-insensitive-parse
+  [this index tramp]
+  (let [string (:string this)
+        text (:text tramp)
+        end (min (count text) (+ index (count string)))
+        head (subs text index end)]      
+    (if (.equalsIgnoreCase ^:String string head)
+      (success tramp [index this] string end)
+      (fail tramp [index this] index
+            {:tag :string :expecting string}))))
+
+(defn string-case-insensitive-full-parse
+  [this index tramp]
+  (let [string (:string this)
+        text (:text tramp)
+        end (min (count text) (+ index (count string)))
+        head (subs text index end)]      
+    (if (and (= end (count text)) (.equalsIgnoreCase ^:String string head))
       (success tramp [index this] string end)
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
