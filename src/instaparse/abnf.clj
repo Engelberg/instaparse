@@ -29,14 +29,13 @@
 (def abnf-grammar
   "
 rulelist = <opt-whitespace> (rule | hide-tag-rule)+;
-rule = rulename-left <defined-as> elements;
-hide-tag-rule = hide-tag <defined-as> elements;
+rule = rulename-left <defined-as> alternation <opt-whitespace>;
+hide-tag-rule = hide-tag <defined-as> alternation <opt-whitespace>;
 rulename-left = rulename;
 rulename-right = rulename;
 <rulename> = #'[a-zA-Z][-a-zA-Z0-9]*(?x) #identifier';
 <hide-tag> = <'<' opt-whitespace> rulename-left <opt-whitespace '>'>;
 defined-as = <opt-whitespace> ('=' | '=/') <opt-whitespace>;
-<elements> = alternation <opt-whitespace>;
 alternation = concatenation (<opt-whitespace '/' opt-whitespace> concatenation)*;
 concatenation = repetition (<whitespace> repetition)*;
 repetition = [repeat] <opt-whitespace> element;
@@ -45,7 +44,9 @@ repeat = NUM | (NUM? '*' NUM?);
 <group> = <'(' opt-whitespace> alternation <opt-whitespace ')'>;
 option = <'[' opt-whitespace> alternation <opt-whitespace ']'>;
 hide = <'<' opt-whitespace> alternation <opt-whitespace '>'>;
-char-val = <DQUOTE> #'[\\u0020-\\u0021\\u0023-\\u007E]'* <DQUOTE>;
+char-val = char-val-dq | char-val-sq
+<char-val-dq> = <DQUOTE> #'[\\u0020-\\u0021\\u0023-\\u007E]'* <DQUOTE>;
+<char-val-sq> = <SQUOTE> #'[\\u0020-\\u0026\u0028-\u007E]'* <SQUOTE>;
 <num-val> = <'%'> (bin-val | dec-val | hex-val);
 bin-val = <'b'> bin-char
           [ (<'.'> bin-char)+ | ('-' bin-char) ];
@@ -60,6 +61,7 @@ NUM = DIGIT+;
 <BIT> = '0' | '1';
 <DIGIT> = #'[0-9]';
 <DQUOTE> = '\\u0022';
+<SQUOTE> = '\\u0027';
 <HEXDIG> = #'[0-9A-Fa-f]';
 opt-whitespace = #'\\s*(?:;.*?\\u000D?\\u000A\\s*)*(?x) # optional whitespace or comments';
 whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments';
@@ -174,7 +176,7 @@ If you give it a series of rules, it will give you back a grammar map.
 Useful for combining with other combinators."
   [spec]
   (if (re-find #"=" spec)
-    (insta/parse abnf-parser)
-    (insta/parse abnf-parser :start :elements)))      
-          
-        
+    (->> (insta/parse abnf-parser spec)
+      (insta/transform abnf-transformer))
+    (->> (insta/parse abnf-parser spec :start :alternation)
+      (insta/transform abnf-transformer))))
