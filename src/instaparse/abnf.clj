@@ -28,7 +28,7 @@
             
 (def abnf-grammar
   "
-rulelist = <opt-whitespace> (rule | hide-tag-rule)+;
+<rulelist> = <opt-whitespace> (rule | hide-tag-rule)+;
 rule = rulename-left <defined-as> alternation <opt-whitespace>;
 hide-tag-rule = hide-tag <defined-as> alternation <opt-whitespace>;
 rulename-left = rulename;
@@ -117,10 +117,7 @@ whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments';
       (alt p1 p2))))
         
 (def abnf-transformer
-  {
-   :rulelist (fn [& rules]
-               (-> (merge-core (apply merge-with alt-preserving-hide-tag rules))                 
-                 (insta/parser :start (key (first (first rules))))))
+  {   
    :rule hash-map
    :hide-tag-rule (fn [tag rule] {tag (hide-tag rule)})
    :rulename-left #(keyword (clojure.string/upper-case (apply str %&)))
@@ -164,10 +161,16 @@ whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments';
 
 (def abnf-parser (insta/parser abnf-grammar))
 
+(defn rules->grammar-map
+  [rules]
+  (merge-core (apply merge-with alt-preserving-hide-tag rules)))
+
 (defn make-abnf-parser
   [s]
-  (insta/transform abnf-transformer
-                   (insta/parse abnf-parser s)))
+  (let [parsed-spec (insta/parse abnf-parser s)
+        rules (insta/transform abnf-transformer parsed-spec)]        
+    (-> (rules->grammar-map rules)
+      (insta/parser :start (key (first (first rules)))))))
 
 (defn abnf
   "Takes an ABNF grammar specification string and returns the combinator version.
@@ -177,6 +180,7 @@ Useful for combining with other combinators."
   [spec]
   (if (re-find #"=" spec)
     (->> (insta/parse abnf-parser spec)
-      (insta/transform abnf-transformer))
+      (insta/transform abnf-transformer)
+      rules->grammar-map)
     (->> (insta/parse abnf-parser spec :start :alternation)
       (insta/transform abnf-transformer))))
