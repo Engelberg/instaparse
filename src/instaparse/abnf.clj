@@ -196,7 +196,7 @@ Useful for combining with other combinators."
       (throw (RuntimeException. (str "Error parsing grammar specification:\n"
                                      (with-out-str (println rule-tree)))))
       (let [rules (rules->grammar-map (t/transform abnf-transformer rule-tree)) 
-            start-production (first (first rules))] 
+            start-production (first (first rule-tree))] 
         {:grammar (cfg/check-grammar (red/apply-standard-reductions output-format rules))
          :start-production start-production
          :output-format output-format}))))
