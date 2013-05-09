@@ -40,17 +40,19 @@ alternation = concatenation (<opt-whitespace '/' opt-whitespace> concatenation)*
 concatenation = repetition (<whitespace> repetition)*;
 repetition = [repeat] <opt-whitespace> element;
 repeat = NUM | (NUM? '*' NUM?);
-<element> = rulename-right | group | hide | option | char-val | num-val;
+<element> = rulename-right | group | hide | option | char-val | num-val
+          | look | neg;
+look = <'&' opt-whitespace> alternation;
+neg = <'!' opt-whitespace> alternation;
 <group> = <'(' opt-whitespace> alternation <opt-whitespace ')'>;
 option = <'[' opt-whitespace> alternation <opt-whitespace ']'>;
 hide = <'<' opt-whitespace> alternation <opt-whitespace '>'>;
-char-val = char-val-dq | char-val-sq
-<char-val-dq> = <DQUOTE> #'[\\u0020-\\u0021\\u0023-\\u007E]'* <DQUOTE>;
-<char-val-sq> = <SQUOTE> #'[\\u0020-\\u0026\u0028-\u007E]'* <SQUOTE>;
+char-val = <'\\u0022'> #'[\\u0020-\\u0021\\u0023-\\u007E]'* <'\\u0022'> (* double-quoted strings *)
+         | <'\\u0027'> #'[\\u0020-\\u0026\u0028-\u007E]'* <'\\u0027'>;  (* single-quoted strings *)
 <num-val> = <'%'> (bin-val | dec-val | hex-val);
 bin-val = <'b'> bin-char
           [ (<'.'> bin-char)+ | ('-' bin-char) ];
-bin-char = BIT+;
+bin-char = ('0' | '1')+;
 dec-val = <'d'> dec-char
           [ (<'.'> dec-char)+ | ('-' dec-char) ];
 dec-char = DIGIT+;
@@ -58,13 +60,12 @@ hex-val = <'x'> hex-char
           [ (<'.'> hex-char)+ | ('-' hex-char) ];
 hex-char = HEXDIG+;
 NUM = DIGIT+;
-<BIT> = '0' | '1';
 <DIGIT> = #'[0-9]';
-<DQUOTE> = '\\u0022';
-<SQUOTE> = '\\u0027';
 <HEXDIG> = #'[0-9A-Fa-f]';
 opt-whitespace = #'\\s*(?:;.*?\\u000D?\\u000A\\s*)*(?x) # optional whitespace or comments';
 whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments';
+regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
+       | #\"#\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"(?x) #Double-quoted regexp\"
 ")
 
 (defn char-range
@@ -145,6 +146,9 @@ whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments';
                    element))
    :option opt
    :hide hide
+   :look look
+   :neg neg
+   :regexp (comp regexp cfg/process-regexp)
    :char-val (fn [& cs]
                ; case insensitive string
                (string-ci (apply str cs)))
