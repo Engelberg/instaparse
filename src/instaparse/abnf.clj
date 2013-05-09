@@ -18,14 +18,15 @@
    :HEXDIG (regexp "[0-9A-F]")
    :HTAB (string "\\u0009")
    :LF (string "\\u000A")
-   :LWSP (alt (nt :WSP)
+   :LWSP (alt (alt (string "\\u0020") (string "\\u0009")) ;WSP
               (star
-                (cat (nt :CRLF)
-                     (nt :WSP))))
+                (cat (string "\\u000D\\u000A") ;CRLF
+                     (alt (string "\\u0020") (string "\\u0009"))))) ;WSP
    :OCTET (regexp "[\\u0000-\\u00FF]")
    :SP (string "\\u0020")
    :VCHAR (regexp "[\\u0021-\\u007E]")
-   :WSP (alt (nt :SP) (nt :HTAB))})
+   :WSP (alt (string "\\u0020")     ;SP
+             (string "\\u0009"))})  ;HTAB
 
 (def abnf-grammar
   "
