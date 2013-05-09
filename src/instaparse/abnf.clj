@@ -182,13 +182,13 @@ Useful for combining with other combinators."
       (if (instance? instaparse.gll.Failure rule-tree)
         (throw (RuntimeException. (str "Error parsing grammar specification:\n"
                                        (with-out-str (println rule-tree)))))
-        (rules->grammar-map (t/transform rule-tree abnf-transformer))))      
+        (rules->grammar-map (t/transform abnf-transformer rule-tree))))      
     
     (let [rhs-tree (gll/parse abnf-parser :alternation spec false)]
       (if (instance? instaparse.gll.Failure rhs-tree)
         (throw (RuntimeException. (str "Error parsing grammar specification:\n"
                                        (with-out-str (println rhs-tree)))))        
-        (t/transform rhs-tree abnf-transformer)))))
+        (t/transform abnf-transformer rhs-tree)))))
 
 (defn build-parser [spec output-format]
   (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
