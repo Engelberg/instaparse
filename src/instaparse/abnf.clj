@@ -195,9 +195,10 @@ Useful for combining with other combinators."
     (if (instance? instaparse.gll.Failure rule-tree)
       (throw (RuntimeException. (str "Error parsing grammar specification:\n"
                                      (with-out-str (println rule-tree)))))
-      (let [rules (rules->grammar-map (t/transform abnf-transformer rule-tree)) 
-            start-production (first (first rule-tree))] 
-        {:grammar (cfg/check-grammar (red/apply-standard-reductions output-format rules))
+      (let [rules (t/transform abnf-transformer rule-tree)
+            grammar-map (rules->grammar-map rules)
+            start-production (first (first (first rules)))] 
+        {:grammar (cfg/check-grammar (red/apply-standard-reductions output-format grammar-map))
          :start-production start-production
          :output-format output-format}))))
 
