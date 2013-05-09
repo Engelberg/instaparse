@@ -18,18 +18,19 @@
    :HEXDIG (regexp "[0-9A-F]")
    :HTAB (string "\\u0009")
    :LF (string "\\u000A")
-   :LWSP (alt (nt :WSP)
+   :LWSP (alt (alt (string "\\u0020") (string "\\u0009")) ;WSP
               (star
-                (cat (nt :CRLF)
-                     (nt :WSP))))
+                (cat (string "\\u000D\\u000A") ;CRLF
+                     (alt (string "\\u0020") (string "\\u0009"))))) ;WSP
    :OCTET (regexp "[\\u0000-\\u00FF]")
    :SP (string "\\u0020")
    :VCHAR (regexp "[\\u0021-\\u007E]")
-   :WSP (alt (nt :SP) (nt :HTAB))})
-            
+   :WSP (alt (string "\\u0020")     ;SP
+             (string "\\u0009"))})  ;HTAB
+
 (def abnf-grammar
   "
-<rulelist> = <opt-whitespace> (rule | hide-tag-rule)+;
+<rulelist> = <opt-whitespace> (rule | hide-tag-rule)+ <a-comment?>;
 rule = rulename-left <defined-as> alternation <opt-whitespace>;
 hide-tag-rule = hide-tag <defined-as> alternation <opt-whitespace>;
 rulename-left = rulename;
@@ -65,6 +66,7 @@ NUM = DIGIT+;
 <HEXDIG> = #'[0-9A-Fa-f]';
 opt-whitespace = #'\\s*(?:;.*?\\u000D?\\u000A\\s*)*(?x) # optional whitespace or comments';
 whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments';
+a-comment = #';.*';
 regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
        | #\"#\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"(?x) #Double-quoted regexp\"
 ")
