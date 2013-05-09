@@ -112,9 +112,9 @@
       (string? grammar-specification)
       (let [parser
             (try (let [spec (slurp grammar-specification)]
-                   (cfg/build-parser spec output-format))
+                   (build-parser spec output-format))
               (catch java.io.FileNotFoundException e 
-                (cfg/build-parser grammar-specification output-format)))]
+                (build-parser grammar-specification output-format)))]
         (if start (map->Parser (assoc parser :start-production start))
           (map->Parser parser)))
       
