@@ -1,7 +1,8 @@
 (ns instaparse.abnf
   "This is the context free grammar that recognizes ABNF notation."
-  (:require [instaparse.core :as insta]
+  (:require [instaparse.transform :as t]
             [instaparse.cfg :as cfg]
+            [instaparse.gll :as gll]
             [instaparse.reduction :as red])
   (:use instaparse.combinators-source))
 
@@ -163,18 +164,12 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
    :hex-val get-char-combinator
    :NUM #(Integer/parseInt (apply str %&))})
 
-(def abnf-parser (insta/parser abnf-grammar))
+(def abnf-parser (red/apply-standard-reductions 
+                   :hiccup (cfg/ebnf abnf-grammar)))
 
 (defn rules->grammar-map
   [rules]
   (merge-core (apply merge-with alt-preserving-hide-tag rules)))
-
-(defn make-abnf-parser
-  [s]
-  (let [parsed-spec (insta/parse abnf-parser s)
-        rules (insta/transform abnf-transformer parsed-spec)]        
-    (-> (rules->grammar-map rules)
-      (insta/parser :start (key (first (first rules)))))))
 
 (defn abnf
   "Takes an ABNF grammar specification string and returns the combinator version.
@@ -183,8 +178,26 @@ If you give it a series of rules, it will give you back a grammar map.
 Useful for combining with other combinators."
   [spec]
   (if (re-find #"=" spec)
-    (->> (insta/parse abnf-parser spec)
-      (insta/transform abnf-transformer)
-      rules->grammar-map)
-    (->> (insta/parse abnf-parser spec :start :alternation)
-      (insta/transform abnf-transformer))))
+    (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
+      (if (instance? instaparse.gll.Failure rule-tree)
+        (throw (RuntimeException. (str "Error parsing grammar specification:\n"
+                                       (with-out-str (println rule-tree)))))
+        (rules->grammar-map (t/transform rule-tree abnf-transformer))))      
+    
+    (let [rhs-tree (gll/parse abnf-parser :alternation spec false)]
+      (if (instance? instaparse.gll.Failure rhs-tree)
+        (throw (RuntimeException. (str "Error parsing grammar specification:\n"
+                                       (with-out-str (println rhs-tree)))))        
+        (t/transform rhs-tree abnf-transformer)))))
+
+(defn build-parser [spec output-format]
+  (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
+    (if (instance? instaparse.gll.Failure rule-tree)
+      (throw (RuntimeException. (str "Error parsing grammar specification:\n"
+                                     (with-out-str (println rule-tree)))))
+      (let [rules (rules->grammar-map (t/transform abnf-transformer spec)) 
+            start-production (first (first rules))] 
+        {:grammar (cfg/check-grammar (red/apply-standard-reductions output-format rules))
+         :start-production start-production
+         :output-format output-format}))))
+

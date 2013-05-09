@@ -1,5 +1,6 @@
 (ns instaparse.combinators
   "The combinator public API for instaparse"
+  (:use instaparse.clone)
   (:require [instaparse.combinators-source :as c])
   (:require [instaparse.cfg :as cfg])
   (:require [instaparse.abnf :as abnf]))
@@ -7,17 +8,6 @@
 ;; The actual source is in combinators-source.
 ;; This was necessary to avoid a cyclical dependency in the namespaces.
 
-(defmacro defclone [here there]
-  `(do 
-     (def ~here ~there)
-     (alter-meta! (var ~here) assoc
-                  :doc (:doc (meta (var ~there)))
-                  :arglists (:arglists (meta (var ~there)))
-                  :file (:file (meta (var ~there)))
-                  :line (:line (meta (var ~there)))
-                  :column (:column (meta (var ~there))))
-     (var ~here)))
-                 
 (defclone Epsilon c/Epsilon)
 (defclone opt c/opt)
 (defclone plus c/plus)
