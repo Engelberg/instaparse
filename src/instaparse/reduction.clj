@@ -28,28 +28,17 @@
         (flattenable? fs) (concat (nt-flatten fs) (nt-flatten (next s)))
         :else             (lazy-seq (cons fs (nt-flatten (next s))))))))
 
-(defrecord RawNonTerminalReduction []
-  clojure.lang.IFn
-  (applyTo [self parse-result]
-    (if parse-result
-      (make-flattenable parse-result)
-      nil)) )
+(def raw-non-terminal-reduction {:reduction-type :raw})
 
-(def raw-non-terminal-reduction (RawNonTerminalReduction.))
+(defn HiccupNonTerminalReduction [key]
+  {:reduction-type :hiccup :key key})
 
-(defrecord HiccupNonTerminalReduction [key]
-  clojure.lang.IFn
-  (applyTo [self parse-result]
-    (into [key] parse-result)))
-
-(defrecord EnliveNonTerminalReduction [key] 
-  clojure.lang.IFn
-  (applyTo [self parse-result]
-    {:tag key, :content parse-result}))
+(defn EnliveNonTerminalReduction [key] 
+  {:reduction-type :enlive, :key key})
 
 (def ^:constant reduction-types 
-  {:hiccup ->HiccupNonTerminalReduction
-   :enlive ->EnliveNonTerminalReduction})
+  {:hiccup HiccupNonTerminalReduction
+   :enlive EnliveNonTerminalReduction})
                     
 (def ^:constant node-builders
   ; A map of functions for building a node that only has one item
@@ -60,8 +49,14 @@
 (def standard-non-terminal-reduction :hiccup)
 
 (defn apply-reduction [f result]
-  (apply f (nt-flatten (make-flattenable [result]))))
-
+  (let [flattened-result (nt-flatten (make-flattenable [result]))]
+    (case (:reduction-type f)
+      :raw (when flattened-result 
+             (make-flattenable flattened-result))               
+      :hiccup (into [(:key f)] flattened-result)
+      :enlive {:tag (:key f), :content flattened-result}
+      (f result))))
+    
 (defn apply-standard-reductions 
   ([grammar] (apply-standard-reductions standard-non-terminal-reduction grammar))
   ([reduction-type grammar]

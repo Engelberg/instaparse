@@ -1,9 +1,12 @@
 (ns instaparse.core
+  (:use instaparse.clone)
   (:require [instaparse.gll :as gll] 
             [instaparse.cfg :as cfg]
             [instaparse.failure :as fail]
             [instaparse.print :as print]
-            [instaparse.reduction :as red]))
+            [instaparse.reduction :as red]
+            [instaparse.transform :as t]
+            [instaparse.abnf :as abnf]))
   ;(:use clojure.tools.trace)
 
 (def ^:dynamic *default-output-format* :hiccup)
@@ -12,6 +15,13 @@
   [type]
   {:pre [(#{:hiccup :enlive} type)]}
   (alter-var-root #'*default-output-format* (constantly type)))
+
+(def ^:dynamic *default-input-format* :ebnf)
+(defn set-default-input-format!
+  "Changes the default input format.  Input should be :abnf or :ebnf"
+  [type]
+  {:pre [(#{:abnf :ebnf} type)]}
+  (alter-var-root #'*default-input-format* (constantly type)))
     
 (defn parse 
   "Use parser to parse the text.  Returns first parse tree found
@@ -80,21 +90,31 @@
    or a map of parser combinators and returns a parser for that grammar.
 
    Optional keyword arguments:
+   :input-format :ebnf
+   or
+   :input-format :abnf
+
    :output-format :enlive
    or
    :output-format :hiccup
    
    :start :keyword (where :keyword is name of starting production rule)"
   [grammar-specification &{:as options}]
-  (let [output-format (get options :output-format *default-output-format*)
+  {:pre [(contains? #{:abnf :ebnf nil} (get options :input-format))
+         (contains? #{:enlive :hiccup nil} (get options :output-format))]}
+  (let [input-format (get options :input-format *default-input-format*)
+        build-parser (case input-format 
+                       :abnf abnf/build-parser
+                       :ebnf cfg/build-parser)
+        output-format (get options :output-format *default-output-format*)
         start (get options :start nil)]    
     (cond
       (string? grammar-specification)
       (let [parser
             (try (let [spec (slurp grammar-specification)]
-                   (cfg/build-parser spec output-format))
+                   (build-parser spec output-format))
               (catch java.io.FileNotFoundException e 
-                (cfg/build-parser grammar-specification output-format)))]
+                (build-parser grammar-specification output-format)))]
         (if start (map->Parser (assoc parser :start-production start))
           (map->Parser parser)))
       
@@ -132,62 +152,4 @@
     :else
     nil))
 
-(defn- enlive-transform
-  [transform-map parse-tree]
-  (let [transform (transform-map (:tag parse-tree))]
-    (cond
-      transform
-      (apply transform (map (partial enlive-transform transform-map)
-                            (:content parse-tree)))
-      (:tag parse-tree)
-      (assoc parse-tree :content (map (partial enlive-transform transform-map)
-                                       (:content parse-tree)))
-      :else
-      parse-tree)))
-
-(defn- hiccup-transform
-  [transform-map parse-tree]
-  (let [transform (transform-map (first parse-tree))]
-    (cond
-      transform
-      (apply transform (map (partial hiccup-transform transform-map)
-                            (next parse-tree)))
-      (and (sequential? parse-tree) (seq parse-tree))
-      (into [(first parse-tree)]
-            (map (partial hiccup-transform transform-map) 
-                 (next parse-tree)))
-      :else
-      parse-tree)))
-
-(defn- map-preserving-meta [f l]
-  (with-meta (map f l) (meta l)))
-
-(defn transform
-  "Takes a transform map and a parse tree (or seq of parse-trees).
-   A transform map is a mapping from tags to 
-   functions that take a node's contents and return
-   a replacement for the node, i.e.,
-   {:node-tag (fn [child1 child2 ...] node-replacement),
-    :another-node-tag (fn [child1 child2 ...] node-replacement)}"
-  [transform-map parse-tree]
-  ; Detect what kind of tree this is
-  (cond
-    (and (map? parse-tree) (:tag parse-tree))
-    ; This is an enlive tree-seq
-    (enlive-transform transform-map parse-tree)
-    
-    (vector? parse-tree)
-    ; This is a hiccup tree-seq
-    (hiccup-transform transform-map parse-tree)
-    
-    (seq? parse-tree)
-    ; This is either a sequence of parse results, or a tree
-    ; with a hidden root tag.
-    (map-preserving-meta (partial transform transform-map) parse-tree)
-    
-    (instance? instaparse.gll.Failure parse-tree)
-    ; pass failures through unchanged
-    parse-tree
-    
-    :else
-    (throw (IllegalArgumentException. "Invalid parse-tree, not recognized as either enlive or hiccup format."))))
+(defclone transform t/transform)

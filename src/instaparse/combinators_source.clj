@@ -60,6 +60,11 @@
   (if (= s "") Epsilon
     {:tag :string :string s}))
 
+(defn string-ci "Create a case-insensitive string terminal out of s" 
+  [s] 
+  (if (= s "") Epsilon
+    {:tag :string-ci :string s}))
+
 (defn regexp "Create a regexp terminal out of regular expression r"
   [r]
   (let [s (str \^ r)]
