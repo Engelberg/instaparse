@@ -15,7 +15,7 @@
    :CTL (regexp "[\\u0000-\\u001F|\\u007F]")
    :DIGIT (regexp "[0-9]")
    :DQUOTE (string "\u0022")
-   :HEXDIG (regexp "[0-9A-F]")
+   :HEXDIG (regexp "[0-9A-Fa-f]")
    :HTAB (string "\u0009")
    :LF (string "\u000A")
    :LWSP (alt (alt (string "\u0020") (string "\u0009")) ;WSP
