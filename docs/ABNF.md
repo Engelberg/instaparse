@@ -43,26 +43,26 @@ To get a feeling for what ABNF syntax looks like, first check out this [ABNF spe
 	          :input-format :abnf))
 
 	=> (phone-uri-parser "tel:+1-201-555-0123")
-	[:TELEPHONE-URI
+	[:telephone-uri
 	 "tel:"
-	 [:TELEPHONE-SUBSCRIBER
-	  [:GLOBAL-NUMBER
-	   [:GLOBAL-NUMBER-DIGITS
+	 [:telephone-subscriber
+	  [:global-number
+	   [:global-number-digits
 	    "+"
 	    [:DIGIT "1"]
-	    [:PHONEDIGIT [:VISUAL-SEPARATOR "-"]]
-	    [:PHONEDIGIT [:DIGIT "2"]]
-	    [:PHONEDIGIT [:DIGIT "0"]]
-	    [:PHONEDIGIT [:DIGIT "1"]]
-	    [:PHONEDIGIT [:VISUAL-SEPARATOR "-"]]
-	    [:PHONEDIGIT [:DIGIT "5"]]
-	    [:PHONEDIGIT [:DIGIT "5"]]
-	    [:PHONEDIGIT [:DIGIT "5"]]
-	    [:PHONEDIGIT [:VISUAL-SEPARATOR "-"]]
-	    [:PHONEDIGIT [:DIGIT "0"]]
-	    [:PHONEDIGIT [:DIGIT "1"]]
-	    [:PHONEDIGIT [:DIGIT "2"]]
-	    [:PHONEDIGIT [:DIGIT "3"]]]]]]
+	    [:phonedigit [:visual-separator "-"]]
+	    [:phonedigit [:DIGIT "2"]]
+	    [:phonedigit [:DIGIT "0"]]
+	    [:phonedigit [:DIGIT "1"]]
+	    [:phonedigit [:visual-separator "-"]]
+	    [:phonedigit [:DIGIT "5"]]
+	    [:phonedigit [:DIGIT "5"]]
+	    [:phonedigit [:DIGIT "5"]]
+	    [:phonedigit [:visual-separator "-"]]
+	    [:phonedigit [:DIGIT "0"]]
+	    [:phonedigit [:DIGIT "1"]]
+	    [:phonedigit [:DIGIT "2"]]
+	    [:phonedigit [:DIGIT "3"]]]]]]
 
 The usage, as you can see, is almost identical to the way you build parsers using the `insta/parser` constructor.  The only difference is the additional keyword argument `:input-format :abnf`.
 
