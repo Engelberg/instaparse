@@ -108,7 +108,7 @@ Some important things to be aware of:
 + Use `;` for comments to the end of the line.  The ABNF specification has rigid definitions about where comments can be, but in instaparse the rules for comment placement are a bit more flexible and intuitive.
 + ABNF uses `/` for the ordinary alternative operator with no order implied.
 + ABNF allows the restatement of a rule name to specify multiple alternatives.  The custom is to use `/=` in definitions that are adding alternatives, for example `S = 'a' / 'b'` could be written as:
-<p>
+<br>
 
 	S = 'a'
 	S /= 'b'
