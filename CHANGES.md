@@ -10,6 +10,13 @@
 
 * Comments now supported in CFGs.  Use (* and *) notation.
 * Added `ebnf` combinator to the `instaparse/combinators` namespace.  This new combinator converts string specifications to the combinator-built equivalent.  See combinator section of the updated tutorial for details.
+* Can now create a parser from a specification using `:input-format :abnf` for ABNF parser syntax.
+    * New combinators related to abnf:
+        1. `abnf` -- converts ABNF string fragments to combinators.
+        2. `string-ci` -- case-insensitive strings.
+        3. `rep` -- between m and n repetitions.
+    * New core function related to abnf:
+        `set-default-input-format!` -- initially defaults to :ebnf
 
 ### Minor Enhancements
 
@@ -20,3 +27,4 @@
 * Backslashes in front of quotation mark were escaping the quotation mark, even if the backslash itself was escaped.
 * Unescaped double-quote marks weren't properly handled, e.g., (parser "A = '\"'").
 * Nullable Plus: ((parser "S = ('a'?)+") "") previously returned a failure, now returns [:S]
+* Fixed problem with failure reporting that would occur if parse failed on an input that ended with a newline character.

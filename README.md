@@ -87,7 +87,7 @@ Here's a quick guide to the syntax for defining context-free grammars:
 <tr><td>Rule</td><td>: := ::= =</td><td>S = A</td></tr>
 <tr><td>End of rule</td><td>; . (optional)</td><td>S = A;</td></tr>
 <tr><td>Alternation</td><td>|</td><td>A | B</td></tr>
-<tr><td>Concatenation</td><td>whitespace</td><td>A B</td></tr>
+<tr><td>Concatenation</td><td>whitespace or ,</td><td>A B</td></tr>
 <tr><td>Grouping</td><td>()</td><td>(A | B) C</td></tr>
 <tr><td>Optional</td><td>? []</td><td>A? [A]</td></tr>
 <tr><td>One or more</td><td>+</td><td>A+</td></tr>
@@ -899,7 +899,7 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	instaparse.core/get-failure
 	([result])
 	  Extracts failure object from failed parse result.
-	
+
 	=> (doc insta/transform)
 	-------------------------
 	instaparse.core/transform
