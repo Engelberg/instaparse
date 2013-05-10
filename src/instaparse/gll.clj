@@ -471,7 +471,7 @@
         text (:text tramp)
         end (min (count text) (+ index (count string)))
         head (subs text index end)]      
-    (if (.equalsIgnoreCase ^:String string head)
+    (if (.equalsIgnoreCase ^String string head)
       (success tramp [index this] string end)
       (fail tramp [index this] index
             {:tag :string :expecting string}))))
@@ -482,7 +482,7 @@
         text (:text tramp)
         end (min (count text) (+ index (count string)))
         head (subs text index end)]      
-    (if (and (= end (count text)) (.equalsIgnoreCase ^:String string head))
+    (if (and (= end (count text)) (.equalsIgnoreCase ^String string head))
       (success tramp [index this] string end)
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
