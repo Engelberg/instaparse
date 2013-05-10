@@ -10,26 +10,27 @@
   {:ALPHA (regexp "[a-zA-Z]")
    :BIT (regexp "[01]")
    :CHAR (regexp "[\\u0001-\\u007F]")
-   :CR (string "\\u000D")
-   :CRLF (string "\\u000D\\u000A")
+   :CR (string "\u000D")
+   :CRLF (string "\u000D\u000A")
    :CTL (regexp "[\\u0000-\\u001F|\\u007F]")
    :DIGIT (regexp "[0-9]")
-   :DQUOTE (string "\\u0022")
+   :DQUOTE (string "\u0022")
    :HEXDIG (regexp "[0-9A-F]")
-   :HTAB (string "\\u0009")
-   :LF (string "\\u000A")
-   :LWSP (alt (nt :WSP)
+   :HTAB (string "\u0009")
+   :LF (string "\u000A")
+   :LWSP (alt (alt (string "\u0020") (string "\u0009")) ;WSP
               (star
-                (cat (nt :CRLF)
-                     (nt :WSP))))
+                (cat (string "\u000D\u000A") ;CRLF
+                     (alt (string "\u0020") (string "\u0009"))))) ;WSP
    :OCTET (regexp "[\\u0000-\\u00FF]")
-   :SP (string "\\u0020")
+   :SP (string "\u0020")
    :VCHAR (regexp "[\\u0021-\\u007E]")
-   :WSP (alt (nt :SP) (nt :HTAB))})
-            
+   :WSP (alt (string "\u0020")     ;SP
+             (string "\u0009"))})  ;HTAB
+
 (def abnf-grammar
   "
-<rulelist> = <opt-whitespace> (rule | hide-tag-rule)+;
+<rulelist> = <opt-whitespace> (rule | hide-tag-rule)+ <a-comment?>;
 rule = rulename-left <defined-as> alternation <opt-whitespace>;
 hide-tag-rule = hide-tag <defined-as> alternation <opt-whitespace>;
 rulename-left = rulename;
@@ -65,6 +66,7 @@ NUM = DIGIT+;
 <HEXDIG> = #'[0-9A-Fa-f]';
 opt-whitespace = #'\\s*(?:;.*?\\u000D?\\u000A\\s*)*(?x) # optional whitespace or comments';
 whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments';
+a-comment = #';.*';
 regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
        | #\"#\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"(?x) #Double-quoted regexp\"
 ")
