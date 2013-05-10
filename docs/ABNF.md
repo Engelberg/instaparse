@@ -148,3 +148,17 @@ The ABNF specification states that the following rules are always available for 
 </table>
 
 LWSP is particularly quirky, defined to be either a space or tab character, or an alternating sequence of carriage-return-linefeed and a single space or tab character.  It's very specific, presumably relevant to some particular protocol, but not generally useful and I don't recommend using it.
+
+## Combinators
+
+The `instaparse.combinators` contains a few combinators that are not documented in the main tutorial, but are listed here because they are only relevant to ABNF grammars.
+
+<table>
+<tr><th>String syntax</th><th>Combinator</th><th>Mnemonic</th></tr>
+<tr><td>"abc" (as used in ABNF)</td><td>string-ci</td><td>string, case-insensitive</td></tr>
+<tr><td>3*5 (as used in ABNF)</td><td>rep</td><td>repetition</td></tr>
+</table>
+
+Finally, just as there exists an `ebnf` function in the combinators namespace that turns EBNF fragments into combinator-built data structures, there exists an `abnf` function which does the same for ABNF fragments.
+
+This means it is entirely possible to take fragments of EBNF syntax along with fragments of ABNF syntax, and convert all the pieces, merging them into a grammar map along with other pieces built from combinators.  I don't expect that many people will need this ability to mix and match, but it's there if you need it.
