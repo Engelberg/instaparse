@@ -176,9 +176,9 @@ This means it is entirely possible to take fragments of EBNF syntax along with f
 
 I've already mentioned that in ABNF syntax, strings are *case-insensitive*, meaning that the string terminal "abc" in an ABNF grammar also matches "aBc", "AbC", etc.  Many ABNF grammar specifications leverage this case insensitivity, for example, the spec for hexadecimal digits include the strings "A", "B", "C", "D", "E", and "F", and this is intended to match the lowercase letters as well.
 
-A lesser-known quirk of ABNF syntax is that, in theory, non-terminal rule names are also case insensitive.  So for example, in the ABNF rule `S = 'a' s`, the lowercase `s` is actually referring back to the uppercase `S`.  Although the specification of ABNF syntax allows for this possibility, as best as I can determine, this "feature" simply isn't used.  It would be confusing and bad form to refer to a non-terminal in different places of your grammar with a different mixture of cases.
+A lesser-known quirk of ABNF syntax is that, in theory, non-terminal rule names are also case-insensitive.  So for example, in the ABNF rule `S = 'a' s`, the lowercase `s` is actually referring back to the uppercase `S`.  Although the specification of ABNF syntax allows for this possibility, as best as I can determine, this "feature" simply isn't used.  It would be confusing and bad form to refer to a non-terminal in different places of your grammar with a different mixture of cases.
 
-Therefore, by default in instaparse, ABNF non-terminals are in fact, case sensitive.  This makes it easier for ABNF grammars to play nicely with EBNF grammars, grammar maps, and instaparse's transform function, all of which are case sensitive.
+Therefore, by default in instaparse, ABNF non-terminals are in fact, case-sensitive.  This makes it easier for ABNF grammars to play nicely with EBNF grammars, grammar maps, and instaparse's transform function, all of which are case-sensitive.
 
 If you find yourself working with an ABNF grammar that uses an inconsistent mix of lowercase and uppercase letters to refer to the same non-terminal rules, you have two options available to you.  The first possibility, of course, is to simply go through and fix the inconsistencies.  The second option is to bind the dynamic variable `instaparse.abnf/*case-insensitive*` to true while building the parser from the ABNF grammar.
 
@@ -212,5 +212,5 @@ As an example, let's revisit the usage example from above:
 	    [:PHONEDIGIT [:DIGIT "1"]]
 	    [:PHONEDIGIT [:DIGIT "2"]]
 	    [:PHONEDIGIT [:DIGIT "3"]]]]]]
-	    
+
 The `*case-insensitive*` dynamic variable is also obeyed by the `abnf` combinator.
