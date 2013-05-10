@@ -107,7 +107,7 @@ Some important things to be aware of:
 + In ABNF, there is one repetition operator, `*`, and it *precedes* the thing that it is operating on.  So, for example, 3*5 means "between 3 and 5 repetitions".  The first number defaults to 0 and the second defaults to infinity, so you can omit one or both numbers to get effects comparable to EBNF's `+`, `*`, and `?`.  `4*4` could just be written as `4`.
 + Use `;` for comments to the end of the line.  The ABNF specification has rigid definitions about where comments can be, but in instaparse the rules for comment placement are a bit more flexible and intuitive.
 + ABNF uses `/` for the ordinary alternative operator with no order implied.
-+ ABNF allows the restatement of a rule name to specify multiple alternatives.  The custom is to use `/=` in definitions that are adding alternatives, for example `S = 'a' / 'b'` could be written as:
++ ABNF allows the restatement of a rule name to specify multiple alternatives.  The custom is to use `/=` in definitions that are adding alternatives, for example `S = 'a' / 'b'` could be written as: 
 <br>
 
 	S = 'a'
