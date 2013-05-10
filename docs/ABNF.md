@@ -109,8 +109,9 @@ Some important things to be aware of:
 + ABNF uses `/` for the ordinary alternative operator with no order implied.
 + ABNF allows the restatement of a rule name to specify multiple alternatives.  The custom is to use `/=` in definitions that are adding alternatives, for example `S = 'a' / 'b'` could be written as:
 
-`S = 'a'
-S /= 'b'`
+S = 'a'
+<br>
+S /= 'b'
 
 ## Extensions
 
