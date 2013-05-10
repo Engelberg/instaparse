@@ -48,8 +48,52 @@
              [:PHONEDIGIT [:DIGIT "5"]]
              [:PHONEDIGIT [:DIGIT "5"]]
              [:PHONEDIGIT [:VISUAL-SEPARATOR "-"]]
-             [:PHONEDIGIT [:DIGIT "0"]]
+             [:PHONEDIGIT [:DIGIT "0"]] 
              [:PHONEDIGIT [:DIGIT "1"]]
              [:PHONEDIGIT [:DIGIT "2"]]
              [:PHONEDIGIT [:DIGIT "3"]]]]]])))
+
+(def abnf-german
+  "Testing the ABNF regular expressions"
+  (parser
+    "
+; a parser for the German programming language
+; http://esolangs.org/wiki/German
+
+S = <*1space> (A / B) *(<space> (A / B)) <*1space>
+A = #'BEER'
+B = #'SCHNITZEL'
+space = #'\\s+'
+" :input-format :abnf))
+
+(deftest german
+  (are [x y] (= x y)
+       (abnf-german " BEER SCHNITZEL BEER BEER SCHNITZEL SCHNITZEL 
+                     BEER BEER BEER ")
+       [:S
+        [:A "BEER"]
+        [:B "SCHNITZEL"]
+        [:A "BEER"]
+        [:A "BEER"]
+        [:B "SCHNITZEL"]
+        [:B "SCHNITZEL"]
+        [:A "BEER"]
+        [:A "BEER"]
+        [:A "BEER"]]))
+
+(def abnf-abc
+  "Trying the \"equal amount of A's, B's, and C's\" parser in ABNF,
+to test the lookahead"
+  (parser
+    "S = &(A 'c') 1*'a' B
+     A = 'a' [A] 'b'
+     <B> = 'b' [B] 'c'"
+    :input-format :abnf))
+
+(deftest abc
+  (are [x y] (= x y)
+       (abnf-abc "aaaabbbbcccc")
+       [:S "a" "a" "a" "a" "b" "b" "b" "b" "c" "c" "c" "c"]
+       (abnf-abc "aaabbbc" :total true)
+       [:S "a" "a" "a" "b" "b" "b" "c" [:instaparse/failure ""] [:instaparse/failure ""]]))
 

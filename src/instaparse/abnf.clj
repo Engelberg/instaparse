@@ -52,9 +52,9 @@ concatenation = repetition (<whitespace> repetition)*;
 repetition = [repeat] <opt-whitespace> element;
 repeat = NUM | (NUM? '*' NUM?);
 <element> = rulename-right | group | hide | option | char-val | num-val
-          | look | neg;
-look = <'&' opt-whitespace> alternation;
-neg = <'!' opt-whitespace> alternation;
+          | look | neg | regexp;
+look = <'&' opt-whitespace> element;
+neg = <'!' opt-whitespace> element;
 <group> = <'(' opt-whitespace> alternation <opt-whitespace ')'>;
 option = <'[' opt-whitespace> alternation <opt-whitespace ']'>;
 hide = <'<' opt-whitespace> alternation <opt-whitespace '>'>;
