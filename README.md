@@ -929,7 +929,7 @@ I probably would have given up, but then Danny Yoo released the [Ragg parser gen
 
 That article had a link to a [paper](http://www.cs.uwm.edu/%7Edspiewak/papers/generalized-parser-combinators.pdf) and [Scala code](https://github.com/djspiewak/gll-combinators) by Daniel Spiewak, which was also extremely helpful.
 
-Alex Engelberg coded the first version of instaparse, proving the capabilities of the GLL algorithm.  He encouraged me to take his code and build and document a user-friendly API around it.
+Alex Engelberg coded the first version of instaparse, proving the capabilities of the GLL algorithm.  He encouraged me to take his code and build and document a user-friendly API around it.  He continues to be a main contributor on the project, most recently developing the ABNF front-end.
 
 I studied a number of other Clojure parser generators to help frame my ideas about what the API should look like.  I communicated with Eric Normand ([squarepeg](https://github.com/ericnormand/squarepeg)) and Christophe Grand ([parsley](https://github.com/cgrand/parsley)), both of whom provided useful advice and encouraged me to pursue my vision.
 
