@@ -30,7 +30,7 @@
 
 (def abnf-grammar
   "
-<rulelist> = <opt-whitespace> (rule | hide-tag-rule)+ <a-comment?>;
+<rulelist> = <opt-whitespace> (rule | hide-tag-rule)+;
 rule = rulename-left <defined-as> alternation <opt-whitespace>;
 hide-tag-rule = hide-tag <defined-as> alternation <opt-whitespace>;
 rulename-left = rulename;
@@ -64,9 +64,8 @@ hex-char = HEXDIG+;
 NUM = DIGIT+;
 <DIGIT> = #'[0-9]';
 <HEXDIG> = #'[0-9A-Fa-f]';
-opt-whitespace = #'\\s*(?:;.*?\\u000D?\\u000A\\s*)*(?x) # optional whitespace or comments';
+opt-whitespace = #'\\s*(?:;.*?(?:\\u000D?\\u000A\\s*|$))*(?x) # optional whitespace or comments';
 whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments';
-a-comment = #';.*';
 regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
        | #\"#\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"(?x) #Double-quoted regexp\"
 ")
