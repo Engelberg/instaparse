@@ -6,6 +6,15 @@
             [instaparse.reduction :as red])
   (:use instaparse.combinators-source))
 
+(def ^:dynamic *case-insensitive*
+  "This is normally set to false, in which case the non-terminals
+are treated as case-sensitive, which is NOT the norm
+for ABNF grammars. If you really want case-insensitivity,
+bind this to true, in which case all non-terminals
+will be converted to upper-case internally (which
+you'll have to keep in mind when transforming)."
+  false)
+
 (def abnf-core
   {:ALPHA (regexp "[a-zA-Z]")
    :BIT (regexp "[01]")
@@ -123,8 +132,12 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
   {   
    :rule hash-map
    :hide-tag-rule (fn [tag rule] {tag (hide-tag rule)})
-   :rulename-left #(keyword (clojure.string/upper-case (apply str %&)))
-   :rulename-right #(nt (keyword (clojure.string/upper-case (apply str %&))))
+   :rulename-left #(if *case-insensitive*
+                     (keyword (clojure.string/upper-case (apply str %&)))
+                     (keyword (apply str %&)))
+   :rulename-right #(if *case-insensitive*
+                      (nt (keyword (clojure.string/upper-case (apply str %&))))
+                      (nt (keyword (apply str %&))))
    ; since rulenames are case insensitive, convert it to upper case internally to be consistent
    :alternation alt
    :concatenation cat
