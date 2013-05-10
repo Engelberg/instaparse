@@ -3,7 +3,8 @@
   (:use instaparse.core))
 
 (deftest abnf-uri
-  (let [uri-parser (parser (slurp "test/instaparse/abnf_uri.txt") :input-format :abnf)]
+  (let [uri-parser (binding [instaparse.abnf/*case-insensitive?* true]
+                     (parser (slurp "test/instaparse/abnf_uri.txt") :input-format :abnf))]
     (are [x y] (= x y)
          (uri-parser "http://www.google.com")
          [:URI [:SCHEME [:ALPHA "h"] [:ALPHA "t"] [:ALPHA "t"] [:ALPHA "p"]] ":" [:HIER-PART "//" [:AUTHORITY [:HOST [:REG-NAME [:UNRESERVED [:ALPHA "w"]] [:UNRESERVED [:ALPHA "w"]] [:UNRESERVED [:ALPHA "w"]] [:UNRESERVED "."] [:UNRESERVED [:ALPHA "g"]] [:UNRESERVED [:ALPHA "o"]] [:UNRESERVED [:ALPHA "o"]] [:UNRESERVED [:ALPHA "g"]] [:UNRESERVED [:ALPHA "l"]] [:UNRESERVED [:ALPHA "e"]] [:UNRESERVED "."] [:UNRESERVED [:ALPHA "c"]] [:UNRESERVED [:ALPHA "o"]] [:UNRESERVED [:ALPHA "m"]]]]] [:PATH-ABEMPTY]]]
@@ -27,7 +28,8 @@
          [:URI [:SCHEME [:ALPHA "l"] [:ALPHA "d"] [:ALPHA "a"] [:ALPHA "p"]] ":" [:HIER-PART "//" [:AUTHORITY [:HOST [:IP-LITERAL "[" [:IPV6ADDRESS [:H16 [:HEXDIG "2"] [:HEXDIG "0"] [:HEXDIG "0"] [:HEXDIG "1"]] ":" [:H16 [:HEXDIG "d"] [:HEXDIG "b"] [:HEXDIG "8"]] "::" [:H16 [:HEXDIG "7"]]] "]"]]] [:PATH-ABEMPTY "/" [:SEGMENT [:PCHAR [:UNRESERVED [:ALPHA "c"]]] [:PCHAR [:SUB-DELIMS "="]] [:PCHAR [:UNRESERVED [:ALPHA "G"]]] [:PCHAR [:UNRESERVED [:ALPHA "B"]]]]]] "?" [:QUERY [:PCHAR [:UNRESERVED [:ALPHA "o"]]] [:PCHAR [:UNRESERVED [:ALPHA "b"]]] [:PCHAR [:UNRESERVED [:ALPHA "j"]]] [:PCHAR [:UNRESERVED [:ALPHA "e"]]] [:PCHAR [:UNRESERVED [:ALPHA "c"]]] [:PCHAR [:UNRESERVED [:ALPHA "t"]]] [:PCHAR [:UNRESERVED [:ALPHA "C"]]] [:PCHAR [:UNRESERVED [:ALPHA "l"]]] [:PCHAR [:UNRESERVED [:ALPHA "a"]]] [:PCHAR [:UNRESERVED [:ALPHA "s"]]] [:PCHAR [:UNRESERVED [:ALPHA "s"]]] "?" [:PCHAR [:UNRESERVED [:ALPHA "o"]]] [:PCHAR [:UNRESERVED [:ALPHA "n"]]] [:PCHAR [:UNRESERVED [:ALPHA "e"]]]]])))
 
 (deftest phone-uri
-  (let [phone-uri-parser (parser (slurp "test/instaparse/phone_uri.txt") :input-format :abnf)]
+  (let [phone-uri-parser (binding [instaparse.abnf/*case-insensitive?* true]
+                           (parser (slurp "test/instaparse/phone_uri.txt") :input-format :abnf))]
     (are [x y] (= x y)
          (phone-uri-parser "tel:+1-201-555-0123")
          [:TELEPHONE-URI
