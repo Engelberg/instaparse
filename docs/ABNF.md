@@ -72,6 +72,14 @@ If you find yourself working with a whole series of ABNF parser specifications, 
 
 to alter the default input format.  Changing the default makes it unnecessary to specify `:input-format :abnf` with each call to the parser constructor.
 
+Here is the doc string:
+
+	=> (doc insta/set-default-input-format!)
+	-------------------------
+	instaparse.core/set-default-input-format!
+	([type])
+	  Changes the default input format.  Input should be :abnf or :ebnf
+
 ## ABNF Syntax Guide
 
 <table>

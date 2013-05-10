@@ -794,7 +794,7 @@ To my eye, the string is dramatically more readable, but if you need or want to 
 
 #### String to combinator conversion
 
-Shortly after I published the first version of instaparse, I received a question, "String specifications can be combined with `clojure.string/join` and combinator grammar maps can be combined with `merge` --- is there any way to mix and match string and combinator grammar representations?"  At the time, there wasn't, but now there is.  As of version 1.1, there is a new function `ebnf` in the `instaparse.combinators` namespace which *converts* EBNF strings into the same underlying structure that is built by the combinator library, thus allowing for further manipulation by combinators.  For example,
+Shortly after I published the first version of instaparse, I received a question, "String specifications can be combined with `clojure.string/join` and combinator grammar maps can be combined with `merge` --- is there any way to mix and match string and combinator grammar representations?"  At the time, there wasn't, but now there is.  As of version 1.1, there is a new function `ebnf` in the `instaparse.combinators` namespace which *converts* EBNF strings into the same underlying structure that is built by the combinator library, thus allowing for further manipulation by combinators.  (EBNF stands for Extended Backus-Naur Form, the technical name for the syntax used by instaparse and described in this tutorial.)  For example,
 
 	(ebnf "'a'* | 'b'+")
 
@@ -820,6 +820,10 @@ This opens up the possibility of building a grammar from a mixture of combinator
 	      (ebnf "A = 'a'*")
 	      {:B (ebnf "'b'+")})
 	    :start :S))
+
+### ABNF
+
+Instaparse's primary input format is based on EBNF syntax, but an alternative input format, ABNF, is available.  Most users will not need the ABNF input format, but if you need to implement a parser whose specification was written in ABNF syntax, it is very easy to do.  Please read [instaparse's ABNF documentation](https://github.com/Engelberg/instaparse/blob/master/docs/ABNF.md) for details.
 
 ### Serialization
 
@@ -848,12 +852,16 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	  Takes a string specification of a context-free grammar,
 	   or a URI for a text file containing such a specification,
 	   or a map of parser combinators and returns a parser for that grammar.
-	
+
 	   Optional keyword arguments:
+	   :input-format :ebnf
+	   or
+	   :input-format :abnf
+
 	   :output-format :enlive
 	   or
 	   :output-format :hiccup
-	   
+
 	   :start :keyword (where :keyword is name of starting production rule)
 
 	=> (doc insta/parse)
@@ -863,7 +871,7 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	  Use parser to parse the text.  Returns first parse tree found
 	   that completely parses the text.  If no parse tree is possible, returns
 	   a Failure object.
-	
+
 	   Optional keyword arguments:
 	   :start :keyword  (where :keyword is name of starting production rule)
 	   :partial true    (parses that don't consume the whole string are okay)
@@ -876,7 +884,7 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	  Use parser to parse the text.  Returns lazy seq of all parse trees
 	   that completely parse the text.  If no parse tree is possible, returns
 	   () with a Failure object attached as metadata.
-	
+
 	   Optional keyword arguments:
 	   :start :keyword  (where :keyword is name of starting production rule)
 	   :partial true    (parses that don't consume the whole string are okay)
@@ -887,13 +895,13 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	instaparse.core/set-default-output-format!
 	([type])
 	  Changes the default output format.  Input should be :hiccup or :enlive
-	
+
 	=> (doc insta/failure?)
 	-------------------------
 	instaparse.core/failure?
 	([result])
 	  Tests whether a parse result is a failure.
-	
+
 	=> (doc insta/get-failure)
 	-------------------------
 	instaparse.core/get-failure
