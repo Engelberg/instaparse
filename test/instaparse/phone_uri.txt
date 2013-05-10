@@ -9,7 +9,7 @@
    descriptor           = domainname / global-number-digits
    global-number-digits = "+" *phonedigit DIGIT *phonedigit
    local-number-digits  =
-      *phonedigit-hex (HEXDIG / "*" / "#")*phonedigit-hex
+      *phonedigit-hex (HEXDIG / "*" / "#") *phonedigit-hex
    domainname           = *( domainlabel "." ) toplabel [ "." ]
    domainlabel          = alphanum
                           / alphanum *( alphanum / "-" ) alphanum

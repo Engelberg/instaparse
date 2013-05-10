@@ -26,3 +26,28 @@
          (uri-parser "ldap://[2001:db8::7]/c=GB?objectClass?one")
          [:URI [:SCHEME [:ALPHA "l"] [:ALPHA "d"] [:ALPHA "a"] [:ALPHA "p"]] ":" [:HIER-PART "//" [:AUTHORITY [:HOST [:IP-LITERAL "[" [:IPV6ADDRESS [:H16 [:HEXDIG "2"] [:HEXDIG "0"] [:HEXDIG "0"] [:HEXDIG "1"]] ":" [:H16 [:HEXDIG "d"] [:HEXDIG "b"] [:HEXDIG "8"]] "::" [:H16 [:HEXDIG "7"]]] "]"]]] [:PATH-ABEMPTY "/" [:SEGMENT [:PCHAR [:UNRESERVED [:ALPHA "c"]]] [:PCHAR [:SUB-DELIMS "="]] [:PCHAR [:UNRESERVED [:ALPHA "G"]]] [:PCHAR [:UNRESERVED [:ALPHA "B"]]]]]] "?" [:QUERY [:PCHAR [:UNRESERVED [:ALPHA "o"]]] [:PCHAR [:UNRESERVED [:ALPHA "b"]]] [:PCHAR [:UNRESERVED [:ALPHA "j"]]] [:PCHAR [:UNRESERVED [:ALPHA "e"]]] [:PCHAR [:UNRESERVED [:ALPHA "c"]]] [:PCHAR [:UNRESERVED [:ALPHA "t"]]] [:PCHAR [:UNRESERVED [:ALPHA "C"]]] [:PCHAR [:UNRESERVED [:ALPHA "l"]]] [:PCHAR [:UNRESERVED [:ALPHA "a"]]] [:PCHAR [:UNRESERVED [:ALPHA "s"]]] [:PCHAR [:UNRESERVED [:ALPHA "s"]]] "?" [:PCHAR [:UNRESERVED [:ALPHA "o"]]] [:PCHAR [:UNRESERVED [:ALPHA "n"]]] [:PCHAR [:UNRESERVED [:ALPHA "e"]]]]])))
 
+(deftest phone-uri
+  (let [phone-uri-parser (parser (slurp "test/instaparse/phone_uri.txt") :input-format :abnf)]
+    (are [x y] (= x y)
+         (phone-uri-parser "tel:+1-201-555-0123")
+         [:TELEPHONE-URI
+          "tel:"
+          [:TELEPHONE-SUBSCRIBER
+           [:GLOBAL-NUMBER
+            [:GLOBAL-NUMBER-DIGITS
+             "+"
+             [:DIGIT "1"]
+             [:PHONEDIGIT [:VISUAL-SEPARATOR "-"]]
+             [:PHONEDIGIT [:DIGIT "2"]]
+             [:PHONEDIGIT [:DIGIT "0"]]
+             [:PHONEDIGIT [:DIGIT "1"]]
+             [:PHONEDIGIT [:VISUAL-SEPARATOR "-"]]
+             [:PHONEDIGIT [:DIGIT "5"]]
+             [:PHONEDIGIT [:DIGIT "5"]]
+             [:PHONEDIGIT [:DIGIT "5"]]
+             [:PHONEDIGIT [:VISUAL-SEPARATOR "-"]]
+             [:PHONEDIGIT [:DIGIT "0"]]
+             [:PHONEDIGIT [:DIGIT "1"]]
+             [:PHONEDIGIT [:DIGIT "2"]]
+             [:PHONEDIGIT [:DIGIT "3"]]]]]])))
+
