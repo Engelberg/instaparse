@@ -6,7 +6,7 @@
 
 Instaparse aims to be the simplest way to build parsers in Clojure.
 
-+ Turns *standard EBNF notation* for context-free grammars into an executable parser that takes a string as an input and produces a parse tree for that string.
++ Turns *standard EBNF or ABNF notation* for context-free grammars into an executable parser that takes a string as an input and produces a parse tree for that string.
 + *No Grammar Left Behind*: Works for *any* context-free grammar, including *left-recursive*, *right-recursive*, and *ambiguous* grammars.
 + Extends the power of context-free grammars with PEG-like syntax for lookahead and negative lookahead.
 + Supports both of Clojure's most popular tree formats (hiccup and enlive) as an output target.
