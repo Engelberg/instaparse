@@ -23,6 +23,7 @@
 
 (defn rep "Between m and n repetitions"
   [m n parser]
+  {:pre [(<= m n)]}
   (if (= parser Epsilon) Epsilon
     {:tag :rep :parser parser :min m :max n}))
 
