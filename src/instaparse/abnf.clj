@@ -141,11 +141,15 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
    ; since rulenames are case insensitive, convert it to upper case internally to be consistent
    :alternation alt
    :concatenation cat
-   :repeat (fn ([num1 _ num2] {:low num1, :high num2})
-             ([item1 item2] (if (= item1 "*")
-                              {:high item2}
-                              {:low item1}))
-             ([_] {}))
+   :repeat (fn [& items]
+             (case (count items)
+               1 (cond
+                   (= (first items) "*") {}                         ; *
+                   :else {:low (first items), :high (first items)}) ; x
+               2 (cond
+                   (= (first items) "*") {:high (second items)}     ; *x
+                   :else {:low (first items)})                      ; x*
+               3 {:low (first items), :high (nth items 2)}))        ; x*y
                  
    :repetition (fn 
                  ([repeat element]
