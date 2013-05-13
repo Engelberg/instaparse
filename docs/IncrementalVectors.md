@@ -1,6 +1,6 @@
 # Incremental Vectors
 
-Incremental vectors are a drop-in replacement for Clojure's vectors, designed to solve the performance problems that occur with large vectors in applications with a heavy interleaving of modification and hashing.
+Incremental vectors are a drop-in replacement for Clojure's vectors, designed to solve the performance problems that occur with large vectors in applications with a heavy interleaving of modification and hashing.  It exists as part of the instaparse library because I created it to address a performance issue with instaparse, but it is not directly related to parsing and can easily be used independently of the other components of the instaparse library.
 
 ## The Problem
 
@@ -70,4 +70,4 @@ This also works with assoc and pop.
 	"Elapsed time: 0.034989 msecs"
 	-717096194
 
-The hash codes of an `ivec` always match that of the corresponding `vec` and ivecs and vecs can be compared for equality.  
+The hash codes of an `ivec` always match that of the corresponding `vec` and ivecs and vecs can be compared for equality.
