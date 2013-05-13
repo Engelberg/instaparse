@@ -3,12 +3,13 @@
 (declare EMPTY)
 
 (defn- expt [base pow]
-  (loop [n (int pow), y (int 1), z (int base)]
-    (let [t (even? n), n (quot n 2)]
-      (cond
-       t (recur n y (unchecked-multiply-int z z))
-       (zero? n) (unchecked-multiply-int z y)
-       :else (recur n (unchecked-multiply-int z y) (unchecked-multiply-int z z))))))
+  (if (zero? pow) 1
+    (loop [n (int pow), y (int 1), z (int base)]
+      (let [t (even? n), n (quot n 2)]
+        (cond
+          t (recur n y (unchecked-multiply-int z z))
+          (zero? n) (unchecked-multiply-int z y)
+          :else (recur n (unchecked-multiply-int z y) (unchecked-multiply-int z z)))))))
 
 (def ^:const inverse-thirty-one -1108378657)
 
