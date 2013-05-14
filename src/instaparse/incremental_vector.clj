@@ -45,6 +45,8 @@
     (.iterator v))
   (size [self]
     (count v))
+  (toArray [self]
+    (.toArray v))
   clojure.lang.IPersistentCollection
   (equiv [self other]
     (or 
