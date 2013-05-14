@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.2.0
+
+### Minor Enhancements
+
+* Added more support to IncrementalVector for a wider variety of vector operations, including subvec, nth, and vec.
+
 ## 1.1.0
 
 ### Breaking Changes
