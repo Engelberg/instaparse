@@ -40,7 +40,7 @@
   (hasheq [self] hashcode)
   java.util.Collection
   (iterator [self]
-    (.iterator (seq v)))
+    (.iterator (seq self)))
   (size [self]
     cnt)
   clojure.lang.IPersistentCollection
