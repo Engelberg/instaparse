@@ -79,6 +79,8 @@
   clojure.lang.IFn
   (invoke [self arg]
     (.invoke v arg))
+  (applyTo [self arglist]
+    (.applyTo v arglist))
   clojure.lang.IPersistentStack
   (peek [self] (peek v))
   (pop [self] 
