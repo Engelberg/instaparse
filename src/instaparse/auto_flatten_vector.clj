@@ -1,5 +1,7 @@
 (ns instaparse.auto-flatten-vector)
 
+(def ^:const threshold 32)
+
 (declare EMPTY)
 
 (defn- expt [base pow]
@@ -27,7 +29,7 @@
       (unchecked-multiply-int e (hash v1))
       (unchecked-subtract-int (hash v2) e))))
 
-(deftype IncrementalVector [^clojure.lang.PersistentVector v ^int hashcode ^int cnt]
+(deftype IncrementalVector [^clojure.lang.PersistentVector v ^int hashcode ^int cnt ^boolean dirty]
   Object
   (toString [self] (.toString v))
   (hashCode [self] hashcode)
@@ -57,11 +59,21 @@
   (cons [self obj]
     (cond
       (empty? obj) self
-      (vector? obj) (IncrementalVector. (conj v obj) (hash-cat self obj) (+ (count obj) cnt))
-      :else (IncrementalVector. (conj v obj) (hash-conj hashcode obj) (inc cnt))))
+      (vector? obj)
+      (if (<= (count obj) threshold)
+        (IncrementalVector. (into v obj) (hash-cat self obj) (+ (count obj) cnt)
+                            (or dirty (:dirty obj)))
+        (IncrementalVector. (conj v obj) (hash-cat self obj) (+ (count obj) cnt)
+                            true))
+      :else (IncrementalVector. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty)))
+  clojure.lang.ILookup
+  (valAt [self key]
+    (when (= key :dirty) dirty))
+  (valAt [self key not-found]
+    (if (= key :dirty) dirty not-found))
   clojure.lang.IObj
   (withMeta [self metamap]
-    (IncrementalVector. (with-meta v metamap) hashcode cnt))
+    (IncrementalVector. (with-meta v metamap) hashcode cnt dirty))
   clojure.lang.IMeta
   (meta [self]
     (meta v))
@@ -76,15 +88,15 @@
         (vector? top)
         (if (> (count top) 1)
           (let [new-top (pop top)]
-            (IncrementalVector. (conj (pop v) new-top) (hash-pop self (peek top)) (dec cnt)))
+            (IncrementalVector. (conj (pop v) new-top) (hash-pop self (peek top)) (dec cnt) dirty))
           (let [new-v (pop v)]
-            (IncrementalVector. new-v (hash-pop self (peek top)) (dec cnt))))
+            (IncrementalVector. new-v (hash-pop self (peek top)) (dec cnt) dirty)))
         :else
         (let [new-v (pop v)]
-          (IncrementalVector. new-v (hash-pop self top) (dec cnt)))))))
+          (IncrementalVector. new-v (hash-pop self top) (dec cnt) dirty))))))
      
 (defn ivec [v]
   (let [v (vec v)]
-    (IncrementalVector. v (hash v) (count v))))
+    (IncrementalVector. v (hash v) (count v) false)))
 
 (def EMPTY (ivec []))
