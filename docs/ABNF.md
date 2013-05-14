@@ -188,7 +188,7 @@ As an example, let's revisit the usage example from above:
 
 	(def phone-uri-parser
 	  (binding [instaparse.abnf/*case-insensitive* true]
-	    (insta/parser "https://raw.github.com/Engelberg/instaparse/abnf/test/instaparse/phone_uri.txt"
+	    (insta/parser "https://raw.github.com/Engelberg/instaparse/master/test/instaparse/phone_uri.txt"
 	                  :input-format :abnf)))
 
 	=> (phone-uri-parser "tel:+1-201-555-0123")
