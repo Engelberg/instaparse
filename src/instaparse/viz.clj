@@ -1,6 +1,6 @@
 (ns instaparse.viz
     (:require [rhizome.viz :refer [view-tree]]
-              [instaparse.core :refer [parser parse parses]]))
+              #_[instaparse.core :refer [parser parse parses]]))
  
               
 (defn- acceptable? [node]
