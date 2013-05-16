@@ -1,4 +1,6 @@
-(ns instaparse.viz)   
+(ns instaparse.viz
+  (:import java.io.IOException)
+  (:require instaparse.core))   
 
 (try 
   (require '[rhizome.viz :as r])
@@ -7,12 +9,17 @@
 
 (defn tree-viz 
     "visualize instaparse hiccup output as a rhizome graph. Requires rhizome: https://github.com/ztellman/rhizome"
-    [mytree]           
+    [mytree]         
+    (try
       (r/view-tree sequential? rest mytree 
                    :node->descriptor (fn [n] {:label (if (vector? n) 
                                                        (first n) 
-                                                       (when (string? n) n ))})))
-
+                                                       (when (string? n) n ))}))
+      (catch IOException e
+        (throw (UnsupportedOperationException. 
+                 "\n\nYou appear to have rhizome in your dependencies, but have not installed GraphViz on your system.
+\nSee https://github.com/ztellman/rhizome for more information.\n")))))
+    
 (def make-tree
      "simple tree parser"
      (instaparse.core/parser "tree: node* 
