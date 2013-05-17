@@ -97,11 +97,13 @@
    :output-format :enlive
    or
    :output-format :hiccup
+   or
+   :output-format :lisp
    
    :start :keyword (where :keyword is name of starting production rule)"
   [grammar-specification &{:as options}]
   {:pre [(contains? #{:abnf :ebnf nil} (get options :input-format))
-         (contains? #{:enlive :hiccup nil} (get options :output-format))]}
+         (contains? #{:enlive :hiccup :lisp nil} (get options :output-format))]}
   (let [input-format (get options :input-format *default-input-format*)
         build-parser (case input-format 
                        :abnf abnf/build-parser
