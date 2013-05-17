@@ -31,20 +31,25 @@
 (def raw-non-terminal-reduction {:reduction-type :raw})
 
 (defn HiccupNonTerminalReduction [key]
-  {:reduction-type :hiccup :key key})
+  {:reduction-type :hiccup, :key key})
 
 (defn EnliveNonTerminalReduction [key] 
   {:reduction-type :enlive, :key key})
 
+(defn LispNonTerminalReduction [key]
+  {:reduction-type :lisp, :key key})
+
 (def ^:constant reduction-types 
   {:hiccup HiccupNonTerminalReduction
-   :enlive EnliveNonTerminalReduction})
+   :enlive EnliveNonTerminalReduction
+   :lisp   LispNonTerminalReduction})
                     
 (def ^:constant node-builders
   ; A map of functions for building a node that only has one item
   ; These functions are used in total-parse mode to build failure nodes
   {:enlive (fn [tag item] {:tag tag :content [item]})
-   :hiccup (fn [tag item] [tag item])})
+   :hiccup (fn [tag item] [tag item])
+   :lisp   (fn [tag item] (list tag item))})
 
 (def standard-non-terminal-reduction :hiccup)
 
@@ -55,6 +60,7 @@
              (make-flattenable flattened-result))               
       :hiccup (into [(:key f)] flattened-result)
       :enlive {:tag (:key f), :content flattened-result}
+      :lisp  (list (:key f) flattened-result)
       (f result))))
     
 (defn apply-standard-reductions 
@@ -65,5 +71,5 @@
                  (if (:red v) [k v]
                    [k (assoc v :red (reduction k))])))
       (throw (IllegalArgumentException. 
-               (format "Invalid output format %s. Use :enlive or :hiccup." reduction-type))))))
+               (format "Invalid output format %s. Use :enlive, :hiccup or :lisp." reduction-type))))))
     
