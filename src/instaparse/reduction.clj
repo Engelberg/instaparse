@@ -49,7 +49,7 @@
   ; These functions are used in total-parse mode to build failure nodes
   {:enlive (fn [tag item] {:tag tag :content [item]})
    :hiccup (fn [tag item] [tag item])
-   :lisp   (fn [tag item] (list tag (list item)))})
+   :lisp   (fn [tag item] (list tag item))})
 
 (def standard-non-terminal-reduction :hiccup)
 
@@ -60,7 +60,7 @@
              (make-flattenable flattened-result))               
       :hiccup (into [(:key f)] flattened-result)
       :enlive {:tag (:key f), :content flattened-result}
-      :lisp  (into () [(first flattened-result) (:key f)])
+      :lisp  (conj flattened-result (:key f))
       (f result))))
     
 (defn apply-standard-reductions 
