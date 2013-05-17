@@ -50,7 +50,7 @@
   {:enlive (fn [tag item] {:tag tag :content [item]})
    :hiccup (fn [tag item] [tag item])
    :lisp   (fn [tag item] (list tag item))})
-
+ 
 (def standard-non-terminal-reduction :hiccup)
 
 (defn apply-reduction [f result]
