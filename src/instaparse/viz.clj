@@ -10,7 +10,7 @@
     "visualize instaparse hiccup output as a rhizome graph. Requires rhizome: https://github.com/ztellman/rhizome"
     [mytree]         
     (r/view-tree sequential? rest mytree 
-                 :node->descriptor (fn [n] {:label (if (vector? n) 
+                 :node->descriptor (fn [n] {:label (if (coll? n) 
                                                      (first n) 
                                                      (when (string? n) n ))})))
       
