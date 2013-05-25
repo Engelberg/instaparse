@@ -32,7 +32,7 @@
 (declare iv?)
 
 (defn delve [v index]
-  (if (vector? (get-in v index))
+  (if (iv? (get-in v index))
     (recur v (conj index 0))
     index))
 
