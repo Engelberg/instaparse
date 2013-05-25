@@ -50,23 +50,6 @@
     :else
     (recur v (pop index))))
       
-(deftype IVSeq [^clojure.lang.PersistentVector v index ^int cnt]
-  clojure.lang.Counted
-  (count [self] cnt)
-  clojure.lang.Seqable
-  (seq [self] self)
-  clojure.lang.ISeq
-  (first [self]
-    (get-in v index))
-  (next [self]
-    (if-let [next-index (advance v index)]
-      (IVSeq. v next-index (dec cnt))
-      nil))    
-  (more [self]
-    (if-let [next-index (advance v index)]
-      (IVSeq. v next-index (dec cnt))
-      ())))
-
 (defn flat-seq
   ([v] (if (pos? (count v)) 
          (flat-seq v (delve v [0]))
@@ -76,8 +59,6 @@
       (cons (get-in v index) 
             (when-let [next-index (advance v index)] 
               (flat-seq v next-index))))))  
-
-(declare my-flatten my-flatten-v my-flatten-3)
 
 (deftype IncrementalVector [^clojure.lang.PersistentVector v ^int hashcode ^int cnt ^boolean dirty]
   Object
@@ -97,6 +78,8 @@
       (.iterator [])))
   (size [self]
     cnt)
+  (toArray [self]
+    (.toArray v))
   clojure.lang.IPersistentCollection
   (equiv [self other]
     (and (== hashcode (hash other))
@@ -107,9 +90,7 @@
   (count [self] cnt)
   clojure.lang.IPersistentVector
   (assoc [self i val] 
-    (throw (UnsupportedOperationException.)))
-  (nth [self i]
-    (nth v i))
+    (throw (UnsupportedOperationException.)))  
   (cons [self obj]
     (cond
       (and (sequential? obj) (empty? obj)) self
@@ -120,13 +101,17 @@
                                            (.dirty ^IncrementalVector obj))))
         (IncrementalVector. (conj v obj) (hash-cat self obj) (+ (count obj) cnt)
                             true))
-      :else (IncrementalVector. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty)))
+      :else (IncrementalVector. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty)))  
+  clojure.lang.Indexed
+  (nth [self i]
+    (.nth v i))
+  (nth [self i not-found]
+    (.nth v i not-found))
   clojure.lang.ILookup
-  (valAt [self key]
-    (if (= key :dirty) dirty
-      (.valAt v key)))
+  (valAt [self key]    
+    (.valAt v key))
   (valAt [self key not-found]
-    (if (= key :dirty) dirty (.valAt v key not-found)))
+    (.valAt v key not-found))
   clojure.lang.IObj
   (withMeta [self metamap]
     (IncrementalVector. (with-meta v metamap) hashcode cnt dirty))
@@ -136,6 +121,11 @@
   clojure.lang.Seqable
   (seq [self]
     (flat-seq v))
+  clojure.lang.IFn
+  (invoke [self arg]
+    (get self arg))
+  (applyTo [self arglist]
+    (apply get self arglist))
   clojure.lang.IPersistentStack
   (peek [self]
     (let [top (peek v)]
@@ -159,27 +149,8 @@
 
 (def EMPTY (ivec []))
 
-(defn my-flatten [s]
-  (when (pos? (count s))
-    (let [f (first s)]
-      (if (instance? IncrementalVector f)
-        (concat (seq f) (my-flatten (rest s)))
-        (lazy-seq (cons (first s) (my-flatten (rest s))))))))
-
-(defn my-flatten-v [s]
-  (when-let [[f & r] (seq s)]
-    (if (instance? IncrementalVector f)
-      (concat (my-flatten-v (.v ^IncrementalVector f))
-              (my-flatten-v (next s)))
-      (lazy-seq (cons (first s) (my-flatten-v (next s)))))))
-      
-
 (defn iv? [s]
   (instance? IncrementalVector s))
-
-(defn my-flatten-3 [s]
-  (filter (complement iv?)
-          (rest (tree-seq iv? #(.v ^IncrementalVector %) s))))
 
 (defn true-count [v]
   (if (iv? v)
