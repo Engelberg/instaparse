@@ -6,7 +6,8 @@
   
   ;; Incremental vector provides a more performant hashing strategy 
   ;; for this use-case for vectors
-  (:require [instaparse.incremental-vector :as iv])
+  ;; We use the auto flatten version
+  (:require [instaparse.auto-flatten-vector :as iv])
   
   ;; failure contains the augment-failure function, which is called to
   ;; add enough information to the failure object for pretty printing 
@@ -515,7 +516,7 @@
       (fail tramp [index this] index
             {:tag :regexp :expecting regexp :full true}))))
         
-(let [empty-cat-result (red/make-flattenable iv/EMPTY)]
+(let [empty-cat-result iv/EMPTY]
 	(defn cat-parse
 	  [this index tramp]
 	  (let [parsers (:parsers this)]

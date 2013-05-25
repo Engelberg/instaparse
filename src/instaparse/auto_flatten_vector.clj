@@ -93,12 +93,16 @@
     (throw (UnsupportedOperationException.)))  
   (cons [self obj]
     (cond
-      (and (sequential? obj) (empty? obj)) self
-      (vector? obj)
-      (if (<= (count obj) threshold)
+      (nil? obj) self
+      (and (sequential? obj) (empty? obj)) self      
+      (iv? obj)
+      (cond
+        (zero? cnt) obj
+        (<= (count obj) threshold)
         (IncrementalVector. (into v obj) (hash-cat self obj) (+ (count obj) cnt)
                             (or dirty (and (instance? IncrementalVector obj)
                                            (.dirty ^IncrementalVector obj))))
+        :else
         (IncrementalVector. (conj v obj) (hash-cat self obj) (+ (count obj) cnt)
                             true))
       :else (IncrementalVector. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty)))  

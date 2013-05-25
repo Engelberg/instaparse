@@ -12,6 +12,7 @@
           [(into (vec (seq r)) v) (conj r iv) rnd]))))
         
 (deftest rand-incremental-vector-test
+  (is (= (conj (ivec [:s]) nil) [:s]))
   (loop [v (vec (range 100)) iv (ivec (range 100)) n 50 loops 20]
     (let [[v iv rnd] (rand-mutation v iv)]
       (cond
