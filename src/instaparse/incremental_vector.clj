@@ -3,12 +3,13 @@
 (declare EMPTY)
 
 (defn- expt [base pow]
-  (loop [n (int pow), y (int 1), z (int base)]
-    (let [t (even? n), n (quot n 2)]
-      (cond
-       t (recur n y (unchecked-multiply-int z z))
-       (zero? n) (unchecked-multiply-int z y)
-       :else (recur n (unchecked-multiply-int z y) (unchecked-multiply-int z z))))))
+  (if (zero? pow) 1
+    (loop [n (int pow), y (int 1), z (int base)]
+      (let [t (even? n), n (quot n 2)]
+        (cond
+          t (recur n y (unchecked-multiply-int z z))
+          (zero? n) (unchecked-multiply-int z y)
+          :else (recur n (unchecked-multiply-int z y) (unchecked-multiply-int z z)))))))
 
 (def ^:const inverse-thirty-one -1108378657)
 
@@ -44,6 +45,8 @@
     (.iterator v))
   (size [self]
     (count v))
+  (toArray [self]
+    (.toArray v))
   clojure.lang.IPersistentCollection
   (equiv [self other]
     (or 
@@ -75,9 +78,16 @@
     (.valAt v key))
   (valAt [self key not-found]
     (.valAt v key not-found))
+  clojure.lang.Indexed
+  (nth [self i]
+    (.nth v i))
+  (nth [self i not-found]
+    (.nth v i not-found))
   clojure.lang.IFn
   (invoke [self arg]
     (.invoke v arg))
+  (applyTo [self arglist]
+    (.applyTo v arglist))
   clojure.lang.IPersistentStack
   (peek [self] (peek v))
   (pop [self] 

@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.2.0
+
+### Minor Enhancements
+
+* Added more support to IncrementalVector for a wider variety of vector operations, including subvec, nth, and vec.
+
 ## 1.1.0
 
 ### Breaking Changes
@@ -10,12 +16,12 @@
 
 * Comments now supported in CFGs.  Use (* and *) notation.
 * Added `ebnf` combinator to the `instaparse/combinators` namespace.  This new combinator converts string specifications to the combinator-built equivalent.  See combinator section of the updated tutorial for details.
-* Can now create a parser from a specification using `:input-format :abnf` for ABNF parser syntax.
-    * New combinators related to abnf:
+* ABNF: can now create a parser from a specification using `:input-format :abnf` for ABNF parser syntax.
+    * New combinators related to ABNF:
         1. `abnf` -- converts ABNF string fragments to combinators.
         2. `string-ci` -- case-insensitive strings.
         3. `rep` -- between m and n repetitions.
-    * New core function related to abnf:
+    * New core function related to ABNF:
         `set-default-input-format!` -- initially defaults to :ebnf
 
 ### Minor Enhancements
