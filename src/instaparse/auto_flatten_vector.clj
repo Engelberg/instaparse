@@ -120,7 +120,7 @@
     (meta v))
   clojure.lang.Seqable
   (seq [self]
-    (flat-seq v))
+    (if dirty (flat-seq v) (seq v)))
   clojure.lang.IFn
   (invoke [self arg]
     (get self arg))
