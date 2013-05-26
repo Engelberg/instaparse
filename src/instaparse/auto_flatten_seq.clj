@@ -73,9 +73,10 @@
   (hasheq [self] hashcode)
   java.util.Collection
   (iterator [self]
-    (if-let [s (seq self)]
-      (.iterator (seq self))
-      (.iterator ())))
+    (if-let [^java.util.Collection s (seq self)]
+      (.iterator s)
+      (let [^java.util.Collection e ()]
+        (.iterator e))))
   (size [self]
     cnt)
   (toArray [self]
