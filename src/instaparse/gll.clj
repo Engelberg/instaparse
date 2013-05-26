@@ -7,7 +7,7 @@
   ;; Incremental vector provides a more performant hashing strategy 
   ;; for this use-case for vectors
   ;; We use the auto flatten version
-  (:require [instaparse.auto-flatten-vector :as iv])
+  (:require [instaparse.auto-flatten-seq :as iv])
   
   ;; failure contains the augment-failure function, which is called to
   ;; add enough information to the failure object for pretty printing 

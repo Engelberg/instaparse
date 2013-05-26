@@ -1,5 +1,5 @@
 (ns instaparse.reduction
-  (:require [instaparse.auto-flatten-vector :as iv]))
+  (:require [instaparse.auto-flatten-seq :as iv]))
 
 ;; utilities
 
