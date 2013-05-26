@@ -80,7 +80,8 @@
   (size [self]
     cnt)
   (toArray [self]
-    (.toArray v))
+    (let [^java.util.Collection s (seq self)]
+      (.toArray s)))
   clojure.lang.Sequential
   clojure.lang.ISeq
   (equiv [self other]
@@ -121,23 +122,7 @@
     (meta v))
   clojure.lang.Seqable
   (seq [self]
-    (if dirty (flat-seq v) (seq v)))
-  clojure.lang.IPersistentStack
-  (peek [self]
-    (let [top (peek v)]
-      (if (iv? top) (peek top) top)))
-  (pop [self] 
-    (let [top (peek v)]
-      (cond
-        (iv? top)
-        (if (> (count top) 1)
-          (let [new-top (pop top)]
-            (IncrementalVector. (conj (pop v) new-top) (hash-pop self (peek top)) (dec cnt) dirty))
-          (let [new-v (pop v)]
-            (IncrementalVector. new-v (hash-pop self (peek top)) (dec cnt) dirty)))
-        :else
-        (let [new-v (pop v)]
-          (IncrementalVector. new-v (hash-pop self top) (dec cnt) dirty))))))
+    (if dirty (flat-seq v) (seq v)))) 
      
 (defn ivec [v]
   (let [v (vec v)]

@@ -2,13 +2,12 @@
   (:use clojure.test instaparse.auto-flatten-seq))
 
 (defn rand-mutation [v iv]
-  (let [rnd (rand-int 4)]
+  (let [rnd (int (rand-int 3))]
     (case rnd
       0 (let [n (rand-int 50000)] [(conj v n) (conj iv n) rnd])
-      1 [(pop v) (pop iv) rnd]
       2 (let [i (rand-int 64), r (ivec (repeat i (rand-int 50000)))]
           [(into v r) (conj iv r) rnd])
-      3 (let [i (rand-int 64), r (ivec (repeat i (rand-int 50000)))]
+      1 (let [i (rand-int 64), r (ivec (repeat i (rand-int 50000)))]
           [(into (vec (seq r)) v) (conj r iv) rnd]))))
         
 (deftest rand-incremental-vector-test
@@ -28,7 +27,7 @@
           (recur v iv (dec n) loops))))))
 
 (defn rand-mutation2 [v]
-  (let [rnd (rand-int 4)]
+  (let [rnd (int (rand-int 4))]
     (case rnd
       0 (let [n (rand-int 50000)] (conj v n))
       1 v
