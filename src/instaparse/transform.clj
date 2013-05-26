@@ -1,5 +1,6 @@
 (ns instaparse.transform
-  "Functions to transform parse trees")
+  "Functions to transform parse trees"
+  (:require instaparse.gll))
 
 (defn- enlive-transform
   [transform-map parse-tree]
