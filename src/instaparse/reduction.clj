@@ -1,5 +1,5 @@
 (ns instaparse.reduction
-  (:require [instaparse.auto-flatten-seq :as iv]))
+  (:require [instaparse.auto-flatten-seq :as afs]))
 
 ;; utilities
 
@@ -37,10 +37,10 @@
 
 (defn apply-reduction [f result]
   (case (:reduction-type f)
-    :raw (iv/conj-flat iv/EMPTY result)               
-    :hiccup (vec (seq (iv/conj-flat (iv/ivec [(:key f)]) result)))
+    :raw (afs/conj-flat afs/EMPTY result)               
+    :hiccup (vec (seq (afs/conj-flat (afs/auto-flatten-seq [(:key f)]) result)))
     :enlive 
-    (let [content (iv/conj-flat iv/EMPTY result)]
+    (let [content (afs/conj-flat afs/EMPTY result)]
       {:tag (:key f), :content (if (zero? (count content)) nil content)})
     (f result)))
     

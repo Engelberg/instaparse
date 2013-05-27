@@ -29,10 +29,10 @@
       (unchecked-multiply-int e (hash v1))
       (unchecked-subtract-int (hash v2) e))))
 
-(declare iv?)
+(declare afs?)
 
 (defn delve [v index]
-  (if (iv? (get-in v index))
+  (if (afs? (get-in v index))
     (recur v (conj index 0))
     index))
 
@@ -63,7 +63,8 @@
 (defprotocol ConjFlat
   (conj-flat [self obj]))
 
-(deftype AutoFlattenSeq [^clojure.lang.PersistentVector v ^int hashcode ^int cnt ^boolean dirty]
+(deftype AutoFlattenSeq [^clojure.lang.PersistentVector v ^int hashcode ^int cnt ^boolean dirty
+                         ^:unsynchronized-mutable ^clojure.lang.ISeq cached-seq]
   Object
   (toString [self] (.toString v))
   (hashCode [self] hashcode)
@@ -102,16 +103,16 @@
     (cond
       (nil? obj) self
       (and (sequential? obj) (empty? obj)) self      
-      (iv? obj)
+      (afs? obj)
       (cond
         (zero? cnt) obj
         (<= (count obj) threshold)
         (AutoFlattenSeq. (into v obj) (hash-cat self obj) (+ (count obj) cnt)
-                            (or dirty (.dirty ^AutoFlattenSeq obj)))
+                            (or dirty (.dirty ^AutoFlattenSeq obj)) nil)
         :else
         (AutoFlattenSeq. (conj v obj) (hash-cat self obj) (+ (count obj) cnt)
-                            true))
-      :else (AutoFlattenSeq. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty)))
+                            true nil))
+      :else (AutoFlattenSeq. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty nil)))
   clojure.lang.Counted
   (count [self] cnt)
   clojure.lang.ILookup
@@ -121,24 +122,27 @@
     (.valAt v key not-found))
   clojure.lang.IObj
   (withMeta [self metamap]
-    (AutoFlattenSeq. (with-meta v metamap) hashcode cnt dirty))
+    (AutoFlattenSeq. (with-meta v metamap) hashcode cnt dirty nil))
   clojure.lang.IMeta
   (meta [self]
     (meta v))
   clojure.lang.Seqable
   (seq [self]
-    (if dirty (flat-seq v) (seq v)))) 
+    (if cached-seq cached-seq
+      (do
+        (set! cached-seq (if dirty (flat-seq v) (seq v)))
+        cached-seq))))
      
-(defn ivec [v]
+(defn auto-flatten-seq [v]
   (let [v (vec v)]
-    (AutoFlattenSeq. v (hash v) (count v) false)))
+    (AutoFlattenSeq. v (hash v) (count v) false nil)))
 
-(def EMPTY (ivec []))
+(def EMPTY (auto-flatten-seq []))
 
-(defn iv? [s]
+(defn afs? [s]
   (instance? AutoFlattenSeq s))
 
 (defn true-count [v]
-  (if (iv? v)
+  (if (afs? v)
     (count (.v ^AutoFlattenSeq v))
     (count v)))
