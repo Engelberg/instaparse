@@ -355,7 +355,7 @@
            :node-key [(node-key 0) (:tag (node-key 1))]})
   (fn [result] 
     (let [{parsed-result :result continue-index :index} result
-          new-results-so-far (conj results-so-far parsed-result)]
+          new-results-so-far (iv/append-flat results-so-far parsed-result)]
       (if (seq parser-sequence)
         (push-listener tramp [continue-index (first parser-sequence)]
                        (CatListener new-results-so-far (next parser-sequence) node-key tramp))          
@@ -368,7 +368,7 @@
 ;           :node-key [(node-key 0) (:tag (node-key 1))]})
   (fn [result] 
     (let [{parsed-result :result continue-index :index} result
-          new-results-so-far (conj results-so-far parsed-result)]
+          new-results-so-far (iv/append-flat results-so-far parsed-result)]
       (cond
         (red/singleton? parser-sequence)
         (push-full-listener tramp [continue-index (first parser-sequence)]
@@ -390,7 +390,7 @@
       (if (= continue-index prev-index)
         (when (zero? (count results-so-far)) 
           (success tramp node-key nil continue-index))        
-        (let [new-results-so-far (conj results-so-far parsed-result)]
+        (let [new-results-so-far (iv/append-flat results-so-far parsed-result)]
           (push-listener tramp [continue-index parser]
                          (PlusListener new-results-so-far parser continue-index
                                        node-key tramp))            
@@ -402,7 +402,7 @@
       (if (= continue-index prev-index)
         (when (zero? (count results-so-far))
           (success tramp node-key nil continue-index))
-        (let [new-results-so-far (conj results-so-far parsed-result)]
+        (let [new-results-so-far (iv/append-flat results-so-far parsed-result)]
           (if (= continue-index (count (:text tramp)))
             (success tramp node-key new-results-so-far continue-index)
             (push-listener tramp [continue-index parser]
@@ -415,7 +415,7 @@
   (fn [result]    
     (let [{parsed-result :result continue-index :index} result]      
       ;(dprintln "Rep" (type results-so-far))
-      (let [new-results-so-far (conj results-so-far parsed-result)]
+      (let [new-results-so-far (iv/append-flat results-so-far parsed-result)]
         (when (<= m (count new-results-so-far) n)
           (success tramp node-key new-results-so-far continue-index))
         (when (< (count new-results-so-far) n)
@@ -427,7 +427,7 @@
   (fn [result]
     (let [{parsed-result :result continue-index :index} result]
       ;(dprintln "RepFull" (type parsed-result))
-      (let [new-results-so-far (conj results-so-far parsed-result)]        
+      (let [new-results-so-far (iv/append-flat results-so-far parsed-result)]        
         (if (= continue-index (count (:text tramp)))
           (when (<= m (count new-results-so-far) n)
             (success tramp node-key new-results-so-far continue-index))
