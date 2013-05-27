@@ -60,15 +60,15 @@
             (when-let [next-index (advance v index)] 
               (flat-seq v next-index))))))  
 
-(deftype IncrementalVector [^clojure.lang.PersistentVector v ^int hashcode ^int cnt ^boolean dirty]
+(deftype AutoFlattenSeq [^clojure.lang.PersistentVector v ^int hashcode ^int cnt ^boolean dirty]
   Object
   (toString [self] (.toString v))
   (hashCode [self] hashcode)
   (equals [self other]
-    (and (instance? IncrementalVector other)
-         (== hashcode (.hashcode ^IncrementalVector other))
-         (== (count v) (count (.v ^IncrementalVector other)))
-         (= v (.v ^IncrementalVector other))))
+    (and (instance? AutoFlattenSeq other)
+         (== hashcode (.hashcode ^AutoFlattenSeq other))
+         (== (count v) (count (.v ^AutoFlattenSeq other)))
+         (= v (.v ^AutoFlattenSeq other))))
   clojure.lang.IHashEq
   (hasheq [self] hashcode)
   java.util.Collection
@@ -99,13 +99,13 @@
       (cond
         (zero? cnt) obj
         (<= (count obj) threshold)
-        (IncrementalVector. (into v obj) (hash-cat self obj) (+ (count obj) cnt)
-                            (or dirty (and (instance? IncrementalVector obj)
-                                           (.dirty ^IncrementalVector obj))))
+        (AutoFlattenSeq. (into v obj) (hash-cat self obj) (+ (count obj) cnt)
+                            (or dirty (and (instance? AutoFlattenSeq obj)
+                                           (.dirty ^AutoFlattenSeq obj))))
         :else
-        (IncrementalVector. (conj v obj) (hash-cat self obj) (+ (count obj) cnt)
+        (AutoFlattenSeq. (conj v obj) (hash-cat self obj) (+ (count obj) cnt)
                             true))
-      :else (IncrementalVector. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty)))  
+      :else (AutoFlattenSeq. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty)))  
   clojure.lang.Indexed
   (nth [self i]
     (.nth v i))
@@ -118,7 +118,7 @@
     (.valAt v key not-found))
   clojure.lang.IObj
   (withMeta [self metamap]
-    (IncrementalVector. (with-meta v metamap) hashcode cnt dirty))
+    (AutoFlattenSeq. (with-meta v metamap) hashcode cnt dirty))
   clojure.lang.IMeta
   (meta [self]
     (meta v))
@@ -140,24 +140,24 @@
         (vector? top)
         (if (> (count top) 1)
           (let [new-top (pop top)]
-            (IncrementalVector. (conj (pop v) new-top) (hash-pop self (peek top)) (dec cnt) dirty))
+            (AutoFlattenSeq. (conj (pop v) new-top) (hash-pop self (peek top)) (dec cnt) dirty))
           (let [new-v (pop v)]
-            (IncrementalVector. new-v (hash-pop self (peek top)) (dec cnt) dirty)))
+            (AutoFlattenSeq. new-v (hash-pop self (peek top)) (dec cnt) dirty)))
         :else
         (let [new-v (pop v)]
-          (IncrementalVector. new-v (hash-pop self top) (dec cnt) dirty))))))
+          (AutoFlattenSeq. new-v (hash-pop self top) (dec cnt) dirty))))))
      
 (defn ivec [v]
   (let [v (vec v)]
-    (IncrementalVector. v (hash v) (count v) false)))
+    (AutoFlattenSeq. v (hash v) (count v) false)))
 
 (def EMPTY (ivec []))
 
 (defn iv? [s]
-  (instance? IncrementalVector s))
+  (instance? AutoFlattenSeq s))
 
 (defn true-count [v]
   (if (iv? v)
-    (count (.v ^IncrementalVector v))
+    (count (.v ^AutoFlattenSeq v))
     (count v)))
 

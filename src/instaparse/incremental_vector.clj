@@ -29,15 +29,15 @@
                          (unchecked-subtract-int (hash new) (hash old))
                          (expt 31 (- c i 1))))))
 
-(deftype IncrementalVector [^clojure.lang.PersistentVector v ^int hashcode]
+(deftype AutoFlattenSeq [^clojure.lang.PersistentVector v ^int hashcode]
   Object
   (toString [self] (.toString v))
   (hashCode [self] hashcode)
   (equals [self other]
-    (and (instance? IncrementalVector other)
-         (== hashcode (.hashcode ^IncrementalVector other))
-         (== (count v) (count (.v ^IncrementalVector other)))
-         (= v (.v ^IncrementalVector other))))
+    (and (instance? AutoFlattenSeq other)
+         (== hashcode (.hashcode ^AutoFlattenSeq other))
+         (== (count v) (count (.v ^AutoFlattenSeq other)))
+         (= v (.v ^AutoFlattenSeq other))))
   clojure.lang.IHashEq
   (hasheq [self] hashcode)
   java.util.Collection
@@ -50,10 +50,10 @@
   clojure.lang.IPersistentCollection
   (equiv [self other]
     (or 
-      (and (instance? IncrementalVector other)
-           (== hashcode (.hashcode ^IncrementalVector other))
-           (== (count v) (count (.v ^IncrementalVector other)))
-           (= v (.v ^IncrementalVector other)))
+      (and (instance? AutoFlattenSeq other)
+           (== hashcode (.hashcode ^AutoFlattenSeq other))
+           (== (count v) (count (.v ^AutoFlattenSeq other)))
+           (= v (.v ^AutoFlattenSeq other)))
       (= v other)))
   (empty [self] (with-meta EMPTY (meta self))) 
   clojure.lang.Counted
@@ -61,12 +61,12 @@
   clojure.lang.IPersistentVector
   (assoc [self i val] 
     (let [new-v (assoc v i val)]
-      (IncrementalVector. new-v (hash-assoc self i val))))
+      (AutoFlattenSeq. new-v (hash-assoc self i val))))
   (cons [self obj]
-    (IncrementalVector. (conj v obj) (hash-conj hashcode obj)))
+    (AutoFlattenSeq. (conj v obj) (hash-conj hashcode obj)))
   clojure.lang.IObj
   (withMeta [self metamap]
-    (IncrementalVector. (with-meta v metamap) hashcode))
+    (AutoFlattenSeq. (with-meta v metamap) hashcode))
   clojure.lang.IMeta
   (meta [self]
     (meta v))
@@ -92,11 +92,11 @@
   (peek [self] (peek v))
   (pop [self] 
     (let [new-v (pop v)]
-      (IncrementalVector. new-v (hash-pop self))))) 
+      (AutoFlattenSeq. new-v (hash-pop self))))) 
   
   
 (defn ivec [v]
   (let [v (vec v)]
-    (IncrementalVector. v (hash v))))
+    (AutoFlattenSeq. v (hash v))))
 
 (def EMPTY (ivec []))
