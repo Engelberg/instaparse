@@ -60,6 +60,9 @@
             (when-let [next-index (advance v index)] 
               (flat-seq v next-index))))))  
 
+(defprotocol ConjFlat
+  (conj-flat [self obj]))
+
 (deftype IncrementalVector [^clojure.lang.PersistentVector v ^int hashcode ^int cnt ^boolean dirty]
   Object
   (toString [self] (.toString v))
@@ -94,6 +97,21 @@
   (more [self] (rest (seq self)))
   (cons [self obj]
     (cons obj self))
+  ConjFlat
+  (conj-flat [self obj]
+    (cond
+      (nil? obj) self
+      (and (sequential? obj) (empty? obj)) self      
+      (iv? obj)
+      (cond
+        (zero? cnt) obj
+        (<= (count obj) threshold)
+        (IncrementalVector. (into v obj) (hash-cat self obj) (+ (count obj) cnt)
+                            (or dirty (.dirty ^IncrementalVector obj)))
+        :else
+        (IncrementalVector. (conj v obj) (hash-cat self obj) (+ (count obj) cnt)
+                            true))
+      :else (IncrementalVector. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty)))
   clojure.lang.Counted
   (count [self] cnt)
   clojure.lang.ILookup
@@ -124,23 +142,3 @@
   (if (iv? v)
     (count (.v ^IncrementalVector v))
     (count v)))
-
-(defn append-flat [^IncrementalVector self obj]
-  (let [v (.v self)
-        cnt (.cnt self)
-        hashcode (.hashcode self)
-        dirty (.dirty self)]
-    (cond
-      (nil? obj) self
-      (and (sequential? obj) (empty? obj)) self      
-      (iv? obj)
-      (cond
-        (zero? cnt) obj
-        (<= (count obj) threshold)
-        (IncrementalVector. (into v obj) (hash-cat self obj) (+ (count obj) cnt)
-                            (or dirty (.dirty ^IncrementalVector obj)))
-        :else
-        (IncrementalVector. (conj v obj) (hash-cat self obj) (+ (count obj) cnt)
-                            true))
-      :else (IncrementalVector. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty))))
-

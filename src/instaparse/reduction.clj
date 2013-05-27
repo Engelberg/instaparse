@@ -37,10 +37,10 @@
 
 (defn apply-reduction [f result]
   (case (:reduction-type f)
-    :raw (iv/append-flat iv/EMPTY result)               
-    :hiccup (vec (seq (iv/append-flat (iv/ivec [(:key f)]) result)))
+    :raw (iv/conj-flat iv/EMPTY result)               
+    :hiccup (vec (seq (iv/conj-flat (iv/ivec [(:key f)]) result)))
     :enlive 
-    (let [content (iv/append-flat iv/EMPTY result)]
+    (let [content (iv/conj-flat iv/EMPTY result)]
       {:tag (:key f), :content (if (zero? (count content)) nil content)})
     (f result)))
     

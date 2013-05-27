@@ -4,14 +4,14 @@
 (defn rand-mutation [v iv]
   (let [rnd (int (rand-int 3))]
     (case rnd
-      0 (let [n (rand-int 50000)] [(conj v n) (append-flat iv n) rnd])
+      0 (let [n (rand-int 50000)] [(conj v n) (conj-flat iv n) rnd])
       2 (let [i (rand-int 64), r (ivec (repeat i (rand-int 50000)))]
-          [(into v r) (append-flat iv r) rnd])
+          [(into v r) (conj-flat iv r) rnd])
       1 (let [i (rand-int 64), r (ivec (repeat i (rand-int 50000)))]
-          [(into (vec (seq r)) v) (append-flat r iv) rnd]))))
+          [(into (vec (seq r)) v) (conj-flat r iv) rnd]))))
         
 (deftest rand-incremental-vector-test
-  (is (= (append-flat (ivec [:s]) nil) [:s]))
+  (is (= (conj-flat (ivec [:s]) nil) [:s]))
   (loop [v (vec (range 100)) iv (ivec (range 100)) n 50 loops 20]
     (let [[v iv rnd] (rand-mutation v iv)]
       (cond
