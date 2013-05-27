@@ -63,16 +63,15 @@
 (defprotocol ConjFlat
   (conj-flat [self obj]))
 
-(deftype AutoFlattenSeq [^clojure.lang.PersistentVector v ^int hashcode ^int cnt ^boolean dirty]
-                            ;^clojure.lang.ISeq cached-sequence]
+(deftype IncrementalVector [^clojure.lang.PersistentVector v ^int hashcode ^int cnt ^boolean dirty]
   Object
   (toString [self] (.toString v))
   (hashCode [self] hashcode)
   (equals [self other]
-    (and (instance? AutoFlattenSeq other)
-         (== hashcode (.hashcode ^AutoFlattenSeq other))
-         (== (count v) (count (.v ^AutoFlattenSeq other)))
-         (= v (.v ^AutoFlattenSeq other))))
+    (and (instance? IncrementalVector other)
+         (== hashcode (.hashcode ^IncrementalVector other))
+         (== (count v) (count (.v ^IncrementalVector other)))
+         (= v (.v ^IncrementalVector other))))
   clojure.lang.IHashEq
   (hasheq [self] hashcode)
   java.util.Collection
@@ -107,12 +106,12 @@
       (cond
         (zero? cnt) obj
         (<= (count obj) threshold)
-        (AutoFlattenSeq. (into v obj) (hash-cat self obj) (+ (count obj) cnt)
-                            (or dirty (.dirty ^AutoFlattenSeq obj)))
+        (IncrementalVector. (into v obj) (hash-cat self obj) (+ (count obj) cnt)
+                            (or dirty (.dirty ^IncrementalVector obj)))
         :else
-        (AutoFlattenSeq. (conj v obj) (hash-cat self obj) (+ (count obj) cnt)
+        (IncrementalVector. (conj v obj) (hash-cat self obj) (+ (count obj) cnt)
                             true))
-      :else (AutoFlattenSeq. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty)))
+      :else (IncrementalVector. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty)))
   clojure.lang.Counted
   (count [self] cnt)
   clojure.lang.ILookup
@@ -122,7 +121,7 @@
     (.valAt v key not-found))
   clojure.lang.IObj
   (withMeta [self metamap]
-    (AutoFlattenSeq. (with-meta v metamap) hashcode cnt dirty))
+    (IncrementalVector. (with-meta v metamap) hashcode cnt dirty))
   clojure.lang.IMeta
   (meta [self]
     (meta v))
@@ -132,14 +131,14 @@
      
 (defn ivec [v]
   (let [v (vec v)]
-    (AutoFlattenSeq. v (hash v) (count v) false)))
+    (IncrementalVector. v (hash v) (count v) false)))
 
 (def EMPTY (ivec []))
 
 (defn iv? [s]
-  (instance? AutoFlattenSeq s))
+  (instance? IncrementalVector s))
 
 (defn true-count [v]
   (if (iv? v)
-    (count (.v ^AutoFlattenSeq v))
+    (count (.v ^IncrementalVector v))
     (count v)))
