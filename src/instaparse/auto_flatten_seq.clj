@@ -40,7 +40,7 @@
 
 (defn advance [v index]
   (cond
-    (= (true-count index) 1)
+    (= (count index) 1)
     (when (< (peek index) (dec (true-count v)))
       (delve v [(inc (peek index))]))
     
@@ -49,7 +49,7 @@
     
     :else
     (recur v (pop index))))
-      
+
 (defn flat-seq
   ([v] (if (pos? (count v)) 
          (flat-seq v (delve v [0]))
@@ -59,6 +59,60 @@
       (cons (get-in v index) 
             (when-let [next-index (advance v index)] 
               (flat-seq v next-index))))))  
+
+; This is slower, by my benchmarking
+;(defn flat-seq2 [v]
+;  (filter (complement afs?) 
+;          (rest (tree-seq afs? seq v))))
+
+; More versions, all slower
+;
+;
+;(defn stack-delve [seq-stack]
+;  (let [top (peek seq-stack)
+;        first-top (first top)
+;        next-top (next top)]
+;    (cond
+;      (afs? first-top) 
+;      (if next-top 
+;        (recur (conj (pop seq-stack) next-top first-top))
+;        (recur (conj (pop seq-stack) first-top)))
+;      :else seq-stack)))
+;
+;(defn stack-advance [seq-stack]
+;  (when (pos? (count seq-stack))
+;    (let [top (peek seq-stack)
+;          first-top (first top)
+;          next-top (next top)]
+;    (cond
+;      (nil? next-top) (recur (pop seq-stack))
+;      :else (stack-delve (conj (pop seq-stack) next-top))))))
+;      
+;(defn flat-seq4-helper
+;  [stack]
+;  (lazy-seq
+;    (cons (first (peek stack))
+;          (when-let [adv (stack-advance stack)]
+;            (flat-seq4-helper adv)))))
+;
+;(defn flat-seq4
+;  ([v] (if (pos? (count v)) 
+;         (flat-seq4-helper (stack-delve [v]))
+;         nil)))
+
+(defn flat-vec-helper [acc v]
+  (if-let [s (seq v)]
+    (let [fst (first v)]
+      (if (afs? fst) 
+        (recur (flat-vec-helper acc fst) (next v))
+        (recur (conj! acc fst) (next v))))
+    acc))
+
+(defn flat-vec
+  "Turns vector inside of auto-flat-seq into a truly flat, concrete vec"
+  [v]
+  (persistent! (flat-vec-helper (transient []) v)))
+
 
 (defprotocol ConjFlat
   (conj-flat [self obj]))
