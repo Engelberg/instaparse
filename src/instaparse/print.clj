@@ -37,12 +37,18 @@
     :opt (str (paren-for-compound parser) "?")
     :plus (str (paren-for-compound parser) "+")
     :star (str (paren-for-compound parser) "*")
+    :rep (if (not= (:min p) (:max p))
+           (str (paren-for-compound parser) \{ 
+                (:min p) \, (:max p) \})
+           (str (paren-for-compound parser) \{ 
+                (:min p)\}))
     :alt (str/join " | " (map (partial paren-for-tags #{:ord}) parsers))
     :ord (str (paren-for-tags #{:alt} parser1)
               " / "
               (paren-for-tags #{:alt} parser2))
     :cat (str/join " " (map (partial paren-for-tags #{:alt :ord}) parsers))
     :string (with-out-str (pr (:string p)))
+    :string-ci (with-out-str (pr (:string p)))
     :regexp (regexp->str (:regexp p))
     :nt (subs (str (:keyword p)) 1)
     :look (str "&" (paren-for-compound parser))

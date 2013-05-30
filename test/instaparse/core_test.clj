@@ -11,6 +11,16 @@
      A = 'a'+
      B = 'b'+"))
 
+(def as-and-bs-regex
+  (insta/parser
+    "S = AB*
+     AB = A B
+     A = #'a'+
+     B = #'b'+"))
+
+;(def long-string
+;  (apply str (concat (repeat 20000 \a) (repeat 20000 \b))))
+
 (def as-and-bs-alternative
   (insta/parser
     "S:={AB}  ;

@@ -23,6 +23,7 @@
 
 (defn rep "Between m and n repetitions"
   [m n parser]
+  {:pre [(<= m n)]}
   (if (= parser Epsilon) Epsilon
     {:tag :rep :parser parser :min m :max n}))
 
@@ -59,6 +60,11 @@
   [s] 
   (if (= s "") Epsilon
     {:tag :string :string s}))
+
+(defn string-ci "Create a case-insensitive string terminal out of s" 
+  [s] 
+  (if (= s "") Epsilon
+    {:tag :string-ci :string s}))
 
 (defn regexp "Create a regexp terminal out of regular expression r"
   [r]
