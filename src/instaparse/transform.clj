@@ -1,5 +1,6 @@
 (ns instaparse.transform
-  "Functions to transform parse trees")
+  "Functions to transform parse trees"
+  (:require instaparse.gll))
 
 (defn- enlive-transform
   [transform-map parse-tree]
@@ -45,11 +46,11 @@
     ; This is an enlive tree-seq
     (enlive-transform transform-map parse-tree)
     
-    (vector? parse-tree)
+    (and (vector? parse-tree) (keyword? (first parse-tree)))
     ; This is a hiccup tree-seq
     (hiccup-transform transform-map parse-tree)
     
-    (seq? parse-tree)
+    (sequential? parse-tree)
     ; This is either a sequence of parse results, or a tree
     ; with a hidden root tag.
     (map-preserving-meta (partial transform transform-map) parse-tree)

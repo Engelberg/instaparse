@@ -45,6 +45,8 @@
     (.iterator v))
   (size [self]
     (count v))
+  (toArray [self]
+    (.toArray v))
   clojure.lang.IPersistentCollection
   (equiv [self other]
     (or 
@@ -76,6 +78,11 @@
     (.valAt v key))
   (valAt [self key not-found]
     (.valAt v key not-found))
+  clojure.lang.Indexed
+  (nth [self i]
+    (.nth v i))
+  (nth [self i not-found]
+    (.nth v i not-found))
   clojure.lang.IFn
   (invoke [self arg]
     (.invoke v arg))

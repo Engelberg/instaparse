@@ -1,5 +1,15 @@
 # Instaparse Change Log
 
+## 1.2.0
+
+### Notable Performance Improvements
+
+* Dramatic performance improvement (quadratic time reduced to linear) when repetition parsers (+ or *) operate on text whose parse tree contains a large number of repetitions.
+
+### Minor Enhancements
+
+* Added more support to IncrementalVector for a wider variety of vector operations, including subvec, nth, and vec.
+
 ## 1.1.0
 
 ### Breaking Changes
