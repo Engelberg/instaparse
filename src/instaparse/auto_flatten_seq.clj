@@ -1,4 +1,5 @@
-(ns instaparse.auto-flatten-seq)
+(ns instaparse.auto-flatten-seq
+  (:import clojure.lang.PersistentVector))
 
 (def ^:const threshold 32)
 
@@ -32,9 +33,11 @@
 (declare afs?)
 
 (defn delve [v index]
-  (if (afs? (get-in v index))
-    (recur v (conj index 0))
-    index))
+  (loop [v (get-in v index)
+         index index]
+    (if (afs? v)
+      (recur (get v 0) (conj index 0))
+      index)))
 
 (declare true-count)
 
@@ -60,72 +63,20 @@
             (when-let [next-index (advance v index)] 
               (flat-seq v next-index))))))  
 
-; This is slower, by my benchmarking
-;(defn flat-seq2 [v]
-;  (filter (complement afs?) 
-;          (rest (tree-seq afs? seq v))))
-
-; More versions, all slower
-;
-;
-;(defn stack-delve [seq-stack]
-;  (let [top (peek seq-stack)
-;        first-top (first top)
-;        next-top (next top)]
-;    (cond
-;      (afs? first-top) 
-;      (if next-top 
-;        (recur (conj (pop seq-stack) next-top first-top))
-;        (recur (conj (pop seq-stack) first-top)))
-;      :else seq-stack)))
-;
-;(defn stack-advance [seq-stack]
-;  (when (pos? (count seq-stack))
-;    (let [top (peek seq-stack)
-;          first-top (first top)
-;          next-top (next top)]
-;    (cond
-;      (nil? next-top) (recur (pop seq-stack))
-;      :else (stack-delve (conj (pop seq-stack) next-top))))))
-;      
-;(defn flat-seq4-helper
-;  [stack]
-;  (lazy-seq
-;    (cons (first (peek stack))
-;          (when-let [adv (stack-advance stack)]
-;            (flat-seq4-helper adv)))))
-;
-;(defn flat-seq4
-;  ([v] (if (pos? (count v)) 
-;         (flat-seq4-helper (stack-delve [v]))
-;         nil)))
-
-(defn flat-vec-helper [acc v]
-  (if-let [s (seq v)]
-    (let [fst (first v)]
-      (if (afs? fst) 
-        (recur (flat-vec-helper acc fst) (next v))
-        (recur (conj! acc fst) (next v))))
-    acc))
-
-(defn flat-vec
-  "Turns vector inside of auto-flat-seq into a truly flat, concrete vec"
-  [v]
-  (persistent! (flat-vec-helper (transient []) v)))
-
-
 (defprotocol ConjFlat
-  (conj-flat [self obj]))
+  (conj-flat [self obj])
+  (cached? [self]))
 
-(deftype AutoFlattenSeq [^clojure.lang.PersistentVector v ^int hashcode ^int cnt ^boolean dirty
+(deftype AutoFlattenSeq [^PersistentVector v ^int hashcode ^int cnt ^boolean dirty
                          ^:unsynchronized-mutable ^clojure.lang.ISeq cached-seq]
   Object
-  (toString [self] (.toString v))
+  (toString [self] (.toString (seq self)))
   (hashCode [self] hashcode)
   (equals [self other]
     (and (instance? AutoFlattenSeq other)
          (== hashcode (.hashcode ^AutoFlattenSeq other))
-         (== (count v) (count (.v ^AutoFlattenSeq other)))
+         (== cnt (.cnt ^AutoFlattenSeq other))
+         (= dirty (.dirty ^AutoFlattenSeq other))
          (= v (.v ^AutoFlattenSeq other))))
   clojure.lang.IHashEq
   (hasheq [self] hashcode)
@@ -156,7 +107,6 @@
   (conj-flat [self obj]
     (cond
       (nil? obj) self
-      (and (sequential? obj) (empty? obj)) self      
       (afs? obj)
       (cond
         (zero? cnt) obj
@@ -167,6 +117,7 @@
         (AutoFlattenSeq. (conj v obj) (hash-cat self obj) (+ (count obj) cnt)
                             true nil))
       :else (AutoFlattenSeq. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty nil)))
+  (cached? [self] cached-seq)
   clojure.lang.Counted
   (count [self] cnt)
   clojure.lang.ILookup
@@ -200,3 +151,112 @@
   (if (afs? v)
     (count (.v ^AutoFlattenSeq v))
     (count v)))
+
+;; For hiccup format, we need to be able to convert the seq to a vector.
+
+(defn flat-vec-helper [acc v]
+  (if-let [s (seq v)]
+    (let [fst (first v)]
+      (if (afs? fst) 
+        (recur (flat-vec-helper acc fst) (next v))
+        (recur (conj! acc fst) (next v))))
+    acc))
+
+(defn flat-vec
+  "Turns deep vector (like the vector inside of FlattenOnDemandVector) into a flat vec"
+  [v]
+  (persistent! (flat-vec-helper (transient []) v)))
+
+(defprotocol GetVec
+  (^PersistentVector get-vec [self]))
+
+(deftype FlattenOnDemandVector [v   ; ref containing PersistentVector or nil 
+                                ^int hashcode
+                                ^int cnt
+                                flat] ; ref containing PersistentVector or nil                                
+  GetVec
+  (get-vec [self] 
+           (when (not @flat)             
+             (dosync
+               (when (not @flat)
+                 (ref-set flat (with-meta (flat-vec @v) (meta @v))) 
+                 (ref-set v nil)))) ; clear out v so it can be garbage collected
+           @flat)
+                    
+  Object
+  (toString [self] (.toString (get-vec self)))
+  (hashCode [self] hashcode)
+  (equals [self other]
+    (and (instance? FlattenOnDemandVector other)
+         (== hashcode (.hashcode ^FlattenOnDemandVector other))
+         (== cnt (.cnt ^FlattenOnDemandVector other))
+         (= v (.v ^FlattenOnDemandVector other))
+         (= flat (.flat ^FlattenOnDemandVector other))))
+  clojure.lang.IHashEq
+  (hasheq [self] hashcode)
+  java.util.Collection
+  (iterator [self]
+    (.iterator (get-vec self)))
+  (size [self]
+    cnt)
+  (toArray [self]
+    (.toArray (get-vec self)))
+  clojure.lang.IPersistentCollection
+  (equiv [self other]
+    (or 
+      (and (== hashcode (hash other))
+           (== cnt (count other))
+           (= (get-vec self) other))))
+  (empty [self] (with-meta EMPTY (meta self))) 
+  clojure.lang.Counted
+  (count [self] cnt)
+  clojure.lang.IPersistentVector
+  (assoc [self i val]
+    (assoc (get-vec self) i val))
+  (cons [self obj]
+    (conj (get-vec self) obj))
+  clojure.lang.IObj
+  (withMeta [self metamap]    
+    (if @flat
+      (FlattenOnDemandVector. (ref @v) hashcode cnt (ref (with-meta @flat metamap)))
+      (FlattenOnDemandVector. (ref (with-meta @v metamap)) hashcode cnt (ref @flat))))
+  clojure.lang.IMeta
+  (meta [self]
+    (if @flat (meta @flat) (meta @v)))
+  clojure.lang.Seqable
+  (seq [self]
+    (seq (get-vec self)))
+  clojure.lang.ILookup
+  (valAt [self key]
+    (.valAt (get-vec self) key))
+  (valAt [self key not-found]
+    (.valAt (get-vec self) key not-found))
+  clojure.lang.Indexed
+  (nth [self i]
+    (.nth (get-vec self) i))
+  (nth [self i not-found]
+    (.nth (get-vec self) i not-found))
+  clojure.lang.IFn
+  (invoke [self arg]
+    (.invoke (get-vec self) arg))
+  (applyTo [self arglist]
+    (.applyTo (get-vec self) arglist))
+  clojure.lang.IPersistentStack
+  (peek [self] 
+    (peek (get-vec self)))
+  (pop [self] 
+    (pop (get-vec self))))
+
+(defn convert-afs-to-vec [^AutoFlattenSeq afs]
+  (cond
+    (.dirty afs) 
+    (if (cached? afs)
+      (vec (seq afs))
+      (FlattenOnDemandVector. (ref (.v afs))
+                              (.hashcode afs)
+                              (.cnt afs)
+                              (ref nil)))
+    :else
+    (.v afs)))
+    
+
