@@ -133,7 +133,6 @@
                                                start)]
         (map->Parser parser)))))
         
-
 (defn failure?
   "Tests whether a parse result is a failure."
   [result]
@@ -151,5 +150,19 @@
     (meta result)
     :else
     nil))
+
+(defn span
+  "Takes a subtree of the parse tree and returns a [start-index end-index] pair
+   indicating the span of text parsed by this part of the tree.
+   start-index is inclusive and end-index is exclusive, as is customary
+   with substrings.
+   Returns nil if no span metadata is attached."
+  [tree]
+  (let [m (meta tree)
+        s (:start-index m)
+        e (:end-index m)]
+    (when (and s e)
+      [s e])))
+   
 
 (defclone transform t/transform)

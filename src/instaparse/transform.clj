@@ -2,16 +2,29 @@
   "Functions to transform parse trees"
   (:require instaparse.gll))
 
+(defn- map-preserving-meta [f l]
+  (with-meta (map f l) (meta l)))
+
+(defn merge-meta
+  "This variation of the merge-meta in gll does nothing if obj is not
+something that can have a metamap attached."
+  [obj metamap]
+  (if (instance? clojure.lang.IObj obj)
+    (instaparse.gll/merge-meta obj metamap)
+    obj))
+
 (defn- enlive-transform
   [transform-map parse-tree]
   (let [transform (transform-map (:tag parse-tree))]
     (cond
       transform
-      (apply transform (map (partial enlive-transform transform-map)
-                            (:content parse-tree)))
+      (merge-meta 
+        (apply transform (map (partial enlive-transform transform-map)
+                              (:content parse-tree)))
+        (meta parse-tree))
       (:tag parse-tree)
       (assoc parse-tree :content (map (partial enlive-transform transform-map)
-                                       (:content parse-tree)))
+                                      (:content parse-tree)))
       :else
       parse-tree)))
 
@@ -20,17 +33,18 @@
   (let [transform (transform-map (first parse-tree))]
     (cond
       transform
-      (apply transform (map (partial hiccup-transform transform-map)
-                            (next parse-tree)))
+      (merge-meta
+        (apply transform (map (partial hiccup-transform transform-map)
+                              (next parse-tree)))
+        (meta parse-tree))
       (and (sequential? parse-tree) (seq parse-tree))
-      (into [(first parse-tree)]
-            (map (partial hiccup-transform transform-map) 
-                 (next parse-tree)))
+      (with-meta 
+        (into [(first parse-tree)]
+              (map (partial hiccup-transform transform-map) 
+                   (next parse-tree)))
+        (meta parse-tree))
       :else
       parse-tree)))
-
-(defn- map-preserving-meta [f l]
-  (with-meta (map f l) (meta l)))
 
 (defn transform
   "Takes a transform map and a parse tree (or seq of parse-trees).

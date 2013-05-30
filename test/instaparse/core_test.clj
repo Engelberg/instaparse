@@ -18,8 +18,8 @@
      A = #'a'+
      B = #'b'+"))
 
-;(def long-string
-;  (apply str (concat (repeat 20000 \a) (repeat 20000 \b))))
+(def long-string
+  (apply str (concat (repeat 20000 \a) (repeat 20000 \b))))
 
 (def as-and-bs-alternative
   (insta/parser
@@ -216,6 +216,12 @@
       {:B (ebnf "'b'+")})
     :start :S))
 
+(defn spans [t]
+  (when (seq t)
+    (if (sequential? t)
+      (cons (insta/span t) (map spans (next t)))
+      t)))      
+
 (deftest parsing-tutorial
   (are [x y] (= x y)
     (as-and-bs "aaaaabbbaaaabb")
@@ -368,4 +374,9 @@
     ((insta/parser "S = ('a'?)+") "")
     [:S]
     
+    (spans (as-and-bs "aaaabbbaabbab"))
+    '([0 13] ([0 7] ([0 4] "a" "a" "a" "a") ([4 7] "b" "b" "b")) ([7 11] ([7 9] "a" "a") ([9 11] "b" "b")) ([11 13] ([11 12] "a") ([12 13] "b")))
     ))    
+
+
+            
