@@ -27,7 +27,7 @@
   [tree]
   (cond
     (and (map? tree) (:tag tree)) :enlive
-    (vector? tree) :hiccup
+    (and (vector? tree) (keyword? (first tree))) :hiccup
     (empty? tree) :nil
     (seq? tree) :rootless
     :else :invalid))
