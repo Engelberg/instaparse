@@ -22,7 +22,7 @@
 (defn- hiccup-tree-viz
     "visualize instaparse hiccup output as a rhizome graph. Requires rhizome: https://github.com/ztellman/rhizome"
     [mytree options]         
-    (r/view-tree sequential? rest mytree 
+    (r/tree->image sequential? rest mytree 
                  :node->descriptor (fn [n] {:label (if (sequential? n) 
                                                      (apply str (first n)
                                                             (when (span n) 
@@ -33,7 +33,7 @@
 (defn- enlive-tree-viz
   "visualize enlive trees"
   [mytree options]
-  (r/view-tree (comp seq :content) :content mytree 
+  (r/tree->image (comp seq :content) :content mytree 
              :node->descriptor (fn [n] 
                                  {:label (if (and (map? n) (:tag n))
                                            (apply str (:tag n)
@@ -68,16 +68,18 @@
 Important: This function will only work if you have added rhizome
 to your dependencies, and installed graphviz on your system.  
 See https://github.com/ztellman/rhizome for more information."
-  ([tree] (tree-viz tree {}))
-  ([tree options]
-    {:pre [(not= (tree-type tree) :invalid)]}
-    (try
-      (case (tree-type tree)
-        :enlive (enlive-tree-viz tree options)
-        (:hiccup :nil) (hiccup-tree-viz tree options)
-        :rootless (tree-viz (fake-root tree) options))
-      (catch IOException e
-        (throw (UnsupportedOperationException. 
-                 "\n\nYou appear to have rhizome in your dependencies, but have not installed GraphViz on your system.
-\nSee https://github.com/ztellman/rhizome for more information.\n"))))))
-    
+  [tree & {output-file :output-file options :options}]
+  {:pre [(not= (tree-type tree) :invalid)]}
+  (let [image
+        (try
+          (case (tree-type tree)
+            :enlive (enlive-tree-viz tree options)
+            (:hiccup :nil) (hiccup-tree-viz tree options)
+            :rootless (tree-viz (fake-root tree) options))
+          (catch IOException e
+            (throw (UnsupportedOperationException. 
+                     "\n\nYou appear to have rhizome in your dependencies, but have not installed GraphViz on your system.
+\nSee https://github.com/ztellman/rhizome for more information.\n"))))]
+    (if output-file 
+      nil;(r/save-image image output-file)
+      (r/view-image image))))
