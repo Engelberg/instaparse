@@ -747,6 +747,14 @@ As you can see, `insta/span` returns a pair containing the start index (inclusiv
 
 Instaparse contains a function, `insta/visualize`, that will give you a visual overview of the parse tree, showing the tags, the character spans, and the leaves of the tree.
 
+`insta/visualize` draws the tree using the [rhizome](https://github.com/ztellman/rhizome) library, which in turn uses graphviz.  Unfortunately, Java, and by extension Clojure, has a bit of a weakness when it comes to libraries depending on other libraries.  If you want to use two libraries that rely on two different versions of a third library, you're in for a headache.
+
+In this instance, rhizome is a particularly fast-moving target.  As of the time of this writing, rhizome 0.1.7 is the most current version, released just a few weeks after version 0.1.6.  If I were to make instaparse depend on rhizome 0.1.7, then in a few weeks when 0.1.8 is released, it will become more difficult to use instaparse in projects which rely on the most recent version of rhizome.
+
+For this reason, I've done something a bit unusual: rather than include rhizome directly in instaparse's dependencies, I've set things up so that `insta/visualize` will use whatever version of rhizome *you've* put in your project.clj dependencies (must be version 0.1.7 or greater).  On top of that, rhizome assumes that you have graphviz installed on your system.  If rhizome is not in your dependencies, or graphviz is not installed, `insta/visualize` will throw an error with a message reminding you of the necessary dependencies.  To find the most current version number for rhizome, and for links to graphviz installers, check out the [rhizome github site](https://github.com/ztellman/rhizome).
+
+If you don't want to use `insta/visualize`, there is no need to add rhizome to your dependencies and no need to install graphviz.  All the other instaparse functions will work just fine.
+
 ### Combinators
 
 I truly believe that ordinary EBNF notation is the clearest, most concise way to express a context-free grammar.  Nevertheless, there may be times where it is useful to build parsers with parser combinators.  If you want to use instaparse in this way, you'll need to use the `instaparse.combinators` namespace.  If you are not interested in the combinator interface, feel free to skip this section -- the combinators provide no additional power or expressiveness over the string representation.
