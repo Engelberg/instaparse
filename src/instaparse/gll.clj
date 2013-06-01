@@ -195,9 +195,9 @@
         (swap! nodes assoc node-key node)
         node))))
 
-(defn safe-vary-meta [obj & variances]
+(defn safe-with-meta [obj metamap]
   (if (instance? clojure.lang.IObj obj)
-    (apply vary-meta obj variances)
+    (with-meta obj metamap)
     obj))
 
 (defn push-result
@@ -215,9 +215,9 @@
                  result)
         result (if-let [reduction-function (:red parser)]
                  (make-success  
-                   (safe-vary-meta 
+                   (safe-with-meta 
                      (red/apply-reduction reduction-function (:result result))
-                     assoc :start-index (node-key 0) :end-index (:index result))
+                     {::start-index (node-key 0) ::end-index (:index result)})
                    (:index result))                 
                  result)              
         total? (total-success? tramp result)
@@ -738,7 +738,7 @@
 (defn build-node-with-meta [node-builder tag content start end]
   (with-meta
     (node-builder tag content)
-    {:start-index start :end-index end}))
+    {::start-index start ::end-index end}))
 
 (defn build-total-failure-node [node-builder start text]
   (let [build-failure-node

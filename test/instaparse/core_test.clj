@@ -217,10 +217,19 @@
     :start :S))
 
 (defn spans [t]
-  (when (seq t)
-    (if (sequential? t)
-      (cons (insta/span t) (map spans (next t)))
-      t)))      
+  (if (sequential? t)
+    (cons (insta/span t) (map spans (next t)))
+    t))      
+
+(defn spans-hiccup-tag [t]
+  (if (sequential? t)
+    (cons {:tag (first t) :span (insta/span t)} (map spans (next t)))
+    t))      
+
+(defn spans-enlive [t]
+  (if (map? t)
+    (assoc t :span (insta/span t) :content (map spans-enlive (:content t)))
+    t))
 
 (deftest parsing-tutorial
   (are [x y] (= x y)
@@ -376,6 +385,32 @@
     
     (spans (as-and-bs "aaaabbbaabbab"))
     '([0 13] ([0 7] ([0 4] "a" "a" "a" "a") ([4 7] "b" "b" "b")) ([7 11] ([7 9] "a" "a") ([9 11] "b" "b")) ([11 13] ([11 12] "a") ([12 13] "b")))
+    
+    (spans ((insta/parser "S = 'a' S | '' ") "aaaa"))
+    '([0 4] "a" ([1 4] "a" ([2 4] "a" ([3 4] "a" ([4 4])))))
+    
+    (spans (as-and-bs "aaaaabbbaacabb" :total true))
+    '([0 14] ([0 8] ([0 5] "a" "a" "a" "a" "a") ([5 8] "b" "b" "b")) ([8 14] ([8 10] "a" "a") ([10 14] ([10 14] "cabb"))))
+    
+    (spans-enlive (as-and-bs-enlive "aaaaabbbaacabb" :total true))
+    '{:span [0 14], :tag :S, :content ({:span [0 8], :tag :AB, :content ({:span [0 5], :tag :A, :content ("a" "a" "a" "a" "a")} {:span [5 8], :tag :B, :content ("b" "b" "b")})} {:span [8 14], :tag :AB, :content ({:span [8 10], :tag :A, :content ("a" "a")} {:span [10 14], :tag :B, :content ({:span [10 14], :tag :instaparse/failure, :content ("cabb")})})})}
+    
+    (spans-enlive (as-and-bs-enlive "aaaabbbaabbab"))
+    '{:span [0 13], :tag :S, :content ({:span [0 7], :tag :AB, :content ({:span [0 4], :tag :A, :content ("a" "a" "a" "a")} {:span [4 7], :tag :B, :content ("b" "b" "b")})} {:span [7 11], :tag :AB, :content ({:span [7 9], :tag :A, :content ("a" "a")} {:span [9 11], :tag :B, :content ("b" "b")})} {:span [11 13], :tag :AB, :content ({:span [11 12], :tag :A, :content ("a")} {:span [12 13], :tag :B, :content ("b")})})}
+    
+    (->> (words-and-numbers-enlive "abc 123 def")
+      (insta/transform
+        {:word (comp (partial array-map :word) str),
+         :number (comp (partial array-map :number) clojure.edn/read-string str)}))
+    {:tag :sentence, :content [{:word "abc"} {:number 123} {:word "def"}]}
+    
+    (->> (words-and-numbers-enlive "abc 123 def")
+      (insta/transform
+        {:word (comp (partial array-map :word) str),
+         :number (comp (partial array-map :number) clojure.edn/read-string str)})
+      spans-enlive)
+    '{:span [0 11], :tag :sentence, :content ({:content (), :span [0 3], :word "abc"} {:content (), :span [4 7], :number 123} {:content (), :span [8 11], :word "def"})}
+
     ))    
 
 

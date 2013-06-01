@@ -159,8 +159,8 @@
    Returns nil if no span metadata is attached."
   [tree]
   (let [m (meta tree)
-        s (:start-index m)
-        e (:end-index m)]
+        s (:instaparse.gll/start-index m)
+        e (:instaparse.gll/end-index m)]
     (when (and s e)
       [s e])))
    

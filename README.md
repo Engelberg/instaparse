@@ -711,6 +711,40 @@ With the tree in this shape, it's trivial to evaluate it:
 	Expected:
 	"a"
 
+### Understanding the tree
+
+#### Character spans
+
+The trees produced by instaparse are annotated with metadata so that for each subtree, you can easily recover the start and end index of the input text parsed by that subtree.  The function for extracting this metadata is `insta/span`.  To demonstrate, let's revisit our first example.
+
+	=> (as-and-bs "aaaaabbbaaaabb")
+	[:S
+	 [:AB [:A "a" "a" "a" "a" "a"] [:B "b" "b" "b"]]
+	 [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]
+
+	=> (insta/span (as-and-bs "aaaaabbbaaaabb"))
+	[0 14]
+
+	=> (count "aaaaabbbaaaabb")
+	14
+
+As you can see, `insta/span` returns a pair containing the start index (inclusive) and end index (exclusive), the customary way to represent the start and end of a substring.  So far, this isn't particularly interesting -- we already knew that the entire string was successfully parsed.   But since `span` works on all the subtrees, this gives us a powerful tool for exploring the provenance of each portion of the tree.  To demonstrate this, here's a quick helper function (not part of instaparse's API) that takes a hiccup tree and replaces all the tags with the character spans.
+
+	(defn spans [t]
+	  (if (sequential? t)
+	    (cons (insta/span t) (map spans (next t)))
+	    t))
+
+	=> (spans (as-and-bs "aaaabbbaabbab"))
+	([0 13]
+	 ([0 7] ([0 4] "a" "a" "a" "a") ([4 7] "b" "b" "b"))
+	 ([7 11] ([7 9] "a" "a") ([9 11] "b" "b"))
+	 ([11 13] ([11 12] "a") ([12 13] "b")))
+
+`insta/span` works on all the tree types produced by instaparse.  Furthermore, when you use `insta/transform` to transform your parse tree, `insta/span` will work on the transformed tree as well -- the span metadata is preserved for every node in the transformed tree to which metadata can be attached.  Keep in mind that although most types of Clojure data support metadata, primitives such as strings or numbers do not, so if you transform any of your nodes into such primitive data types, `insta/span` on those nodes will simply return `nil`.
+
+#### Visualizing the tree
+
 ### Combinators
 
 I truly believe that ordinary EBNF notation is the clearest, most concise way to express a context-free grammar.  Nevertheless, there may be times where it is useful to build parsers with parser combinators.  If you want to use instaparse in this way, you'll need to use the `instaparse.combinators` namespace.  If you are not interested in the combinator interface, feel free to skip this section -- the combinators provide no additional power or expressiveness over the string representation.
