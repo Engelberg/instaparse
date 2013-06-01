@@ -6,22 +6,41 @@
   (catch Exception e
     (require '[instaparse.viz-not-found :as r])))
 
+(defn span
+  "Takes a subtree of the parse tree and returns a [start-index end-index] pair
+   indicating the span of text parsed by this subtree.
+   start-index is inclusive and end-index is exclusive, as is customary
+   with substrings.
+   Returns nil if no span metadata is attached."
+  [tree]
+  (let [m (meta tree)
+        s (:instaparse.gll/start-index m)
+        e (:instaparse.gll/end-index m)]
+    (when (and s e)
+      [s e])))
+
 (defn- hiccup-tree-viz
     "visualize instaparse hiccup output as a rhizome graph. Requires rhizome: https://github.com/ztellman/rhizome"
-    [mytree]         
+    [mytree options]         
     (r/view-tree sequential? rest mytree 
-                 :node->descriptor (fn [n] {:label (if (vector? n) 
-                                                     (first n) 
-                                                     (when (string? n) n ))})))
+                 :node->descriptor (fn [n] {:label (if (sequential? n) 
+                                                     (apply str (first n)
+                                                            (when (span n) 
+                                                              ["\n" (span n)]))
+                                                     (with-out-str (pr n)))})
+                 :options options))
       
 (defn- enlive-tree-viz
   "visualize enlive trees"
-  [mytree]
+  [mytree options]
   (r/view-tree (comp seq :content) :content mytree 
              :node->descriptor (fn [n] 
-                                 {:label (if (string? n)
-                                             n
-                                             (:tag n))})))
+                                 {:label (if (and (map? n) (:tag n))
+                                           (apply str (:tag n)
+                                                  (when (span n) 
+                                                    ["\n" (span n)]))
+                                           (with-out-str (pr n)))})
+             :options options))
 
 (defn tree-type
   [tree]
@@ -44,15 +63,21 @@
     :invalid))
     
 (defn tree-viz
-  [tree]
-  {:pre [(not= (tree-type tree) :invalid)]}
-  (try
-    (case (tree-type tree)
-      :enlive (enlive-tree-viz tree)
-      (:hiccup :nil) (hiccup-tree-viz tree)
-      :rootless (tree-viz (fake-root tree)))
-    (catch IOException e
-      (throw (UnsupportedOperationException. 
-               "\n\nYou appear to have rhizome in your dependencies, but have not installed GraphViz on your system.
-\nSee https://github.com/ztellman/rhizome for more information.\n")))))
+  "Creates a graphviz visualization of the parse tree.
+
+Important: This function will only work if you have added rhizome
+to your dependencies, and installed graphviz on your system.  
+See https://github.com/ztellman/rhizome for more information."
+  ([tree] (tree-viz tree {}))
+  ([tree options]
+    {:pre [(not= (tree-type tree) :invalid)]}
+    (try
+      (case (tree-type tree)
+        :enlive (enlive-tree-viz tree options)
+        (:hiccup :nil) (hiccup-tree-viz tree options)
+        :rootless (tree-viz (fake-root tree) options))
+      (catch IOException e
+        (throw (UnsupportedOperationException. 
+                 "\n\nYou appear to have rhizome in your dependencies, but have not installed GraphViz on your system.
+\nSee https://github.com/ztellman/rhizome for more information.\n"))))))
     

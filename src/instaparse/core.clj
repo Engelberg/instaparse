@@ -152,27 +152,8 @@
     :else
     nil))
 
-(defn span
-  "Takes a subtree of the parse tree and returns a [start-index end-index] pair
-   indicating the span of text parsed by this subtree.
-   start-index is inclusive and end-index is exclusive, as is customary
-   with substrings.
-   Returns nil if no span metadata is attached."
-  [tree]
-  (let [m (meta tree)
-        s (:instaparse.gll/start-index m)
-        e (:instaparse.gll/end-index m)]
-    (when (and s e)
-      [s e])))
+(defclone span viz/span)
    
 (defclone transform t/transform)
 
-(defn visualize
-  "Creates a graphviz visualization of the parse tree.
-
-Important: This function will only work if you have added rhizome
-to your dependencies, and installed graphviz on your system.  
-See https://github.com/ztellman/rhizome for more information."
-  [tree]
-  (viz/tree-viz tree))
-
+(defclone visualize viz/tree-viz)
