@@ -6,7 +6,8 @@
             [instaparse.print :as print]
             [instaparse.reduction :as red]
             [instaparse.transform :as t]
-            [instaparse.abnf :as abnf]))
+            [instaparse.abnf :as abnf]
+            [instaparse.viz :as viz]))
   ;(:use clojure.tools.trace)
 
 (def ^:dynamic *default-output-format* :hiccup)
@@ -153,7 +154,7 @@
 
 (defn span
   "Takes a subtree of the parse tree and returns a [start-index end-index] pair
-   indicating the span of text parsed by this part of the tree.
+   indicating the span of text parsed by this subtree.
    start-index is inclusive and end-index is exclusive, as is customary
    with substrings.
    Returns nil if no span metadata is attached."
@@ -164,5 +165,14 @@
     (when (and s e)
       [s e])))
    
-
 (defclone transform t/transform)
+
+(defn visualize
+  "Creates a graphviz visualization of the parse tree.
+
+Important: This function will only work if you have added rhizome
+to your dependencies, and installed graphviz on your system.  
+See https://github.com/ztellman/rhizome for more information."
+  [tree]
+  (viz/tree-viz tree))
+
