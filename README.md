@@ -745,6 +745,8 @@ As you can see, `insta/span` returns a pair containing the start index (inclusiv
 
 #### Visualizing the tree
 
+Instaparse contains a function, `insta/visualize`, that will give you a visual overview of the parse tree, showing the tags, the character spans, and the leaves of the tree.
+
 ### Combinators
 
 I truly believe that ordinary EBNF notation is the clearest, most concise way to express a context-free grammar.  Nevertheless, there may be times where it is useful to build parsers with parser combinators.  If you want to use instaparse in this way, you'll need to use the `instaparse.combinators` namespace.  If you are not interested in the combinator interface, feel free to skip this section -- the combinators provide no additional power or expressiveness over the string representation.
