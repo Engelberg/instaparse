@@ -1,4 +1,5 @@
-(ns instaparse.viz-not-found)
+(ns instaparse.viz-not-found
+    "This file is a stub, so that a meaningful error will be returned if rhizome is not in your project's dependencies")
 
 (defn view-tree [& args]
   (throw (UnsupportedOperationException. 
