@@ -747,6 +747,8 @@ As you can see, `insta/span` returns a pair containing the start index (inclusiv
 
 Instaparse contains a function, `insta/visualize`, that will give you a visual overview of the parse tree, showing the tags, the character spans, and the leaves of the tree.
 
+*Example coming soon*
+
 `insta/visualize` draws the tree using the [rhizome](https://github.com/ztellman/rhizome) library, which in turn uses [graphviz](http://www.graphviz.org).  Unfortunately, Java, and by extension Clojure, has a bit of a weakness when it comes to libraries depending on other libraries.  If you want to use two libraries that rely on two different versions of a third library, you're in for a headache.
 
 In this instance, rhizome is a particularly fast-moving target.  As of the time of this writing, rhizome 0.1.7 is the most current version, released just a few weeks after version 0.1.6.  If I were to make instaparse depend on rhizome 0.1.7, then in a few weeks when 0.1.8 is released, it will become more difficult to use instaparse in projects which rely on the most recent version of rhizome.
