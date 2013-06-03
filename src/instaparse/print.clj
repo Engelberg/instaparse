@@ -63,7 +63,7 @@
        " = " 
        (parser->str parser)))
 
-(defn Parser->str
+(defn pparser->str
   "Takes a Parser object, i.e., something with a grammar map and a start 
    production keyword, and stringifies it." 
   [{grammar :grammar start :start-production}]
