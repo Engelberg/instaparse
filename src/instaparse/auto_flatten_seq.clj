@@ -264,6 +264,19 @@
   IKVReduce
   (kv-reduce [self f init]
     (.kv-reduce (get-vec self) f init))
+  java.lang.Comparable
+  (compareTo [self that]
+    (.compareTo (get-vec self) that))
+  java.util.List
+  (get [self i] (nth (get-vec self) i))
+  (indexOf [self o] (.indexOf (get-vec self) o))
+  (lastIndexOf [self o] (.lastIndexOf (get-vec self) o))
+  (listIterator [self]
+    (.listIterator (get-vec self) 0))
+  (listIterator [self i]
+    (.listIterator (get-vec self) i))
+  (subList [self a z]
+    (.subList (get-vec self) a z))
   )
 
 (defn convert-afs-to-vec [^AutoFlattenSeq afs]

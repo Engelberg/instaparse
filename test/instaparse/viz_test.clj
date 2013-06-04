@@ -1,5 +1,6 @@
 (ns instaparse.viz-test
-  (:use instaparse.core instaparse.viz))
+  (:require instaparse.core)
+  (:use instaparse.viz))
 
 (def make-tree-e
      "simple tree parser"

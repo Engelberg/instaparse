@@ -1,4 +1,5 @@
-(ns instaparse.incremental-vector)
+(ns instaparse.incremental-vector
+  (:require [clojure.core.protocols :refer [IKVReduce]]))
 
 (declare EMPTY)
 
@@ -62,6 +63,10 @@
   (assoc [self i val] 
     (let [new-v (assoc v i val)]
       (IncrementalVector. new-v (hash-assoc self i val))))
+  (assocN [self i val] 
+    (let [new-v (assoc v i val)]
+      (IncrementalVector. new-v (hash-assoc self i val))))
+  (length [self] (count v))
   (cons [self obj]
     (IncrementalVector. (conj v obj) (hash-conj hashcode obj)))
   clojure.lang.IObj
@@ -73,6 +78,7 @@
   clojure.lang.Seqable
   (seq [self]
     (seq v))
+  clojure.lang.Sequential
   clojure.lang.ILookup
   (valAt [self key]
     (.valAt v key))
@@ -88,11 +94,36 @@
     (.invoke v arg))
   (applyTo [self arglist]
     (.applyTo v arglist))
+  clojure.lang.Reversible
+  (rseq [self]
+    (rseq v))
   clojure.lang.IPersistentStack
   (peek [self] (peek v))
   (pop [self] 
     (let [new-v (pop v)]
-      (IncrementalVector. new-v (hash-pop self))))) 
+      (IncrementalVector. new-v (hash-pop self))))
+  clojure.lang.Associative
+  (containsKey [self k]
+    (.containsKey v k))
+  (entryAt [self k]
+    (.entryAt v k))
+  IKVReduce
+  (kv-reduce [self f init]
+    (reduce-kv f init v))
+  java.lang.Comparable
+  (compareTo [this that]
+    (.compareTo v that))
+   java.util.List
+  (get [this i] (.nth v i))
+  (indexOf [this o] (.indexOf v o))
+  (lastIndexOf [this o] (.lastIndexOf v o))
+  (listIterator [this]
+    (.listIterator v 0))
+  (listIterator [this i]
+    (.listIterator v i))
+  (subList [this a z]
+    (.subList v a z))
+  ) 
   
   
 (defn ivec [v]
