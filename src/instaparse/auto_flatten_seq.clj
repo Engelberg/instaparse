@@ -1,5 +1,6 @@
 (ns instaparse.auto-flatten-seq
-  (:import clojure.lang.PersistentVector))
+  (:import clojure.lang.PersistentVector)
+  (:require [clojure.core.protocols :refer [IKVReduce]]))
 
 (def ^:const threshold 32)
 
@@ -213,6 +214,10 @@
   clojure.lang.IPersistentVector
   (assoc [self i val]
     (assoc (get-vec self) i val))
+  (assocN [self i val]
+    (.assocN (get-vec self) i val))
+  (length [self]
+    cnt)
   (cons [self obj]
     (conj (get-vec self) obj))
   clojure.lang.IObj
@@ -241,11 +246,25 @@
     (.invoke (get-vec self) arg))
   (applyTo [self arglist]
     (.applyTo (get-vec self) arglist))
+  clojure.lang.Reversible
+  (rseq [self]
+    (if (pos? cnt)
+      (rseq (get-vec self))
+      nil))
   clojure.lang.IPersistentStack
   (peek [self] 
     (peek (get-vec self)))
   (pop [self] 
-    (pop (get-vec self))))
+    (pop (get-vec self)))
+  clojure.lang.Associative
+  (containsKey [self k]
+    (.containsKey (get-vec self) k))
+  (entryAt [self k]
+    (.entryAt (get-vec self) k))
+  IKVReduce
+  (kv-reduce [self f init]
+    (.kv-reduce (get-vec self) f init))
+  )
 
 (defn convert-afs-to-vec [^AutoFlattenSeq afs]
   (cond
