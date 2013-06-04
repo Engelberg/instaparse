@@ -81,5 +81,5 @@ See https://github.com/ztellman/rhizome for more information."
                      "\n\nYou appear to have rhizome in your dependencies, but have not installed GraphViz on your system.
 \nSee https://github.com/ztellman/rhizome for more information.\n"))))]
     (if output-file 
-      nil;(r/save-image image output-file)
+      (r/save-image image output-file)
       (r/view-image image))))
