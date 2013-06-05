@@ -751,9 +751,9 @@ Instaparse contains a function, `insta/visualize`, that will give you a visual o
 
 <img src="images/vizexample1.png?raw=true" alt="Tree Image"/>
 
-The visualize function, by default, pops open the tree in a new window.  To actually save the tree image as a file for this tutorial, I used both of the optional keyword arguments supported by `insta/visualize`.  First the `:output-file` keyword argument supplies the destination where the image should be saved.  Second, the keyword `:options` is used to supply an option map of additional drawing parameters.  I lowered it to 60dpi so it wouldn't take up so much screen real estate.  So my function call looked like:
+The visualize function, by default, pops open the tree in a new window.  To actually save the tree image as a file for this tutorial, I used both of the optional keyword arguments supported by `insta/visualize`.  First the `:output-file` keyword argument supplies the destination where the image should be saved.  Second, the keyword `:options` is used to supply an option map of additional drawing parameters.  I lowered it to 63dpi so it wouldn't take up so much screen real estate.  So my function call looked like:
 
-	=> (insta/visualize (as-and-bs "aaabbab") :output-file "images/vizexample1.png" :options {:dpi 60})
+	=> (insta/visualize (as-and-bs "aaabbab") :output-file "images/vizexample1.png" :options {:dpi 63})
 
 `insta/visualize` draws the tree using the [rhizome](https://github.com/ztellman/rhizome) library, which in turn uses [graphviz](http://www.graphviz.org).  Unfortunately, Java, and by extension Clojure, has a bit of a weakness when it comes to libraries depending on other libraries.  If you want to use two libraries that rely on two different versions of a third library, you're in for a headache.
 
