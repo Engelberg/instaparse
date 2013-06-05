@@ -64,6 +64,9 @@
     
 (defn tree-viz
   "Creates a graphviz visualization of the parse tree.
+   Optional keyword arguments:
+   :output-file output-file (will save the tree image to output-file)
+   :options options (options passed along to rhizome)
 
 Important: This function will only work if you have added rhizome
 to your dependencies, and installed graphviz on your system.  

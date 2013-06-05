@@ -747,7 +747,13 @@ As you can see, `insta/span` returns a pair containing the start index (inclusiv
 
 Instaparse contains a function, `insta/visualize`, that will give you a visual overview of the parse tree, showing the tags, the character spans, and the leaves of the tree.
 
-*Example coming soon*
+	=> (insta/visualize (as-and-bs "aaabbab"))
+
+<img src="images/vizexample1.png">
+
+The visualize function, by default, pops open the tree in a new window.  To actually save the tree image as a file for this tutorial, I used both of the optional keyword arguments supported by `insta/visualize`.  First the `:output-file` keyword argument supplies the destination where the image should be saved.  Second, the keyword `:options` is used to supply an option map of additional drawing parameters.  I lowered it to 60dpi so it wouldn't take up so much screen real estate.  So my function call looked like:
+
+	=> (insta/visualize (as-and-bs "aaabbab") :output-file "images/vizexample1.png" :options {:dpi 60})
 
 `insta/visualize` draws the tree using the [rhizome](https://github.com/ztellman/rhizome) library, which in turn uses [graphviz](http://www.graphviz.org).  Unfortunately, Java, and by extension Clojure, has a bit of a weakness when it comes to libraries depending on other libraries.  If you want to use two libraries that rely on two different versions of a third library, you're in for a headache.
 
@@ -889,7 +895,7 @@ One performance caveat: instaparse is fairly memory-hungry, relying on extensive
 
 ## Reference
 
-All the functionality you've seen in this tutorial is packed into an API of just 7 functions.  Here are the doc strings:
+All the functionality you've seen in this tutorial is packed into an API of just 9 functions.  Here are the doc strings:
 
 	=> (doc insta/parser)
 	-------------------------
@@ -964,6 +970,29 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	   a replacement for the node, i.e.,
 	   {:node-tag (fn [child1 child2 ...] node-replacement),
 	    :another-node-tag (fn [child1 child2 ...] node-replacement)}
+
+	=> (doc insta/span)
+	-------------------------
+	instaparse.core/span
+	([tree])
+	  Takes a subtree of the parse tree and returns a [start-index end-index] pair
+	   indicating the span of text parsed by this subtree.
+	   start-index is inclusive and end-index is exclusive, as is customary
+	   with substrings.
+	   Returns nil if no span metadata is attached.
+
+	=> (doc insta/visualize)
+	-------------------------
+	instaparse.core/visualize
+	([tree & {output-file :output-file, options :options}])
+	  Creates a graphviz visualization of the parse tree.
+	   Optional keyword arguments:
+	   :output-file output-file (will save the tree image to output-file)
+	   :options options (options passed along to rhizome)
+
+	Important: This function will only work if you have added rhizome
+	to your dependencies, and installed graphviz on your system.
+	See https://github.com/ztellman/rhizome for more information.
 
 ## Special Thanks
 
