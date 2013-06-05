@@ -749,7 +749,7 @@ Instaparse contains a function, `insta/visualize`, that will give you a visual o
 
 	=> (insta/visualize (as-and-bs "aaabbab"))
 
-![Tree Image](images/vizexample1.png?raw=true)
+<img src="images/vizexample1.png?raw=true" alt="Tree Image"/>
 
 The visualize function, by default, pops open the tree in a new window.  To actually save the tree image as a file for this tutorial, I used both of the optional keyword arguments supported by `insta/visualize`.  First the `:output-file` keyword argument supplies the destination where the image should be saved.  Second, the keyword `:options` is used to supply an option map of additional drawing parameters.  I lowered it to 60dpi so it wouldn't take up so much screen real estate.  So my function call looked like:
 
