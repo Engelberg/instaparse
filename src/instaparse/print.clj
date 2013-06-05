@@ -3,12 +3,12 @@
    Used for pretty-printing."
   (:require [clojure.string :as str]))
 
-(declare parser->str) ; mutual recursion
+(declare combinators->str) ; mutual recursion
 
 (defn paren-for-tags [tag-set parser]
   (if (tag-set (parser :tag))
-    (str "(" (parser->str parser) ")")
-    (parser->str parser)))
+    (str "(" (combinators->str parser) ")")
+    (combinators->str parser)))
 
 (def paren-for-compound 
   (partial paren-for-tags #{:alt :ord :cat}))
@@ -29,7 +29,7 @@
     (str "#\"" (subs (str r) 1) "\"")
     #"[\s]" regexp-replace))
 
-(defn parser->str
+(defn combinators->str
   "Stringifies a parser built from combinators"
   [{:keys [parser parser1 parser2 parsers tag] :as p}]
   (case tag
@@ -53,7 +53,7 @@
     :nt (subs (str (:keyword p)) 1)
     :look (str "&" (paren-for-compound parser))
     :neg (str "!" (paren-for-compound parser))
-    :hide (str "<" (parser->str parser) ">")))
+    :hide (str "<" (combinators->str parser) ">")))
               
 (defn rule->str
   "Takes a terminal symbol and a parser built from combinators,
@@ -61,7 +61,7 @@
   [terminal parser]
   (str (subs (str terminal) 1)
        " = " 
-       (parser->str parser)))
+       (combinators->str parser)))
 
 (defn Parser->str
   "Takes a Parser object, i.e., something with a grammar map and a start 
