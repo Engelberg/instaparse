@@ -9,5 +9,6 @@
                     [criterium "0.3.1"]
                     [rhizome "0.1.8"]]}}
   :test-paths ["test"]
+  :target-path "target"
   :scm {:name "git"
         :url "https://github.com/Engelberg/instaparse"})
