@@ -411,6 +411,11 @@
       spans-enlive)
     '{:span [0 11], :tag :sentence, :content ({:content (), :span [0 3], :word "abc"} {:content (), :span [4 7], :number 123} {:content (), :span [8 11], :word "def"})}
 
+    ((insta/parser
+     "a = b c .
+      b = 'b' .
+      c = 'c' .") "bc")
+    [:a [:b "b"] [:c "c"]]
     ))    
 
 

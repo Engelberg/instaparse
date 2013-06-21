@@ -263,7 +263,7 @@
     (.entryAt (get-vec self) k))
   IKVReduce
   (kv-reduce [self f init]
-    (.kv-reduce (get-vec self) f init))
+    (.kvreduce (get-vec self) f init))
   java.lang.Comparable
   (compareTo [self that]
     (.compareTo (get-vec self) that))
