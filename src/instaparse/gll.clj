@@ -22,6 +22,10 @@
   ;; Need a way to convert parsers into strings for printing and error messages.
   (:require [instaparse.print :as print])
   
+  ;; In Java 7, strings no longer have fast substring operation,
+  ;; so we use Segments instead.
+  (:import javax.swing.text.Segment)
+  
   (:use clojure.pprint)
   )
     
@@ -101,13 +105,14 @@
 ; success contains a successful parse
 ; failure contains the index of the furthest-along failure
 
-(defrecord Tramp [grammar text fail-index node-builder
+(defrecord Tramp [grammar text segment fail-index node-builder
                   stack next-stack generation negative-listeners 
                   msg-cache nodes success failure])
 (defn make-tramp 
   ([grammar text] (make-tramp grammar text -1 nil))
   ([grammar text fail-index node-builder]
-    (Tramp. grammar text fail-index node-builder
+    (Tramp. grammar text (Segment. (char-array text) 0 (count text))
+            fail-index node-builder
             (atom []) (atom []) (atom 0) (atom []) 
             (atom {}) (atom {}) (atom nil) (atom (Failure. 0 [])))))
   
@@ -459,6 +464,7 @@
   (let [string (:string this)
         text (:text tramp)
         end (min (count text) (+ index (count string)))
+        ;substring (.subSequence text index end)
         head (subs text index end)]      
     (if (= string head)
       (success tramp [index this] string end)
@@ -505,8 +511,9 @@
 (defn regexp-parse
   [this index tramp]
   (let [regexp (:regexp this)
-        text (:text tramp)
-        matches (re-seq-no-submatches regexp (subs text index))]
+        ^Segment text (:segment tramp)
+        substring (.subSequence text index (.length text))
+        matches (re-seq-no-submatches regexp substring)]
     (if (seq matches)
       (doseq [match matches]
         (success tramp [index this] match (+ index (count match))))
@@ -516,8 +523,9 @@
 (defn regexp-full-parse
   [this index tramp]
   (let [regexp (:regexp this)
-        text (:text tramp)
-        matches (re-seq-no-submatches regexp (subs text index))
+        text (:segment tramp)
+        substring (.subSequence text index (.length text))
+        matches (re-seq-no-submatches regexp substring)
         desired-length (- (count text) index)
         filtered-matches (filter #(= (count %) desired-length) matches)]
     (if-let [seq-filtered-matches (seq filtered-matches)]
