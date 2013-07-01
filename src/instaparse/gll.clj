@@ -464,7 +464,6 @@
   (let [string (:string this)
         text (:text tramp)
         end (min (count text) (+ index (count string)))
-        ;substring (.subSequence text index end)
         head (subs text index end)]      
     (if (= string head)
       (success tramp [index this] string end)
