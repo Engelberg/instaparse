@@ -10,6 +10,7 @@
 ### Notable Performance Improvements
 
 * Dramatic performance improvement (quadratic time reduced to linear) when repetition parsers (+ or *) operate on text whose parse tree contains a large number of repetitions.
+* Performance improvement for regular expressions. 
 
 ### Minor Enhancements
 
