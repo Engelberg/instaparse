@@ -29,8 +29,10 @@
         (let [first-result (parse-from-index grammar initial-parser text segment index)
               [start end] (viz/span first-result)
               end (if end end (+ index (count first-result)))]
-          (if (instance? instaparse.gll.Failure first-result) first-result
-            (recur end (conj parses first-result))))))))
+          (cond 
+            (instance? instaparse.gll.Failure first-result) first-result
+            (= index end) (gll/->Failure nil nil)
+            :else (recur end (conj parses first-result))))))))
           
 (defn repeat-parse-enlive [grammar initial-parser root-tag text]
   (let [length (count text)
@@ -44,8 +46,10 @@
         (let [first-result (parse-from-index grammar initial-parser text segment index)
               [start end] (viz/span first-result)
               end (if end end (+ index (count first-result)))]
-          (if (instance? instaparse.gll.Failure first-result) first-result
-            (recur end (conj parses first-result))))))))
+          (cond 
+            (instance? instaparse.gll.Failure first-result) first-result
+            (= index end) (gll/->Failure nil nil)
+            :else (recur end (conj parses first-result))))))))
 
 (defn repeat-parse-no-tag [grammar initial-parser text]
   (let [length (count text)
@@ -59,8 +63,10 @@
         (let [first-result (parse-from-index grammar initial-parser text segment index)
               [start end] (viz/span first-result)
               end (if end end (+ index (count first-result)))]
-          (if (instance? instaparse.gll.Failure first-result) first-result
-            (recur end (conj parses first-result))))))))
+          (cond 
+            (instance? instaparse.gll.Failure first-result) first-result
+            (= index end) (gll/->Failure nil nil)
+            :else (recur end (conj parses first-result))))))))
 
 (defn repeat-parse 
   ([grammar initial-parser output-format text] (repeat-parse-no-tag grammar initial-parser text))
