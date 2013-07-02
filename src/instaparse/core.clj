@@ -7,7 +7,8 @@
             [instaparse.reduction :as red]
             [instaparse.transform :as t]
             [instaparse.abnf :as abnf]
-            [instaparse.viz :as viz]))
+            [instaparse.viz :as viz]
+            [instaparse.repeat :as repeat]))
   ;(:use clojure.tools.trace)
 
 (def ^:dynamic *default-output-format* :hiccup)
@@ -23,7 +24,9 @@
   [type]
   {:pre [(#{:abnf :ebnf} type)]}
   (alter-var-root #'*default-input-format* (constantly type)))
-    
+
+(declare failure?)
+
 (defn parse 
   "Use parser to parse the text.  Returns first parse tree found
    that completely parses the text.  If no parse tree is possible, returns
@@ -32,19 +35,29 @@
    Optional keyword arguments:
    :start :keyword  (where :keyword is name of starting production rule)
    :partial true    (parses that don't consume the whole string are okay)
-   :total true      (if parse fails, embed failure node in tree)"
+   :total true      (if parse fails, embed failure node in tree)
+   :optimize true   (apply experimental optimizations)"
   [parser text &{:as options}]
   (let [start-production 
         (get options :start (:start-production parser)),
         
         partial?
-        (get options :partial false)]
+        (get options :partial false)
+        
+        optimize?
+        (get options :optimize false)]
     
     (cond
       (:total options)
       (gll/parse-total (:grammar parser) start-production text 
                        partial? (red/node-builders (:output-format parser)))
 
+      (and optimize? (not partial?))
+      (let [result (repeat/try-repeating-parse-strategy parser text start-production)]
+        (if (failure? result)
+          (gll/parse (:grammar parser) start-production text partial?)
+          result))
+      
       :else
       (gll/parse (:grammar parser) start-production text partial?))))
   
