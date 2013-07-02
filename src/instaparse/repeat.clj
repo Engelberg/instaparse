@@ -2,6 +2,7 @@
   (:use clojure.tools.trace)
   (:require [instaparse.gll :as gll] 
             [instaparse.combinators-source :as c]
+            [instaparse.auto-flatten-seq :as afs]
             [instaparse.viz :as viz]
             [instaparse.reduction :as red]
             [instaparse.failure :as fail]))
@@ -21,9 +22,9 @@
   (let [length (count text)
         segment (gll/string->segment text)]
     (loop [index 0
-           parses [root-tag]]
+           parses (afs/auto-flatten-seq [root-tag])]
       (if (= index length) (gll/safe-with-meta
-                             parses
+                             (afs/convert-afs-to-vec parses)
                              {:instaparse.gll/start-index 0
                               :instaparse.gll/end-index length})
         (let [first-result (parse-from-index grammar initial-parser text segment index)
@@ -32,13 +33,13 @@
           (cond 
             (instance? instaparse.gll.Failure first-result) first-result
             (= index end) (gll/->Failure nil nil)
-            :else (recur end (conj parses first-result))))))))
+            :else (recur end (afs/conj-flat parses first-result))))))))
           
 (defn repeat-parse-enlive [grammar initial-parser root-tag text]
   (let [length (count text)
         segment (gll/string->segment text)]
     (loop [index 0
-           parses []]
+           parses afs/EMPTY]
       (if (= index length) (gll/safe-with-meta
                              {:tag root-tag :content (seq parses)}
                              {:instaparse.gll/start-index 0
@@ -49,15 +50,15 @@
           (cond 
             (instance? instaparse.gll.Failure first-result) first-result
             (= index end) (gll/->Failure nil nil)
-            :else (recur end (conj parses first-result))))))))
+            :else (recur end (afs/conj-flat parses first-result))))))))
 
 (defn repeat-parse-no-tag [grammar initial-parser text]
   (let [length (count text)
         segment (gll/string->segment text)]
     (loop [index 0
-           parses []]
+           parses afs/EMPTY]
       (if (= index length) (gll/safe-with-meta 
-                             (seq parses)
+                             parses
                              {:instaparse.gll/start-index 0
                               :instaparse.gll/end-index length})
         (let [first-result (parse-from-index grammar initial-parser text segment index)
@@ -66,7 +67,7 @@
           (cond 
             (instance? instaparse.gll.Failure first-result) first-result
             (= index end) (gll/->Failure nil nil)
-            :else (recur end (conj parses first-result))))))))
+            :else (recur end (afs/conj-flat parses first-result))))))))
 
 (defn repeat-parse 
   ([grammar initial-parser output-format text] (repeat-parse-no-tag grammar initial-parser text))
