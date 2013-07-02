@@ -84,6 +84,7 @@
         output-format (:output-format parser)
         start-rule (get grammar start-production)]
     (cond
+      (= (:hide start-rule) true) (gll/->Failure nil nil)
       (= (:red start-rule) red/raw-non-terminal-reduction)
       (cond
         (= (:tag start-rule) :star)
