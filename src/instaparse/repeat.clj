@@ -102,7 +102,7 @@
           end (get-end header-result)
           repeat-result (repeat-parse-no-tag grammar repeating-parser text segment end)
           concat-result (concat header-result repeat-result)
-          span-meta {:optimize true-with-header
+          span-meta {:optimize :true-with-header
                      :instaparse.gll/start-index 0
                      :instaparse.gll/end-index length}]
       (case output-format
