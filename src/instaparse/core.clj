@@ -36,7 +36,7 @@
    :start :keyword  (where :keyword is name of starting production rule)
    :partial true    (parses that don't consume the whole string are okay)
    :total true      (if parse fails, embed failure node in tree)
-   :optimize true   (apply experimental optimizations)"
+   :optimize :memory   (when possible, employ strategy to use less memory)"
   [parser text &{:as options}]
   (let [start-production 
         (get options :start (:start-production parser)),

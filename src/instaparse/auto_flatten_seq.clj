@@ -97,7 +97,8 @@
   (equiv [self other]
     (and (== hashcode (hash other))
          (== cnt (count other))
-         (= (seq self) other)))
+         (or (== cnt 0)
+             (= (seq self) other))))
   (empty [self] (with-meta EMPTY (meta self))) 
   (first [self] (first (seq self)))
   (next [self] (next (seq self)))

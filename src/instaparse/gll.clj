@@ -29,7 +29,7 @@
   (:use clojure.pprint)
   )
     
-(def DEBUG true)
+(def DEBUG false)
 (def PRINT false)
 (defmacro debug [& body]
   (when DEBUG

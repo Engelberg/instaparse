@@ -21,8 +21,9 @@
 (defn marker
   "Creates string with caret at nth position, 1-based"
   [n]
-  (if (<= n 1) "^"
-    (apply str (concat (repeat (dec n) \space) [\^])))) 
+  (when (integer? n)
+    (if (<= n 1) "^"
+      (apply str (concat (repeat (dec n) \space) [\^]))))) 
       
 (defn augment-failure
   "Adds text, line, and column info to failure object."
