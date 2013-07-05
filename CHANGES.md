@@ -6,6 +6,7 @@
 
 * `span` function returns substring indexes into the parsed text for a portion of the parse tree.
 * `visualize` function draws the parse tree, using rhizome and graphviz if installed.
+* `:optimize :memory` flag that, for suitable parsers, will perform the parsing in discrete chunks, using less memory.
 
 ### Notable Performance Improvements
 
