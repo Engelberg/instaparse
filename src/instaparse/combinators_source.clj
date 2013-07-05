@@ -96,24 +96,37 @@
 ; Ways to alter a parser with hidden information, unhiding that information
 
 (defn hidden-tag?
+  "Tests whether parser was created with hide-tag combinator"
   [parser]
   (= (:red parser) raw-non-terminal-reduction))
 
-(defn unhide-content [parser]
+(defn unhide-content
+  "Recursively undoes the effect of hide on one parser"
+  [parser]
   (let [parser (if (:hide parser) (dissoc parser :hide) parser)]
     (cond
       (:parser parser) (assoc parser :parser (unhide-content (:parser parser)))
       (:parsers parser) (assoc parser :parsers (map unhide-content (:parsers parser)))
       :else parser)))
 
-(defn unhide-tag [reduction-type grammar]
+(defn unhide-all-content
+  "Recursively undoes the effect of hide on all parsers in the grammar"
+  [grammar]
+  (into {} (for [[k v] grammar]
+             [k (unhide-content v)])))
+
+(defn unhide-tags 
+  "Recursively undoes the effect of hide-tag"
+  [reduction-type grammar]
   (if-let [reduction (reduction-types reduction-type)]
     (into {} (for [[k v] grammar]
                [k (assoc v :red (reduction k))]))
     (throw (IllegalArgumentException. 
              (format "Invalid output format %s. Use :enlive or :hiccup." reduction-type)))))
 
-(defn unhide-all [reduction-type grammar]
+(defn unhide-all
+  "Recursively undoes the effect of both hide and hide-tag"
+  [reduction-type grammar]
   (if-let [reduction (reduction-types reduction-type)]
     (into {} (for [[k v] grammar]
                [k (assoc (unhide-content v) :red (reduction k))]))

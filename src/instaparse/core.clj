@@ -8,7 +8,8 @@
             [instaparse.transform :as t]
             [instaparse.abnf :as abnf]
             [instaparse.viz :as viz]
-            [instaparse.repeat :as repeat]))
+            [instaparse.repeat :as repeat]
+            [instaparse.combinators-source :as c]))
   ;(:use clojure.tools.trace)
 
 (def ^:dynamic *default-output-format* :hiccup)
@@ -27,6 +28,18 @@
 
 (declare failure?)
 
+(defn- unhide-parser [parser unhide]
+  (case unhide
+    nil parser
+    :content 
+    (assoc parser :grammar (c/unhide-all-content (:grammar parser)))
+    :tags 
+    (assoc parser :grammar (c/unhide-tags (:output-format parser) 
+                                          (:grammar parser)))
+    :all
+    (assoc parser :grammar (c/unhide-all (:output-format parser)
+                                         (:grammar parser)))))
+  
 (defn parse 
   "Use parser to parse the text.  Returns first parse tree found
    that completely parses the text.  If no parse tree is possible, returns
@@ -36,8 +49,11 @@
    :start :keyword  (where :keyword is name of starting production rule)
    :partial true    (parses that don't consume the whole string are okay)
    :total true      (if parse fails, embed failure node in tree)
+   :unhide <:tags or :content or :all> (for this parse, disable hiding)
    :optimize :memory   (when possible, employ strategy to use less memory)"
   [parser text &{:as options}]
+  {:pre [(contains? #{:tags :content :all nil} (get options :unhide))
+         (contains? #{:memory nil} (get options :optimize))]}
   (let [start-production 
         (get options :start (:start-production parser)),
         
@@ -45,7 +61,12 @@
         (get options :partial false)
         
         optimize?
-        (get options :optimize false)]
+        (get options :optimize false)
+        
+        unhide
+        (get options :unhide)
+        
+        parser (unhide-parser parser unhide)]
     
     (cond
       (:total options)
@@ -69,14 +90,21 @@
    Optional keyword arguments:
    :start :keyword  (where :keyword is name of starting production rule)
    :partial true    (parses that don't consume the whole string are okay)
-   :total true      (if parse fails, embed failure node in tree)"
+   :total true      (if parse fails, embed failure node in tree)
+   :unhide <:tags or :content or :all> (for this parse, disable hiding)"
   [parser text &{:as options}]
+  {:pre [(contains? #{:tags :content :all nil} (get options :unhide))]}
   (let [start-production 
         (get options :start (:start-production parser)),
         
         partial?
-        (get options :partial false)]
-
+        (get options :partial false)
+        
+        unhide
+        (get options :unhide)
+        
+        parser (unhide-parser parser unhide)]
+    
     (cond
       (:total options)
       (gll/parses-total (:grammar parser) start-production text 

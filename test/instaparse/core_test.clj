@@ -488,6 +488,21 @@
       b = 'b' .
       c = 'c' .") "bc")
     [:a [:b "b"] [:c "c"]]
+    
+    (paren-ab-hide-parens "(ababa)" :unhide :content)
+    [:paren-wrapped "(" [:seq-of-A-or-B "a" "b" "a" "b" "a"] ")"]
+    
+    (paren-ab-hide-parens "(ababa)" :unhide :all)
+    [:paren-wrapped "(" [:seq-of-A-or-B "a" "b" "a" "b" "a"] ")"]
+    
+    (paren-ab-hide-tag "(ababa)" :unhide :tags)
+    [:paren-wrapped [:seq-of-A-or-B "a" "b" "a" "b" "a"]]
+    
+    (paren-ab-hide-tag "(ababa)" :unhide :all)
+    [:paren-wrapped "(" [:seq-of-A-or-B "a" "b" "a" "b" "a"] ")"]
+    
+    (insta/parses words-and-numbers "ab 123 cd" :unhide :all)
+    '([:sentence [:token [:word "ab"]] [:whitespace " "] [:token [:number "123"]] [:whitespace " "] [:token [:word "cd"]]])
     ))    
 
 
