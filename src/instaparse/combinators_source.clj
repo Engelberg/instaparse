@@ -92,3 +92,30 @@
   Wrap this combinator around the entire right-hand side."  
   [parser]
   (red parser raw-non-terminal-reduction))
+
+; Ways to alter a parser with hidden information, unhiding that information
+
+(defn hidden-tag?
+  [parser]
+  (= (:red parser) raw-non-terminal-reduction))
+
+(defn unhide-content [parser]
+  (let [parser (if (:hide parser) (dissoc parser :hide) parser)]
+    (cond
+      (:parser parser) (assoc parser :parser (unhide-content (:parser parser)))
+      (:parsers parser) (assoc parser :parsers (map unhide-content (:parsers parser)))
+      :else parser)))
+
+(defn unhide-tag [reduction-type grammar]
+  (if-let [reduction (reduction-types reduction-type)]
+    (into {} (for [[k v] grammar]
+               [k (assoc v :red (reduction k))]))
+    (throw (IllegalArgumentException. 
+             (format "Invalid output format %s. Use :enlive or :hiccup." reduction-type)))))
+
+(defn unhide-all [reduction-type grammar]
+  (if-let [reduction (reduction-types reduction-type)]
+    (into {} (for [[k v] grammar]
+               [k (assoc (unhide-content v) :red (reduction k))]))
+    (throw (IllegalArgumentException. 
+             (format "Invalid output format %s. Use :enlive or :hiccup." reduction-type)))))
