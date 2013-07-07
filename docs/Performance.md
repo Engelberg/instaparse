@@ -109,7 +109,7 @@ Occasionally, I receive a question about whether there's a *best* way to write i
 
 7. Watch out for ambiguity in your hidden content.  One time I was working with a grammar that I was convinced was unambiguous -- `insta/parses` always returned a single answer.  However, it turned out that the definition of whitespace was highly ambiguous.  I didn't realize it because the whitespace was hidden.  To help diagnose these sorts of problems, try running `insta/parses` with the `:unhide :all` flag.
 
-8. Prefer Java 1.7.  I've received one report where instaparse, running on Java 1.6 was running out of memory on a large input, whereas the exact same grammar on the same input ran perfectly fine on Java 1.7.
+8. Prefer Java 1.7.  I've received one report where instaparse, running on Java 1.6, was running out of memory on a large input, whereas the exact same grammar on the same input ran perfectly fine on Java 1.7.
 
 9. Feed instaparse smaller chunks of text.  The reality is that most large parsing tasks involve a series of individual data records that could potentially be parsed independently of one another.  As has been discussed earlier in this document, if you feed instaparse the entire block of text, instaparse has to assume the worst -- that it might encounter some sort of failure that causes it to go back and reintrepret all the text it has processed so far.  Consider preprocessing the text, chopping it into strings representing the individual data records, and pass the smaller strings into instaparse in order to limit the scope of what possibilities it needs to consider and how much history it needs to track.
 
