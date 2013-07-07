@@ -39,11 +39,11 @@ Roughly speaking, the goal is for instaparse to be performant in the same sense 
 
 There were a lot of algorithmic coding decisions that I made by benchmarking multiple alternatives and data structures.  I won't go into them all here.  My aim in this section is to give you a sense for how I go about optimizing and what sorts of things I focus on.
 
-Here is the gist of my optimization process: I take a grammar, try it on increasingly large inputs, and track the running-time growth.  If the growth is quadratic, I profile and investigate to try to track down the offending code and rework it into linear behavior.  My goal is to ensure that as many grammars as possible have linear growth.
+Here is the gist of my optimization process: I take a grammar, try it on increasingly large inputs, and track the running-time growth.  If the growth is quadratic (or worse), I profile and investigate to try to track down the offending code and rework it into linear behavior.  My goal is to ensure that as many grammars as possible have linear growth.
 
 As I mentioned in the tutorial, one of the first things I noticed in my profiling was how critical hashing was.  This is a great example of how an algorithm that seems like it *should* be linear can go awry without careful attention to implementation details.  We all know that inserting something into a hash map is essentially constant time, so we take that for granted in our analysis.  As long as the algorithm only performs O(n) insertions/lookups in the hash table, it should have linear performance, right?  Well, if the thing you are inserting into the hash table takes O(n) time to compute the hash, you're in big trouble!
 
-So the first big accomplishment of my optimization efforts was reducing the hashing time to constant for all the information cached by instaparse.  Version 1.2 of instaparse sports two new equally significant performance improvements:
+So the first big accomplishment of my optimization efforts was to reduce the hashing time to constant for all the information cached by instaparse.  Version 1.2 of instaparse sports two new equally significant performance improvements:
 
 First, I discovered that on long texts with long repeating sequences, linear-time concatenation of the internal partial tree results was a huge bottleneck, leading to overall quadratic behavior.  So in 1.2, I converted over to using a custom data structure with O(1) concatentation.  RRB-trees would be another data structure that could potentially solve my concatenation problem, so this is something I intend to look at after the Clojure implementation of RRB-trees matures.
 
@@ -91,7 +91,7 @@ Occasionally, I receive a question about whether there's a *best* way to write i
 
 2. If your token is a string, use a string literal, not a regular epxression.  For example, prefer `'apple'` to `#'apple'`.
 
-3. When the greedy behavior of regular expressions is what you want, prefer using `*` nd `+` *inside* the regular expression rather than outside.  This comes up very commonly in processing whitespace.  In most applications, once you hit whitespace, you want to eat up all the whitespace to get to the next token.  So you'll get better performance with `#'\\s*'` than with `#'\\s'*`.  In my parsers, I routinely have a rule for optional whitespace that looks like `ows = #'\\s*'` and then I drop `<ows>` liberally into my other rules wherever I want to potentially allow whitespace.
+3. When the greedy behavior of regular expressions is what you want, prefer using `*` nd `+` *inside* the regular expression rather than outside.  This comes up very commonly in processing whitespace.  In most applications, once you hit whitespace, you want to eat up all the whitespace to get to the next token.  So you'll get better performance with `#'\\s*'` than with `#'\\s'*`.  In my parsers, I routinely have a rule for optional whitespace that looks like `ows = #'\\s*'` and then I sprinkle `<ows>` liberally in my other rules wherever I want to potentially allow whitespace.
 
 4. Related to the previous point, prefer using regular expressions to define tokens in their entirety rather than using instaparse to build up the tokens by analyzing the string character by character.  For example, if an identifer in your language is a letter followed by a series of letters or digits, you'll be better off with the rule
 
