@@ -248,6 +248,25 @@ You might wonder what would happen if we hid the root tag as well.  Let's take a
 
 With no root tag, the parser just returns a sequence of children.  So in the above example where *all* the tags are hidden, you just get a sequence of parsed elements.  Sometimes that's what you want, but in general, I recommend that you don't hide the root tag, ensuring the output is a well-formed tree.
 
+#### Revealing hidden information
+
+Sometimes, after setting up the parser to hide content and tags, you temporarily want to reveal the hidden information, perhaps for debugging purposes.
+
+The optional keyword argument `:unhide :content` reveals the hidden content in the tree output.
+
+	=> (paren-ab-hide-both-tags "(aba)" :unhide :content)
+	("(" "a" "b" "a" ")")
+
+The optional keyword argument `:unhide :tags` reveals the hidden tags in the tree output.
+
+	=> (paren-ab-hide-both-tags "(aba)" :unhide :tags)
+	[:paren-wrapped [:seq-of-A-or-B "a" "b" "a"]]
+
+The optional keyword argument `:unhide :all` reveals all hidden information.
+
+	=> (paren-ab-hide-both-tags "(aba)" :unhide :all)
+	[:paren-wrapped "(" [:seq-of-A-or-B "a" "b" "a"] ")"]
+
 ### No Grammar Left Behind
 
 One of the things that really sets instaparse apart from other Clojure parser generators is that it can handle any context-free grammar.  For example, some parsers only accept LL(1) grammars, others accept LALR grammars.  Many of the libraries use a recursive-descent strategy that fail for left-recursive grammars.  If you are willing to learn the esoteric restrictions posed by the library, it is usually possible to rework your grammar to fit that mold.  But instaparse lets you write your grammar in whatever way is most natural.
@@ -893,6 +912,8 @@ I've also worked to remove "performance surprises".  For example, both left-recu
 
 One performance caveat: instaparse is fairly memory-hungry, relying on extensive caching of intermediate results to keep the computational costs reasonable.  This is not unusual -- caching is commonplace in many modern parsers, trading off space for time -- but it's worth bearing in mind.  Packrat/PEG parsers and many recursive descent parsers employ a similar memory-intensive strategy, but there are other alternatives out there if that kind of memory usage is unacceptable.  As one would expect, instaparse parsers do not hold onto the memory cache once the parse is complete; that memory is made available for garbage collection.
 
+The [performance notes document] (https://github.com/Engelberg/instaparse/blob/master/docs/Performance.md) contains a deeper discussion of performance and a few helpful hints for getting the best performance out of your parser.
+
 ## Reference
 
 All the functionality you've seen in this tutorial is packed into an API of just 9 functions.  Here are the doc strings:
@@ -928,6 +949,8 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	   :start :keyword  (where :keyword is name of starting production rule)
 	   :partial true    (parses that don't consume the whole string are okay)
 	   :total true      (if parse fails, embed failure node in tree)
+	   :unhide <:tags or :content or :all> (for this parse, disable hiding)
+	   :optimize :memory   (when possible, employ strategy to use less memory)
 
 	=> (doc insta/parses)
 	-------------------------
@@ -941,6 +964,7 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	   :start :keyword  (where :keyword is name of starting production rule)
 	   :partial true    (parses that don't consume the whole string are okay)
 	   :total true      (if parse fails, embed failure node in tree)
+	   :unhide <:tags or :content or :all> (for this parse, disable hiding)
 
 	=> (doc insta/set-default-output-format!)
 	-------------------------

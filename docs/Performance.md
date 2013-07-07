@@ -12,13 +12,13 @@ If you can do that, great!  If there's already a parser written for the kind of 
 
 That's where instaparse comes in.  Instaparse can handle arbitrary context-free grammars written using standard notation, so it's easy to apply it, even for a quickie one-time parsing task.
 
-Shortly after the release of instaparse, there were a couple great testimonial blog posts about instaparse.  [This blog post by Brandon Harvey](http://walkwithoutrhythm.net/blog/2013/05/16/instaparse-parsing-with-clojure-is-the-new-black/) especially made my day, because it perfectly captured what I had hoped to achieve with instaparse.  
+Shortly after the release of instaparse, there were a couple great testimonial blog posts about instaparse.  [This blog post by Brandon Harvey](http://walkwithoutrhythm.net/blog/2013/05/16/instaparse-parsing-with-clojure-is-the-new-black/) especially made my day, because it perfectly captured what I had hoped to achieve with instaparse.
 
 In his blog post, Brandon describes some cave data that he wanted to parse.  Ideally, he wanted to figure out how to get "from a big fat unwieldy string to a nice, regular tree-shaped data structure in 20 minutes or less."  The cave data is clearly structured and looks kind of like JSON, but it isn't quite JSON.
 
 First, he tried using another Clojure parsing library (a rather excellent library provided you're working with a grammar that fits its constraints), but couldn't figure out how to express his grammar in a way that worked.  He got bogged down with a bunch of shift/reduce conflicts and other errors  that he didn't know how to interpret without understanding the underlying machinery.  Using instaparse, he expressed the grammar in the way that seemed most natural, and it worked.
 
-This brings me to my first main point about performance:
+This brings me to a point I'd like to make before discussing performance:
 
 *Instaparse aims to be more flexible than traditional parser libraries --- more tolerant of grammars that are ambiguous, require backtracking, or use a mixture of left and right recursion.*
 
@@ -33,5 +33,92 @@ With that disclaimer in mind, here are the specifics of what I strive for:
 + If you have a reasonable grammar, even one that isn't expressed in "just the right way", it should still have solid performance.
 + Performance should degrade gracefully as you incorporate more ambiguity and heavy backtracking into the grammar.
 
-In some sense, instaparse is like Clojure itself.  We accept that Clojure is somewhat slower than writing directly in Java because we understand that Clojure offers us greater expressivity and immutable data structures that are competitive with, but not quite as fast as their mutable counterparts.  If we need more extreme performance, we know we can drop down to the Java level if absolutely necessary.  Similarly, the goal is for instaparse to have a performance profile that is similar to, but possibly a bit slower than its less flexible counterparts.  If you have truly high-performance needs, you should think about "dropping down to the Java level" and creating your parser with a tool like Antlr.
+Roughly speaking, the goal is for instaparse to be performant in the same sense that Clojure is performant.  Clojure is not quite as fast as languages like Java or C++, but we use it because it offers greater expressivity and flexibility with enough speed to be useful for a wide range of tasks.
 
+## Specific optimizations
+
+There were a lot of specific algorithmic coding decisions that I made by benchmarking multiple alternatives and data structures.  I won't go into them all here.  My aim in this section is to give you a sense for how I go about optimizing and what sorts of things I focus on.
+
+Here is the gist of my optimization process: I take a grammar, try it on increasingly large inputs, and track the running-time growth.  If the growth is quadratic, I profile and investigate to try to track down the offending code and rework it into linear behavior.  My goal is to ensure that as many grammars as possible have linear growth.
+
+As I mentioned in the tutorial, one of the first things I noticed in my profiling was how critical hashing was.  This is a great example of how an algorithm that seems like it *should* be linear can go awry without careful attention to implementation details.  We all know that inserting something into a hash map is essentially constant time, so we take that for granted in our analysis.  As long as the algorithm only performs O(n) insertions/lookups in the hash table, it should have linear performance, right?  Well, if the thing you are inserting into the hash table takes O(n) time to compute the hash, you're in big trouble!
+
+So the first big accomplishment of my optimization efforts was reducing the hashing time to constant for all the information cached by instaparse.  Version 1.2 of instaparse sports two new equally significant performance improvements:
+
+First, I discovered that on long texts with long repeating sequences, linear-time concatenation of the internal partial tree results was a huge bottleneck, leading to overall quadratic behavior.  So in 1.2, I converted over to using a custom data structure with O(1) concatentation.  RRB-trees would be another data structure that could potentially solve my concatenation problem, so this is something I intend to look at after the Clojure implementation of RRB-trees matures.
+
+The other major performance improvement in 1.2 compensated for an unfortunate change that Oracle made in Java 1.7 to the String class, changing Strings so that the substring operation is O(n) rather than O(1), using a freshly allocated string to hold the substring.  Instaparse handles regular expressions by testing the regular expression against a substring of the input text that skips past the part of the text already parsed.  This strategy, which creates rather large substrings frequently, needed to be modified in light of Java 1.7's poor substring behavior.
+
+With these version 1.2 modifications in place, I'm now getting linear-time behavior for all the parsers in my test suite that aren't explicitly designed to demonstrate huge amounts of ambiguity.  This is exactly where I want instaparse to be.
+
+## Memory
+
+When talking about performance, the other big discussion point of course needs to be memory consumption.  As I mentioned in the tutorial, instaparse does use a lot of memory.  There's really no way around this; it all comes back to my earlier point that instaparse aims to gracefully handle arbitrary levels of ambiguity and backtracking, which means that the entire text needs to reside in memory and lots of intermediate results need to be cached.
+
+Instaparse's own syntax for context-free grammars is parsed by an instaparse parser, and is a great example of the advantage of backtracking.
+
+Consider the following grammar:
+
+	A = B B
+	B = 'b'
+
+For most parser generators, it would be critical that each line be terminated by an end-of-line character, such as `;` or a newline.  But instaparse's CFG parser has no problem if you write out the grammar all mushed together on one line:
+
+	A = B B B = 'b'
+
+Working from left-to-right, at the time it parses the third `B`, it is entirely possible that the `B` should be interpreted as part of a rule
+
+	A = B B B
+
+But when it encounters the `=`, it realizes that the only sensible interpretation is for the third `B` to be the beginning of a new rule, and instaparse sorts it all out.
+
+Taken to an extreme, consider a grammar like:
+
+	S = 'ab'+ | 'a' 'ba'+
+
+If you parse a long string of "abababab...aba", there's no way for instaparse to determine when looking at the first 'a' which way to interpret it.  Instaparse can try one path, for example, assuming that it is part of the `'ab'+` rule, but it won't know until it gets to the very end of the string that it has chosen incorrectly, and has to back up and try another path.  Looking at this example, it should be clear that there's no way to parse the input string in a single linear pass with bounded memory.
+
+For this reason, I haven't put as much effort into optimizing memory usage -- a lot of data needs to be retained throughout the parsing process, and there simply is less scope for improvement, I think.  Certainly Java 1.7's substring behavior was causing massive memory churn, so the changes I made in instaparse 1.2 will also benefit the memory side of the performance equation.  But other than that, I haven't found any big wins for optimizing memory consumption.
+
+In theory, I can imagine that there might be a way to intelligently figure out which cached data can be safely discarded, but in the context of left-recursion this is an extremely hard problem to solve.  Chalk this up as a future research problem, but one that is not likely to bear fruit in the short-term.  I have made one step in this direction which I will detail further in the section below about performance tips.
+
+## Performance Tips
+
+Occasionally, I receive a question about whether there's a *best* way to write instaparse grammars for maximum performance.  I've tried very hard to make it so that instaparse's performance isn't ultra-sensitive to the exact way you word the grammar.  My hope is that most people will find these performance tips to be completely unnecessary.  However, for those that are interested, here are some recommendations:
+
+1. Instaparse's algorithm is in the family of LL parsing algorithms.  So if you know how to easily write your grammar as an LL grammar, that's probably going to yield the best possible performance.  If not, don't worry about it.
+
+2. If your token is a string, use a string literal, not a regular epxression.  For example, prefer `'apple'` to `#'apple'`.
+
+3. When the greedy behavior of regular expressions is what you want, prefer using `*` nd `+` *inside* the regular expression rather than outside.  This comes up very commonly in processing whitespace.  In most applications, once you hit whitespace, you want to eat up all the whitespace to get to the next token.  So you'll get better performance with `#'\\s*'` than with `#'\\s'*`.  In my parsers, I routinely have a rule for optional whitespace that looks like `ows = #'\\s*'` and then I drop `<ows>` liberally into my other rules wherever I want to potentially allow whitespace.
+
+4. Related to the previous point, prefer using regular expressions to define tokens in their entirety rather than using instaparse to build up the tokens by analyzing the string character by character.  For example, if an identifer in your language is a letter followed by a series of letters or digits, you'll be better off with the rule
+
+	Identifier = #'[a-zA-Z][a-zA-Z0-9]*'
+
+rather than
+
+	Identifer = Letter Digit*
+	Letter = #'[a-zA-Z]'
+	Digit = #'[a-zA-Z0-9]'
+
+5. Remove as much ambiguity from your grammar as you can.  Instaparse will function with ambiguous grammars, but dealing with that ambiguity can take a toll on performance.  Use the `insta/parses` function on a variety of sample inputs in order to troubleshoot your grammar and discover ways in which your inputs might have multiple interpretations.
+
+6. Even if `insta/parses` returns a single answer, think about whether you've created a lot of *internal ambiguity*, i.e., situations where the parser won't be able to work out the interpretation of the text until it has gotten much further along.  One way to analyze this is to test the various rules in your grammar using `insta/parses` with the `:partial true` flag to get a feel for how many scenarios it has to consider before it can be sure it is found the whole chunk of text defined by that rule.
+
+7. Watch out for ambiguity in your hidden content.  One time I was working with a grammar that I was convinced was unambiguous -- `insta/parses` always returned a single answer.  However, it turned out that the definition of whitespace was highly ambiguous.  I didn't realize it because the whitespace was hidden.  To help diagnose these sorts of problems, try running `insta/parses` with the `:unhide :all` flag.
+
+8. Prefer Java 1.7.  I've received one report where instaparse, running on Java 1.6 was running out of memory on a large input, whereas the exact same grammar on the same input ran perfectly fine on Java 1.7.
+
+9. Feed instaparse smaller chunks of text.  The reality is that most large parsing tasks involve a block of text that is essentially a series of individual data records that could potentially be parsed independently of one another.  As has been discussed earlier in this document, if you feed instaparse the entire block of text, instaparse has to assume the worst -- that it might encounter some sort of failure that causes it to go back and reintrepret all the text it has processed so far.  Consider preprocessing the text, chopping it into strings representing the individual data records, and pass the smaller strings into instaparse in order to limit the scope of what possibilities it needs to consider and how much history it needs to track.
+
+For example, I saw one grammar where each line of text represented a new record, and the grammar looked like:
+
+	document = line+
+	line = ...
+
+Instead of applying this grammar to the entire document at once, why not build a parser where `line` is the top-level starting rule, and then map this parser over a `line-seq` of the text?
+
+I've added a new, experimental `:optimize :memory` flag that attempts to automate this kind of preprocessing, chopping the text into smaller independent chunks on grammars that describe these sorts of repeated data records (possibly with a header at the beginning of the file) in order to use less memory.  If instaparse can't find the pattern or runs into any sort of failure, it will fall back to the usual parsing strategy to make sure it has considered all possibilities.  Using this flag will likely slow down your parser, but if your data lends itself to this alternative strategy, you'll use much less memory.
+
+I consider the `:optimize :memory` flag to be an *alpha* feature, subject to change.  If you try it and find it useful, or try it on something where you'd expect it to help and it doesn't, please send me your feedback.

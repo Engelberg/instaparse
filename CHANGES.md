@@ -7,7 +7,11 @@
 * `span` function returns substring indexes into the parsed text for a portion of the parse tree.
 * `visualize` function draws the parse tree, using rhizome and graphviz if installed.
 * `:optimize :memory` flag that, for suitable parsers, will perform the parsing in discrete chunks, using less memory.
-
+* New parsing flag to undo the effect of the <> hide notation.
+    + `(my-parser text :unhide :tags)` - reveals tags, i.e., `<>` applied on the left-hand sides of rules. 
+    + `(my-parser text :unhide :content)` - reveals content hidden on the right-hand side of rules with `<>`
+    + `(my-parser text :unhide :all)` - reveals both tags and content.
+ 
 ### Notable Performance Improvements
 
 * Dramatic performance improvement (quadratic time reduced to linear) when repetition parsers (+ or *) operate on text whose parse tree contains a large number of repetitions.
