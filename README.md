@@ -1,4 +1,4 @@
-# Instaparse
+# Instaparse 1.2.1
 
 *What if context-free grammars were as easy to use as regular expressions?*
 

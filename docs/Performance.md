@@ -111,7 +111,17 @@ Occasionally, I receive a question about whether there's a *best* way to write i
 
 8. Prefer Java 1.7.  I've received one report where instaparse, running on Java 1.6, was running out of memory on a large input, whereas the exact same grammar on the same input ran perfectly fine on Java 1.7.
 
-9. Feed instaparse smaller chunks of text.  The reality is that most large parsing tasks involve a series of individual data records that could potentially be parsed independently of one another.  As has been discussed earlier in this document, if you feed instaparse the entire block of text, instaparse has to assume the worst -- that it might encounter some sort of failure that causes it to go back and reintrepret all the text it has processed so far.  Consider preprocessing the text, chopping it into strings representing the individual data records, and pass the smaller strings into instaparse in order to limit the scope of what possibilities it needs to consider and how much history it needs to track.
+9. Prefer using * and + over recursion to describe simple repetition.  For example, the rule:
+
+		<A> = 'a'+
+
+	can be internally optimized in ways that
+
+		<A> = 'a' A | 'a'
+
+	cannot.
+
+10. Feed instaparse smaller chunks of text.  The reality is that most large parsing tasks involve a series of individual data records that could potentially be parsed independently of one another.  As has been discussed earlier in this document, if you feed instaparse the entire block of text, instaparse has to assume the worst -- that it might encounter some sort of failure that causes it to go back and reintrepret all the text it has processed so far.  Consider preprocessing the text, chopping it into strings representing the individual data records, and pass the smaller strings into instaparse in order to limit the scope of what possibilities it needs to consider and how much history it needs to track.
 
 	For example, I saw one grammar where each line of text represented a new record, and the grammar looked like:
 
@@ -123,3 +133,5 @@ Occasionally, I receive a question about whether there's a *best* way to write i
 	I've added a new, experimental `:optimize :memory` flag that attempts to automate this kind of preprocessing, chopping the text into smaller independent chunks in order to use less memory. This only works on grammars that describe these sorts of repeated data records (possibly with a header at the beginning of the file).  If instaparse can't find the pattern or runs into any sort of failure, it will fall back to its usual parsing strategy in order to make sure it has considered all possibilities.  Using this flag will likely slow down your parser, but if your data lends itself to this alternative strategy, you'll use much less memory.
 
 	I consider the `:optimize :memory` flag to be an *alpha* feature, subject to change.  If you try it and find it useful, or try it on something where you'd expect it to help and it doesn't, please send me your feedback.
+	
+11. As of version 1.2, the enlive output format is slightly faster than hiccup.  This may change in the future, so I don't recommend that you base your choice of output format on this slight differential.  However, if you're trying to eke out the best possible performance, you might find it useful to experiment with both output formats to see whether one performs better for you than the other.
