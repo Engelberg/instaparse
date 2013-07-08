@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.2.1
+
+### Bugfixes
+
+* I had accidentally left a dependency on tools.trace in the repeat.clj file, used while I was debugging that namespace.  Removed it.
+
 ## 1.2.0
 
 ### New Features

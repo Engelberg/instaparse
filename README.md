@@ -22,7 +22,7 @@ Instaparse requires Clojure v1.5.1 or later.  (It may work with earlier versions
 
 Add the following line to your leiningen dependencies:
 
-	[instaparse "1.2.0"]
+	[instaparse "1.2.1"]
 
 Require instaparse in your namespace header:
 

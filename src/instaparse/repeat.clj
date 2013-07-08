@@ -1,5 +1,4 @@
 (ns instaparse.repeat
-  (:use clojure.tools.trace)
   (:require [instaparse.gll :as gll] 
             [instaparse.combinators-source :as c]
             [instaparse.auto-flatten-seq :as afs]
