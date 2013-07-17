@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.2.2
+
+### Bugfixes
+
+* Fixed reflection warning.
+
 ## 1.2.1
 
 ### Bugfixes

@@ -529,7 +529,7 @@
 (defn regexp-full-parse
   [this index tramp]
   (let [regexp (:regexp this)
-        text (:segment tramp)
+        ^Segment text (:segment tramp)
         substring (.subSequence text index (.length text))
         matches (re-seq-no-submatches regexp substring)
         desired-length (- (count text) index)
