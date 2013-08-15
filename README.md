@@ -27,7 +27,7 @@ Add the following line to your leiningen dependencies:
 Require instaparse in your namespace header:
 
 	(ns example.core
-	  (:require [instaparse.core :as insta])
+	  (:require [instaparse.core :as insta]))
 
 ### Creating your first parser
 
