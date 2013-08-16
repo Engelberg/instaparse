@@ -38,8 +38,8 @@
          (insta/parse parser (flatten-enlive tree))))
   ([parser tree rule]
   (if (vector? tree)
-         (insta/transform {rule (fn [& node] (re-parse-tree parser [:rule node]))} tree)
-         (insta/parse parser (flatten-enlive tree)))))
+         (insta/transform {rule (fn [& node] (re-parse-tree parser [rule node]))} tree)
+         (insta/transform {rule (fn [& node] (re-parse-tree parser {:tag rule, :content node}))} tree))))
                                              
                                              
 ;;;;;;;;;;;;;;;;;
