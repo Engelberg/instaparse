@@ -18,14 +18,30 @@
   [tree]
   (apply str (filter string? (flatten tree))))
                                       
-(defn re-parse
+(defn- re-parse-tree
      "[parser tree]
      reparses a instaparse tree with the given parser."
      [parser tree]
      (if (vector? tree)
          (insta/parse parser (flatten-hiccup tree))
          (insta/parse parser (flatten-enlive tree))))
-                         
+                    
+                    
+(defn re-parse
+  "[parser tree (:rule)]
+  Re-parse an instaparse tree with a parser
+  If :rule is given, re-parse only those nodes matching
+  :rule."
+  ([parser tree]
+  (if (vector? tree)
+         (insta/parse parser (flatten-hiccup tree))
+         (insta/parse parser (flatten-enlive tree))))
+  ([parser tree rule]
+  (if (vector? tree)
+         (insta/transform {rule (fn [node] [:node (re-parse-tree parser node)])} tree)
+         (insta/parse parser (flatten-enlive tree)))))
+                                             
+                                             
 ;;;;;;;;;;;;;;;;;
 ; Demonstration ;
 ;;;;;;;;;;;;;;;;;
@@ -37,8 +53,9 @@
               node: leaf | '(' node (<'('> node <')'>)* node* ')' 
               leaf: #'a+'
               " :output-format :enlive))
+
 (def ^:private edn-enl
-     "simple edn parser"
+     "toy edn parser"
      (insta/parser (slurp "edn.grammar") :output-format :enlive))
 
 (def ^:private m-hic
@@ -56,10 +73,12 @@
 
                                          
 (= (re-parse m-hic (m-hic "a(a)a"))
-   (m-hic "a(a)a")) ;true
+   (m-hic "a(a)a"))                  ; true
 (= (re-parse m-enl (m-enl "a(a)a"))
-   (m-enl "a(a)a")) ; true
+   (m-enl "a(a)a"))                  ; true
 (= (re-parse m-enl (m-hic "a(a)a"))
-   (m-enl "a(a)a")) ; true
+   (m-enl "a(a)a"))                  ; true
+ (= (re-parse m-hic (m-hic "a(a)a") :tree)
+   (m-hic "a(a)a"))         
           
           
