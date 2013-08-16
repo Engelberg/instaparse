@@ -17,15 +17,6 @@
   "flattens a hiccup tree (instparse dialect)"
   [tree]
   (apply str (filter string? (flatten tree))))
-                                      
-(defn- re-parse-tree
-     "[parser tree]
-     reparses a instaparse tree with the given parser."
-     [parser tree]
-     (if (vector? tree)
-         (insta/parse parser (flatten-hiccup tree))
-         (insta/parse parser (flatten-enlive tree))))
-                    
                     
 (defn re-parse
   "[parser tree (:rule)]
@@ -38,8 +29,8 @@
          (insta/parse parser (flatten-enlive tree))))
   ([parser tree rule]
   (if (vector? tree)
-         (insta/transform {rule (fn [& node] (re-parse-tree parser [rule node]))} tree)
-         (insta/transform {rule (fn [& node] (re-parse-tree parser {:tag rule, :content node}))} tree))))
+         (insta/transform {rule (fn [& node] (re-parse parser [rule node]))} tree)
+         (insta/transform {rule (fn [& node] (re-parse parser {:tag rule, :content node}))} tree))))
                                              
                                              
 ;;;;;;;;;;;;;;;;;
@@ -54,7 +45,7 @@
               leaf: #'a+'
               " :output-format :enlive))
 
-(def ^:private edn-enl
+(def ^:private edn-enl ;
      "toy edn parser"
      (insta/parser (slurp "edn.grammar") :output-format :enlive))
 
@@ -73,12 +64,13 @@
 
                                          
 (= (re-parse m-hic (m-hic "a(a)a"))
-   (m-hic "a(a)a"))                  ; true
+   (m-hic "a(a)a"))                        ; true
 (= (re-parse m-enl (m-enl "a(a)a"))
-   (m-enl "a(a)a"))                  ; true
+   (m-enl "a(a)a"))                        ; true
 (= (re-parse m-enl (m-hic "a(a)a"))
-   (m-enl "a(a)a"))                  ; true
- (= (re-parse m-hic (m-hic "a(a)a") :tree)
-   (m-hic "a(a)a"))         
-          
+   (m-enl "a(a)a"))                        ; true
+(= (re-parse m-hic (m-hic "a(a)a") :tree)  
+   (m-hic "a(a)a"))                        ; true
+(= (re-parse m-enl (m-enl "a(a)a") :tree) 
+   (m-enl "a(a)a"))                        ; true 
           
