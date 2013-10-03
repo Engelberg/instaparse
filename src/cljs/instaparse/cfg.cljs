@@ -7,12 +7,12 @@
             [instaparse.gll :refer [parse]]
             [clojure.string :as str]))
 
-(def single-quoted-string #"'[^'\\]*(?:\\.[^'\\]*)*'(?x) #Single-quoted string")
-(def single-quoted-regexp #"#'[^'\\]*(?:\\.[^'\\]*)*'(?x) #Single-quoted regexp")
-(def double-quoted-string #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"(?x) #Double-quoted string")
-(def double-quoted-regexp #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"(?x) #Double-quoted regexp")
-(def inside-comment #"(?:(?!(?:\(\*|\*\)))[.\n])*(?x) #Comment text")
-(def ws "[,\\s]*(?x) #optional whitespace")
+(def single-quoted-string #"'[^'\\]*(?:\\.[^'\\]*)*'")
+(def single-quoted-regexp #"#'[^'\\]*(?:\\.[^'\\]*)*'")
+(def double-quoted-string #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
+(def double-quoted-regexp #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
+(def inside-comment #"(?:(?!(?:\(\*|\*\)))[.\n])*")
+(def ws "[,\\s]*")
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
 
@@ -42,7 +42,7 @@
                            (cat (nt :opt-whitespace) (alt (string ";") (string ".")) (nt :opt-whitespace)))))          
      :nt (cat
            (neg (nt :epsilon))
-           (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+(?x) #Non-terminal"))
+           (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+"))
           :hide-nt (cat (hide (string "<"))
                         opt-whitespace
                         (nt :nt)

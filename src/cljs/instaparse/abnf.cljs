@@ -46,7 +46,7 @@ rule = rulename-left <defined-as> alternation <opt-whitespace>;
 hide-tag-rule = hide-tag <defined-as> alternation <opt-whitespace>;
 rulename-left = rulename;
 rulename-right = rulename;
-<rulename> = #'[a-zA-Z][-a-zA-Z0-9]*(?x) #identifier';
+<rulename> = #'[a-zA-Z][-a-zA-Z0-9]*';
 <hide-tag> = <'<' opt-whitespace> rulename-left <opt-whitespace '>'>;
 defined-as = <opt-whitespace> ('=' | '=/') <opt-whitespace>;
 alternation = concatenation (<opt-whitespace '/' opt-whitespace> concatenation)*;
@@ -75,10 +75,10 @@ hex-char = HEXDIG+;
 NUM = DIGIT+;
 <DIGIT> = #'[0-9]';
 <HEXDIG> = #'[0-9A-Fa-f]';
-opt-whitespace = #'\\s*(?:;.*?(?:\\u000D?\\u000A\\s*|$))*(?x) # optional whitespace or comments';
-whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments';
-regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
-       | #\"#\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"(?x) #Double-quoted regexp\"
+opt-whitespace = #'\\s*(?:;.*?(?:\\u000D?\\u000A\\s*|$))*';
+whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*';
+regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
+       | #\"#\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"\"
 ")
 
 (defn char-range
