@@ -165,16 +165,16 @@
     (let [[ch & input] input]
       (cond
        (nil? ch)
-       (throw "EOF while reading string")
+       (throw (js/Error. "EOF while reading string"))
 
        (= ch \\)
        (let [[ch2 & input] input]
          (cond
           (contains? escape-characters ch2)
-          (recur input (get escape-characters ch2))
+          (recur input (str output (get escape-characters ch2)))
 
           :default
-          (throw (str "Unsupported escape character: " ch2))))
+          (throw (js/Error. (str "Unsupported escape character: " ch2)))))
       
        (= \" ch)
        output
