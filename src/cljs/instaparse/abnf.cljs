@@ -184,41 +184,41 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
    :hex-val get-char-combinator
    :NUM #(Integer/parseInt (apply str %&))})
 
-(def abnf-parser (red/apply-standard-reductions 
-                   :hiccup (cfg/ebnf abnf-grammar)))
+;; (def abnf-parser (red/apply-standard-reductions 
+;;                    :hiccup (cfg/ebnf abnf-grammar)))
 
-(defn rules->grammar-map
-  [rules]
-  (merge-core (apply merge-with alt-preserving-hide-tag rules)))
+;; (defn rules->grammar-map
+;;   [rules]
+;;   (merge-core (apply merge-with alt-preserving-hide-tag rules)))
 
-(defn abnf
-  "Takes an ABNF grammar specification string and returns the combinator version.
-If you give it the right-hand side of a rule, it will return the combinator equivalent.
-If you give it a series of rules, it will give you back a grammar map.   
-Useful for combining with other combinators."
-  [spec]
-  (if (re-find #"=" spec)
-    (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
-      (if (instance? instaparse.gll.Failure rule-tree)
-        (throw (str "Error parsing grammar specification:\n"
-                    (with-out-str (println rule-tree))))
-        (rules->grammar-map (t/transform abnf-transformer rule-tree))))      
+;; (defn abnf
+;;   "Takes an ABNF grammar specification string and returns the combinator version.
+;; If you give it the right-hand side of a rule, it will return the combinator equivalent.
+;; If you give it a series of rules, it will give you back a grammar map.   
+;; Useful for combining with other combinators."
+;;   [spec]
+;;   (if (re-find #"=" spec)
+;;     (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
+;;       (if (instance? instaparse.gll.Failure rule-tree)
+;;         (throw (str "Error parsing grammar specification:\n"
+;;                     (with-out-str (println rule-tree))))
+;;         (rules->grammar-map (t/transform abnf-transformer rule-tree))))      
     
-    (let [rhs-tree (gll/parse abnf-parser :alternation spec false)]
-      (if (instance? instaparse.gll.Failure rhs-tree)
-        (throw (str "Error parsing grammar specification:\n"
-                    (with-out-str (println rhs-tree))))        
-        (t/transform abnf-transformer rhs-tree)))))
+;;     (let [rhs-tree (gll/parse abnf-parser :alternation spec false)]
+;;       (if (instance? instaparse.gll.Failure rhs-tree)
+;;         (throw (str "Error parsing grammar specification:\n"
+;;                     (with-out-str (println rhs-tree))))        
+;;         (t/transform abnf-transformer rhs-tree)))))
 
-(defn build-parser [spec output-format]
-  (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
-    (if (instance? instaparse.gll.Failure rule-tree)
-      (throw (str "Error parsing grammar specification:\n"
-                  (with-out-str (println rule-tree))))
-      (let [rules (t/transform abnf-transformer rule-tree)
-            grammar-map (rules->grammar-map rules)
-            start-production (first (first (first rules)))] 
-        {:grammar (cfg/check-grammar (red/apply-standard-reductions output-format grammar-map))
-         :start-production start-production
-         :output-format output-format}))))
+;; (defn build-parser [spec output-format]
+;;   (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
+;;     (if (instance? instaparse.gll.Failure rule-tree)
+;;       (throw (str "Error parsing grammar specification:\n"
+;;                   (with-out-str (println rule-tree))))
+;;       (let [rules (t/transform abnf-transformer rule-tree)
+;;             grammar-map (rules->grammar-map rules)
+;;             start-production (first (first (first rules)))] 
+;;         {:grammar (cfg/check-grammar (red/apply-standard-reductions output-format grammar-map))
+;;          :start-production start-production
+;;          :output-format output-format}))))
 
