@@ -80,20 +80,47 @@
 
 (defrecord Failure [index reason])  
 
-(defprotocol ISegment
-  (subsegment [this start-index end-index]))
+(defn- chop-off-repetition [s]
+  (let [[before-repeats repeats] (->> (partition-all 2 1 s)
+                                      (split-with (fn [[x y]] (not= x y))))]
+    (concat (map first before-repeats)
+            (map first (take 1 repeats)))))
 
-(defrecord Segment [text start end]
+(defn- re-seq-hack
+  "As of clojurescript 1913, re-seq can sometimes return an infinite
+   sequence.  This is a hack to avoid that."
+  [re s]
+  (chop-off-repetition (re-seq re s)))
+
+(defn re-seq-no-submatches [regexp text]
+  (for [match (re-seq-hack regexp text)]
+    (if (vector? match) (match 0) match)))
+
+(defprotocol ISegment
+  (subsegment [this start-index end-index-minus-one])
+  (segment-re-seq [this re]))
+
+(deftype Segment [text offset count]
   ISegment
-  (subsegment [_ start-index end-index]
-    (->Segment text (+ start start-index) (+ start end-index)))
+  (subsegment [this start end]
+    (Segment. text (+ offset start) (- end start)))
+
+  (segment-re-seq [_ regexp]
+    ;; This silly implementation defeats the entire purpose of the
+    ;; Segment record.  A possible way to optimize this: prepend
+    ;; ([.\n]{start-index}) to the regular expression and keep
+    ;; start-index small by preemptively running substring inside the
+    ;; subsegment method when it gets too large. This may not work because
+    ;; any compiled regexes would be thrown out.
+    (let [substring (subs text offset (+ offset count))]
+      (re-seq-no-submatches regexp substring)))
   ICounted
-  (-count [_] (- end start)))
+  (-count [_] count))
 
 (defn string->segment
   "Converts a string to a Segment, which has fast subsequencing"
   [s]
-  (->Segment s 0 (count s)))
+  (Segment. s 0 (count s)))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
@@ -501,16 +528,12 @@
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
 
-(defn re-seq-no-submatches [regexp text]
-  (for [match (re-seq regexp text)]
-    (if (vector? match) (match 0) match)))
-
 (defn regexp-parse
   [this index tramp]
   (let [regexp (:regexp this)
         ^Segment text (:segment tramp)
         substring (subsegment text index (count text))
-        matches (re-seq-no-submatches regexp substring)]
+        matches (segment-re-seq substring regexp)]
     (if (seq matches)
       (doseq [match matches]
         (success tramp [index this] match (+ index (count match))))
@@ -522,7 +545,7 @@
   (let [regexp (:regexp this)
         ^Segment text (:segment tramp)
         substring (subsegment text index (count text))
-        matches (re-seq-no-submatches regexp substring)
+        matches (segment-re-seq substring regexp)
         desired-length (- (count text) index)
         filtered-matches (filter #(= (count %) desired-length) matches)]
     (if-let [seq-filtered-matches (seq filtered-matches)]
