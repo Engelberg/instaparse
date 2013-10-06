@@ -5,7 +5,8 @@
               string-ci regexp nt look neg hide hide-tag]]
             [instaparse.reduction :refer [apply-standard-reductions]]
             [instaparse.gll :refer [parse]]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [cljs.reader :as reader]))
 
 (def single-quoted-string #"'[^'\\]*(?:\\.[^'\\]*)*'")
 (def single-quoted-regexp #"#'[^'\\]*(?:\\.[^'\\]*)*'")
@@ -148,39 +149,8 @@
         (recur (next sq) (conj v c)))
       (apply str v))))                     
 
-;(defn safe-read-string [s]
-;  (binding [*read-eval* false]
-;    (read-string s)))
-
-(def escape-characters
-  {\t \tab, \r \return, \n \newline, \\ \\, \" \", \b \backspace, \f \formfeed})
-
-(defn safe-read-string
-  "Interprets escape sequences, and expects (but does not include in
-   the return value) a double-quote at the end of the string. Ported 
-   from the java edn reader. This is a crippled version that doesn't
-   support unicode or octal escapes. "
-  [s]
-  (loop [input s, output ""]
-    (let [[ch & input] input]
-      (cond
-       (nil? ch)
-       (throw (js/Error. "EOF while reading string"))
-
-       (= ch \\)
-       (let [[ch2 & input] input]
-         (cond
-          (contains? escape-characters ch2)
-          (recur input (str output (get escape-characters ch2)))
-
-          :default
-          (throw (js/Error. (str "Unsupported escape character: " ch2)))))
-      
-       (= \" ch)
-       output
-
-       :default
-       (recur input (str output ch))))))
+(defn safe-read-string [s]
+  (reader/read-string* (reader/push-back-reader s) nil))
 
 
 ; I think re-pattern is sufficient, but here's how to do it without.
