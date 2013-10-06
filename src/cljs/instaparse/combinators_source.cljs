@@ -68,9 +68,18 @@
   (if (= s "") Epsilon
     {:tag :string-ci :string s}))
 
+(defn- regexp-to-str
+  "(str regexp) in clojurescript puts slashes around the result, unlike
+   in clojure. Work around that."
+  [r]
+  (if (regexp? r)
+    (let [s (str r)]
+      (subs s 1 (dec (count s))))
+    r))
+
 (defn regexp "Create a regexp terminal out of regular expression r"
   [r]
-  (let [s (str \^ r)]
+  (let [s (str \^ (regexp-to-str r))]
     (if (= s "^") Epsilon
       {:tag :regexp :regexp (re-pattern s)})))
 
