@@ -132,8 +132,9 @@
 ; failure contains the index of the furthest-along failure
 
 (defrecord Tramp [grammar text segment fail-index node-builder
-                  stack next-stack generation negative-listeners 
-                  msg-cache nodes success failure])
+                  ^mutable stack ^mutable next-stack ^mutable generation 
+                  ^mutable negative-listeners ^mutable msg-cache 
+                  ^mutable nodes ^mutable success ^mutable failure])
 (defn make-tramp 
   ([grammar text] (make-tramp grammar text (string->segment text) -1 nil))
   ([grammar text segment] (make-tramp grammar text segment -1 nil))
@@ -141,8 +142,7 @@
   ([grammar text segment fail-index node-builder]
     (Tramp. grammar text segment
             fail-index node-builder
-            (atom []) (atom []) (atom 0) (atom []) 
-            (atom {}) (atom {}) (atom nil) (atom (Failure. 0 [])))))
+            [] [] 0 [] {} {} nil (Failure. 0 []))))
   
 ; A Success record contains the result and the index to continue from
 (defn make-success [result index] {:result result :index index})
@@ -155,12 +155,9 @@
 ; results are expected to be refs of sets.
 ; listeners are refs of vectors.
 
-(defrecord Node [listeners full-listeners results full-results])
-(defn make-node [] (Node. (atom []) (atom []) (atom #{}) (atom #{})))
-; Currently using records for Node.  Seems to run marginally faster.
-; Here's the way without records:
-;(defn make-node [] {:listeners (atom []) :full-listeners (atom []) 
-;                    :results (atom #{}) :full-results (atom #{})})
+(defrecord Node [^mutable listeners ^mutable full-listeners 
+                 ^mutable results ^mutable full-results])
+(defn make-node [] (Node. [] [] #{} #{}))
 
 ;; Trampoline helper functions
 
@@ -168,7 +165,7 @@
   "Pushes an item onto the trampoline's stack"
   [tramp item]
   (debug (add! :push-stack))
-  (swap! (.-stack tramp) conj item))
+  (swap-field! (.-stack tramp) conj item))
 
 (defn push-message
   "Pushes onto stack a message to a given listener about a result"
@@ -176,56 +173,56 @@
   (let [cache (.-msg-cache tramp)
         i (:index result)
         k [listener i]
-        c (get @cache k 0)
+        c (get cache k 0)
         f #(listener result)]
     (debug (add! :push-message))    
-    (dprintln "push-message" i c @(.-generation tramp) (count @(.-stack tramp))
-             (count @(.-next-stack tramp)))
+    (dprintln "push-message" i c (.-generation tramp) (count (.-stack tramp))
+             (count (.-next-stack tramp)))
     (dprintln "push-message: listener result" listener result)
-    (if (> c @(.-generation tramp))
-      (swap! (.-next-stack tramp) conj f)
-      (swap! (.-stack tramp) conj f))
-    (swap! cache assoc k (inc c))))
+    (if (> c (.-generation tramp))
+      (swap-field! (.-next-stack tramp) conj f)
+      (swap-field! (.-stack tramp) conj f))
+    (swap-field! (.-msg-cache tramp) assoc k (inc c))))
     
 (defn listener-exists?
   "Tests whether node already has a listener"
   [tramp node-key]
   (let [nodes (.-nodes tramp)]
-    (when-let [node (@nodes node-key)]
-      (pos? (count @(.-listeners node))))))
+    (when-let [node (nodes node-key)]
+      (pos? (count (.-listeners node))))))
 
 (defn full-listener-exists?
   "Tests whether node already has a listener or full-listener"
   [tramp node-key]
   (let [nodes (.-nodes tramp)]
-    (when-let [node (@nodes node-key)]
-      (or (pos? (count @(:full-listeners node)))
-          (pos? (count @(:listeners node)))))))
+    (when-let [node (nodes node-key)]
+      (or (pos? (count (.-full-listeners node)))
+          (pos? (count (.-listeners node)))))))
 
 (defn result-exists?
   "Tests whether node has a result or full-result"
   [tramp node-key]
   (let [nodes (.-nodes tramp)]
-    (when-let [node (@nodes node-key)]
-      (or (pos? (count @(:full-results node)))
-          (pos? (count @(:results node)))))))
+    (when-let [node (nodes node-key)]
+      (or (pos? (count (.-full-results node)))
+          (pos? (count (.-results node)))))))
 
 (defn full-result-exists?
   "Tests whether node has a full-result"
   [tramp node-key]
   (let [nodes (.-nodes tramp)]
-    (when-let [node (@nodes node-key)]
-      (pos? (count @(:full-results node))))))      
+    (when-let [node (nodes node-key)]
+      (pos? (count (.-full-results node))))))      
 
 (defn node-get
   "Gets node if already exists, otherwise creates one"
   [tramp node-key]
   (let [nodes (.-nodes tramp)]
-    (if-let [node (@nodes node-key)]
+    (if-let [node (nodes node-key)]
       node 
       (let [node (make-node)]
         (debug (add! .-create-node))
-        (swap! nodes assoc node-key node)
+        (swap-field! (.-nodes tramp) assoc node-key node)
         node))))
 
 (defn safe-with-meta [obj metamap]
@@ -255,13 +252,15 @@
                  result)              
         total? (total-success? tramp result)
         results (if total? (.-full-results node) (.-results node))]
-    (when (not (@results result))  ; when result is not already in @results
+    (when (not (results result))  ; when result is not already in results
       (debug (add! :push-result))
-      (swap! results conj result)
-      (doseq [listener @(.-listeners node)]
+      (if total?
+        (swap-field! (.-full-results node) conj result)
+        (swap-field! (.-results node) conj result))
+      (doseq [listener (.-listeners node)]
         (push-message tramp listener result))
       (when total?
-        (doseq [listener @(.-full-listeners node)]
+        (doseq [listener (.-full-listeners node)]
           (push-message tramp listener result)))))) 
 
 (defn push-listener
@@ -271,13 +270,12 @@
   [tramp node-key listener]
   (dprintln "push-listener" [(node-key 1) (node-key 0)] (type listener))
   (let [listener-already-exists? (listener-exists? tramp node-key)
-        node (node-get tramp node-key)
-        listeners (.-listeners node)]
+        node (node-get tramp node-key)]
     (debug (add! :push-listener))
-    (swap! listeners conj listener)
-    (doseq [result @(.-results node)]
+    (swap-field! (.-listeners node) conj listener)
+    (doseq [result (.-results node)]
       (push-message tramp listener result))
-    (doseq [result @(.-full-results node)]
+    (doseq [result (.-full-results node)]
       (push-message tramp listener result))
     (when (not listener-already-exists?)
       (push-stack tramp #(-parse (node-key 1) (node-key 0) tramp))))) 
@@ -287,11 +285,10 @@
    Schedules notification to listener of all existing full results."
   [tramp node-key listener]
   (let [full-listener-already-exists? (full-listener-exists? tramp node-key)
-        node (node-get tramp node-key)
-        listeners (.-full-listeners node)]
+        node (node-get tramp node-key)]
     (debug (add! :push-full-listener))
-    (swap! listeners conj listener)
-    (doseq [result @(.-full-results node)]
+    (swap-field! (.-full-listeners node) conj listener)
+    (doseq [result (.-full-results node)]
       (push-message tramp listener result))
     (when (not full-listener-already-exists?)
       (push-stack tramp #(-full-parse (node-key 1) (node-key 0) tramp)))))
@@ -299,20 +296,20 @@
 (defn push-negative-listener
   "Pushes a thunk onto the trampoline's negative-listener stack."
   [tramp negative-listener]
-  (swap! (:negative-listeners tramp) conj negative-listener))  
+  (swap-field! (.-negative-listeners tramp) conj negative-listener))  
 
 ;(defn success [tramp node-key result end]
 ;  (push-result tramp node-key (make-success result end)))
 
 (declare build-node-with-meta)
 (defn fail [tramp node-key index reason]  
-  (swap! (.-failure tramp) 
-         (fn [failure] 
-           (let [current-index (:index failure)]
-             (case (compare index current-index)
-               1 (Failure. index [reason])
-               0 (Failure. index (conj (:reason failure) reason))
-               -1  failure))))
+  (swap-field! (.-failure tramp) 
+               (fn [failure] 
+                 (let [current-index (:index failure)]
+                   (case (compare index current-index)
+                     1 (Failure. index [reason])
+                     0 (Failure. index (conj (:reason failure) reason))
+                     -1  failure))))
   #_(dprintln "Fail index" (.-fail-index tramp))
   (when (= index (.-fail-index tramp))
     (success tramp node-key 
@@ -325,9 +322,9 @@
 
 (defn step
   "Executes one thing on the stack (not threadsafe)"
-  [stack]
-  (let [top (peek @stack)]
-    (swap! stack pop)
+  [tramp]
+  (let [top (peek (.-stack tramp))]
+    (swap-field! (.-stack tramp) pop)
     #_(dprintln "Top" top (meta top))
     (top)))
 
@@ -336,32 +333,32 @@
   ([tramp] (run tramp nil))
   ([tramp found-result?] 
     (let [stack (.-stack tramp)]
-      ;_ (dprintln found-result? (count @(.-stack tramp)) (count @(.-next-stack tramp)))
+      ;_ (dprintln found-result? (count (.-stack tramp)) (count (.-next-stack tramp)))
       (cond
-        @(.-success tramp)
-        (lazy-seq (cons (:result @(.-success tramp))
-                        (do (reset! (.-success tramp) nil)
+        (.-success tramp)
+        (lazy-seq (cons (:result (.-success tramp))
+                        (do (set! (.-success tramp) nil)
                           (run tramp true))))
         
-        (pos? (count @stack))
-        (do ;(dprintln "stacks" (count @stack) (count @(.-next-stack tramp)))
-          (step stack) (recur tramp found-result?))
+        (pos? (count stack))
+        (do ;(dprintln "stacks" (count stack) (count (.-next-stack tramp)))
+          (step tramp) (recur tramp found-result?))
         
-        (pos? (count @(.-negative-listeners tramp)))
-        (let [listener (peek @(.-negative-listeners tramp))]
+        (pos? (count (.-negative-listeners tramp)))
+        (let [listener (peek (.-negative-listeners tramp))]
           (listener)
-          (swap! (.-negative-listeners tramp) pop)
+          (swap-field! (.-negative-listeners tramp) pop)
           (recur tramp found-result?))
         
         found-result?
         (let [next-stack (.-next-stack tramp)]
-          (dprintln "Swapping stacks" (count @(.-stack tramp)) 
-                   (count @(.-next-stack tramp)))
-          (reset! stack @next-stack) 
-          (reset! next-stack [])
-          (swap! (.-generation tramp) inc)  
-          (dprintln "Swapped stacks" (count @(.-stack tramp)) 
-                   (count @(.-next-stack tramp)))          
+          (dprintln "Swapping stacks" (count (.-stack tramp)) 
+                   (count (.-next-stack tramp)))
+          (set! (.-stack tramp) next-stack) 
+          (set! (.-next-stack tramp) [])
+          (swap-field! (.-generation tramp) inc)  
+          (dprintln "Swapped stacks" (count (.-stack tramp)) 
+                   (count (.-next-stack tramp)))          
           (recur tramp nil))        
       
         :else nil))))
@@ -480,7 +477,7 @@
 
 (defn TopListener [tramp] 
   (fn [result] 
-    (reset! (:success tramp) result)))
+    (set! (.-success tramp) result)))
 
 ;; Parsers
 
@@ -749,7 +746,7 @@
     (if-let [all-parses (run tramp)]
       all-parses 
       (with-meta () 
-        (fail/augment-failure @(:failure tramp) text)))))
+        (fail/augment-failure (.-failure tramp) text)))))
   
 (defn parse [grammar start text partial?]
   (debug (clear!))
@@ -758,7 +755,7 @@
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       (first all-parses) 
-      (fail/augment-failure @(:failure tramp) text))))
+      (fail/augment-failure (.-failure tramp) text))))
 
 ;; The node builder function is what we use to build the failure nodes
 ;; but we want to include start and end metadata as well.

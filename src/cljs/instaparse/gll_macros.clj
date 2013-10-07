@@ -13,3 +13,6 @@
 (defmacro success [tramp node-key result end]
   `(instaparse.gll/push-result ~tramp ~node-key
                                (instaparse.gll/make-success ~result ~end)))
+
+(defmacro swap-field! [field-form f & args]
+  `(set! ~field-form (~f ~field-form ~@args)))
