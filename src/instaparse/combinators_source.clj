@@ -132,3 +132,33 @@
                [k (assoc (unhide-content v) :red (reduction k))]))
     (throw (IllegalArgumentException. 
              (format "Invalid output format %s. Use :enlive or :hiccup." reduction-type)))))
+
+
+;; New beta feature: automatically add whitespace
+
+(defn auto-whitespace-parser [parser ws-parser]
+  (case (:tag parser)
+    (:nt :epsilon) parser  
+    (:opt :plus :star :rep :look :neg) (update-in parser [:parser] auto-whitespace-parser ws-parser)
+    (:alt :cat) (assoc parser :parsers  
+                       (map #(auto-whitespace-parser % ws-parser) (:parsers parser)))
+    :ord (assoc parser 
+                :parser1 (auto-whitespace-parser (:parser1 parser) ws-parser)
+                :parser2 (auto-whitespace-parser (:parser2 parser) ws-parser))
+    (:string :string-ci :regexp) (cat ws-parser parser)))
+
+(defn auto-whitespace [grammar start grammar-ws start-ws]
+  (let [ws-parser (hide (opt (nt start-ws)))
+        grammar-ws (assoc grammar-ws start-ws (hide-tag (grammar-ws start-ws)))
+        modified-grammar (into {} 
+                               (for [[nt parser] grammar] 
+                                 [nt (auto-whitespace-parser parser ws-parser)]))
+        final-grammar (assoc modified-grammar start 
+                             (assoc (cat (dissoc (modified-grammar start) :red) 
+                                         ws-parser)
+                                    :red (:red (modified-grammar start))))]
+    (merge final-grammar grammar-ws)))
+  
+    
+
+    
