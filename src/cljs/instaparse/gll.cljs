@@ -147,7 +147,7 @@
 ; A Success record contains the result and the index to continue from
 (defn make-success [result index] {:result result :index index})
 (defn total-success? [tramp s]
-  (= (count (:text tramp)) (:index s)))
+  (= (count (.-text tramp)) (:index s)))
 
 ; The trampoline's nodes field is map from [index parser] pairs to Nodes
 ; Nodes track the results of a given parser at a given index, and the listeners
@@ -168,36 +168,36 @@
   "Pushes an item onto the trampoline's stack"
   [tramp item]
   (debug (add! :push-stack))
-  (swap! (:stack tramp) conj item))
+  (swap! (.-stack tramp) conj item))
 
 (defn push-message
   "Pushes onto stack a message to a given listener about a result"
   [tramp listener result]
-  (let [cache (:msg-cache tramp)
+  (let [cache (.-msg-cache tramp)
         i (:index result)
         k [listener i]
         c (get @cache k 0)
         f #(listener result)]
     (debug (add! :push-message))    
-    (dprintln "push-message" i c @(:generation tramp) (count @(:stack tramp))
-             (count @(:next-stack tramp)))
+    (dprintln "push-message" i c @(.-generation tramp) (count @(.-stack tramp))
+             (count @(.-next-stack tramp)))
     (dprintln "push-message: listener result" listener result)
-    (if (> c @(:generation tramp))
-      (swap! (:next-stack tramp) conj f)
-      (swap! (:stack tramp) conj f))
+    (if (> c @(.-generation tramp))
+      (swap! (.-next-stack tramp) conj f)
+      (swap! (.-stack tramp) conj f))
     (swap! cache assoc k (inc c))))
     
 (defn listener-exists?
   "Tests whether node already has a listener"
   [tramp node-key]
-  (let [nodes (:nodes tramp)]
+  (let [nodes (.-nodes tramp)]
     (when-let [node (@nodes node-key)]
-      (pos? (count @(:listeners node))))))
+      (pos? (count @(.-listeners node))))))
 
 (defn full-listener-exists?
   "Tests whether node already has a listener or full-listener"
   [tramp node-key]
-  (let [nodes (:nodes tramp)]
+  (let [nodes (.-nodes tramp)]
     (when-let [node (@nodes node-key)]
       (or (pos? (count @(:full-listeners node)))
           (pos? (count @(:listeners node)))))))
@@ -205,7 +205,7 @@
 (defn result-exists?
   "Tests whether node has a result or full-result"
   [tramp node-key]
-  (let [nodes (:nodes tramp)]
+  (let [nodes (.-nodes tramp)]
     (when-let [node (@nodes node-key)]
       (or (pos? (count @(:full-results node)))
           (pos? (count @(:results node)))))))
@@ -213,18 +213,18 @@
 (defn full-result-exists?
   "Tests whether node has a full-result"
   [tramp node-key]
-  (let [nodes (:nodes tramp)]
+  (let [nodes (.-nodes tramp)]
     (when-let [node (@nodes node-key)]
       (pos? (count @(:full-results node))))))      
 
 (defn node-get
   "Gets node if already exists, otherwise creates one"
   [tramp node-key]
-  (let [nodes (:nodes tramp)]
+  (let [nodes (.-nodes tramp)]
     (if-let [node (@nodes node-key)]
       node 
       (let [node (make-node)]
-        (debug (add! :create-node))
+        (debug (add! .-create-node))
         (swap! nodes assoc node-key node)
         node))))
 
@@ -254,14 +254,14 @@
                    (:index result))                 
                  result)              
         total? (total-success? tramp result)
-        results (if total? (:full-results node) (:results node))]
+        results (if total? (.-full-results node) (.-results node))]
     (when (not (@results result))  ; when result is not already in @results
       (debug (add! :push-result))
       (swap! results conj result)
-      (doseq [listener @(:listeners node)]
+      (doseq [listener @(.-listeners node)]
         (push-message tramp listener result))
       (when total?
-        (doseq [listener @(:full-listeners node)]
+        (doseq [listener @(.-full-listeners node)]
           (push-message tramp listener result)))))) 
 
 (defn push-listener
@@ -272,12 +272,12 @@
   (dprintln "push-listener" [(node-key 1) (node-key 0)] (type listener))
   (let [listener-already-exists? (listener-exists? tramp node-key)
         node (node-get tramp node-key)
-        listeners (:listeners node)]
+        listeners (.-listeners node)]
     (debug (add! :push-listener))
     (swap! listeners conj listener)
-    (doseq [result @(:results node)]
+    (doseq [result @(.-results node)]
       (push-message tramp listener result))
-    (doseq [result @(:full-results node)]
+    (doseq [result @(.-full-results node)]
       (push-message tramp listener result))
     (when (not listener-already-exists?)
       (push-stack tramp #(-parse (node-key 1) (node-key 0) tramp))))) 
@@ -288,10 +288,10 @@
   [tramp node-key listener]
   (let [full-listener-already-exists? (full-listener-exists? tramp node-key)
         node (node-get tramp node-key)
-        listeners (:full-listeners node)]
+        listeners (.-full-listeners node)]
     (debug (add! :push-full-listener))
     (swap! listeners conj listener)
-    (doseq [result @(:full-results node)]
+    (doseq [result @(.-full-results node)]
       (push-message tramp listener result))
     (when (not full-listener-already-exists?)
       (push-stack tramp #(-full-parse (node-key 1) (node-key 0) tramp)))))
@@ -306,20 +306,20 @@
 
 (declare build-node-with-meta)
 (defn fail [tramp node-key index reason]  
-  (swap! (:failure tramp) 
+  (swap! (.-failure tramp) 
          (fn [failure] 
            (let [current-index (:index failure)]
              (case (compare index current-index)
                1 (Failure. index [reason])
                0 (Failure. index (conj (:reason failure) reason))
                -1  failure))))
-  #_(dprintln "Fail index" (:fail-index tramp))
-  (when (= index (:fail-index tramp))
+  #_(dprintln "Fail index" (.-fail-index tramp))
+  (when (= index (.-fail-index tramp))
     (success tramp node-key 
              (build-node-with-meta
-               (:node-builder tramp) :instaparse/failure (subs (:text tramp) index)
-               index (count (:text tramp)))
-             (count (:text tramp)))))
+               (.-node-builder tramp) :instaparse/failure (subs (.-text tramp) index)
+               index (count (.-text tramp)))
+             (count (.-text tramp)))))
 
 ;; Stack helper functions
 
@@ -335,33 +335,33 @@
   "Executes the stack until exhausted"
   ([tramp] (run tramp nil))
   ([tramp found-result?] 
-    (let [stack (:stack tramp)]
-      ;_ (dprintln found-result? (count @(:stack tramp)) (count @(:next-stack tramp)))
+    (let [stack (.-stack tramp)]
+      ;_ (dprintln found-result? (count @(.-stack tramp)) (count @(.-next-stack tramp)))
       (cond
-        @(:success tramp)
-        (lazy-seq (cons (:result @(:success tramp))
-                        (do (reset! (:success tramp) nil)
+        @(.-success tramp)
+        (lazy-seq (cons (:result @(.-success tramp))
+                        (do (reset! (.-success tramp) nil)
                           (run tramp true))))
         
         (pos? (count @stack))
-        (do ;(dprintln "stacks" (count @stack) (count @(:next-stack tramp)))
+        (do ;(dprintln "stacks" (count @stack) (count @(.-next-stack tramp)))
           (step stack) (recur tramp found-result?))
         
-        (pos? (count @(:negative-listeners tramp)))
-        (let [listener (peek @(:negative-listeners tramp))]
+        (pos? (count @(.-negative-listeners tramp)))
+        (let [listener (peek @(.-negative-listeners tramp))]
           (listener)
-          (swap! (:negative-listeners tramp) pop)
+          (swap! (.-negative-listeners tramp) pop)
           (recur tramp found-result?))
         
         found-result?
-        (let [next-stack (:next-stack tramp)]
-          (dprintln "Swapping stacks" (count @(:stack tramp)) 
-                   (count @(:next-stack tramp)))
+        (let [next-stack (.-next-stack tramp)]
+          (dprintln "Swapping stacks" (count @(.-stack tramp)) 
+                   (count @(.-next-stack tramp)))
           (reset! stack @next-stack) 
           (reset! next-stack [])
-          (swap! (:generation tramp) inc)  
-          (dprintln "Swapped stacks" (count @(:stack tramp)) 
-                   (count @(:next-stack tramp)))          
+          (swap! (.-generation tramp) inc)  
+          (dprintln "Swapped stacks" (count @(.-stack tramp)) 
+                   (count @(.-next-stack tramp)))          
           (recur tramp nil))        
       
         :else nil))))
@@ -487,7 +487,7 @@
 (defn string-parse
   [this index tramp]
   (let [string (:string this)
-        text (:text tramp)
+        text (.-text tramp)
         end (min (count text) (+ index (count string)))
         head (subs text index end)]      
     (if (= string head)
@@ -498,7 +498,7 @@
 (defn string-full-parse
   [this index tramp]
   (let [string (:string this)
-        text (:text tramp)
+        text (.-text tramp)
         end (min (count text) (+ index (count string)))
         head (subs text index end)]      
     (if (and (= end (count text)) (= string head))
@@ -509,7 +509,7 @@
 (defn string-case-insensitive-parse
   [this index tramp]
   (let [string (:string this)
-        text (:text tramp)
+        text (.-text tramp)
         end (min (count text) (+ index (count string)))
         head (subs text index end)]      
     (if (.equalsIgnoreCase ^String string head)
@@ -520,7 +520,7 @@
 (defn string-case-insensitive-full-parse
   [this index tramp]
   (let [string (:string this)
-        text (:text tramp)
+        text (.-text tramp)
         end (min (count text) (+ index (count string)))
         head (subs text index end)]      
     (if (and (= end (count text)) (.equalsIgnoreCase ^String string head))
@@ -531,7 +531,7 @@
 (defn regexp-parse
   [this index tramp]
   (let [regexp (:regexp this)
-        ^Segment text (:segment tramp)
+        ^Segment text (.-segment tramp)
         substring (subsegment text index (count text))
         matches (segment-re-seq substring regexp)]
     (if (seq matches)
@@ -543,7 +543,7 @@
 (defn regexp-full-parse
   [this index tramp]
   (let [regexp (:regexp this)
-        ^Segment text (:segment tramp)
+        ^Segment text (.-segment tramp)
         substring (subsegment text index (count text))
         matches (segment-re-seq substring regexp)
         desired-length (- (count text) index)
