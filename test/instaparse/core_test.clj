@@ -503,6 +503,8 @@
     
     (insta/parses words-and-numbers "ab 123 cd" :unhide :all)
     '([:sentence [:token [:word "ab"]] [:whitespace " "] [:token [:number "123"]] [:whitespace " "] [:token [:word "cd"]]])
+    
+    ((insta/parser "S = epsilon") "") [:S]
     ))    
 
 
