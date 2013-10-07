@@ -59,7 +59,7 @@
     :cat (cat-parse parser index tramp)
     :string (string-parse parser index tramp)
     :string-ci (string-case-insensitive-parse parser index tramp)
-    :epsilon (epsilon-parse index tramp)
+    :epsilon (epsilon-parse parser index tramp)
     :opt (opt-parse parser index tramp)
     :plus (plus-parse parser index tramp)
     :rep (rep-parse parser index tramp)
@@ -81,7 +81,7 @@
     :cat (cat-full-parse parser index tramp)
     :string (string-full-parse parser index tramp)
     :string-ci (string-case-insensitive-full-parse parser index tramp)
-    :epsilon (epsilon-full-parse index tramp)
+    :epsilon (epsilon-full-parse parser index tramp)
     :opt (opt-full-parse parser index tramp)
     :plus (plus-full-parse parser index tramp)
     :rep (rep-full-parse parser index tramp)
@@ -713,12 +713,12 @@
              (success tramp [index this] nil index)))))))      
 
 (defn epsilon-parse
-  [index tramp] (success tramp [index Epsilon] nil index))
+  [this index tramp] (success tramp [index this] nil index))
 (defn epsilon-full-parse
-  [index tramp] 
+  [this index tramp]
   (if (= index (count (:text tramp)))
-    (success tramp [index Epsilon] nil index)
-    (fail tramp [index Epsilon] index {:tag :Epsilon :expecting :end-of-string})))
+    (success tramp [index this] nil index)
+    (fail tramp [index this] index {:tag :Epsilon :expecting :end-of-string})))
     
 ;; Parsing functions
 

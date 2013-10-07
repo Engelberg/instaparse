@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.2.3
+
+### Bugfixes
+
+* Fixed problem when epsilon was the only thing in a nonterminal, e.g., "S = epsilon"
+
 ## 1.2.2
 
 ### Bugfixes
