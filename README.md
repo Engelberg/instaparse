@@ -1018,6 +1018,10 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	to your dependencies, and installed graphviz on your system.
 	See https://github.com/ztellman/rhizome for more information.
 
+## Experimental Features
+
+See the [Experimental Features](docs/ExperimentalFeatures.md) page for a discussion of new features under active development.
+
 ## Special Thanks
 
 My interest in this project began while watching a video of Matt Might's [*Parsing with Derivatives*](http://www.youtube.com/watch?v=ZzsK8Am6dKU) talk.  That video convinced me that the world would be a better place if building parsers were as easy as working with regular expressions, and that the ability to handle arbitrary, possibly-ambiguous grammars was essential to that goal.

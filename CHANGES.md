@@ -6,6 +6,10 @@
 
 * Fixed problem when epsilon was the only thing in a nonterminal, e.g., "S = epsilon"
 
+### Features
+
+* Added experimental `:auto-whitespace` feature.  See the [Experimental Features Document](docs/ExperimentalFeatures.md) for more details.
+
 ## 1.2.2
 
 ### Bugfixes

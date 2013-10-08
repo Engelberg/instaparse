@@ -221,4 +221,4 @@ If you try to use the auto-whitespace feature with a grammar like this, it will 
 
 	month = #'[Mm]arch'
 
-Let me know what you think of the auto-whitespace feature.
+Let me know what you think of the auto-whitespace feature.  Is it sufficiently simple and useful to belong in the instaparse library?
