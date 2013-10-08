@@ -116,7 +116,7 @@ Because the :auto-whitespace feature allows you to specify your notion of whites
 	  (insta/parser
 	    "ws-or-comment = #'\\s+' | comment
 	     comment = '(*' inside-comment* '*)'
-	     inside-comment =  ( !('*)' | '(*') #'.' ) | comment"))
+	     inside-comment =  !( '*)' | '(*' ) #'.' | comment"))
 
 Does it eat whitespace?
 
@@ -145,7 +145,7 @@ However, there's a problem here.  The auto-whitespace feature inserts optional `
 	    "ws-or-comments = #'\\s+' | comments
 	     comments = comment+
 	     comment = '(*' inside-comment* '*)'
-	     inside-comment =  ( !('*)' | '(*') #'.' ) | comment"))
+	     inside-comment =  !( '*)' | '(*' ) #'.' | comment"))
 
 	=> (whitespace-or-comments-v2 "(* comment1 *)(* (* nested comment *) *)")
 	<successful parse output omitted>
@@ -167,7 +167,7 @@ I could go through and manually insert optional whitespace, but wouldn't it be d
 	    "ws-or-comments = #'\\s+' | comments
 	     comments = comment+
 	     comment = '(*' inside-comment* '*)'
-	     inside-comment =  ( !('*)' | '(*') #'.' ) | comment"
+	     inside-comment =  !( '*)' | '(*' ) #'.' | comment"
 
     	:auto-whitespace whitespace))
 

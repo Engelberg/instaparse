@@ -254,14 +254,14 @@
     "ws-or-comments = #'\\s+' | comments
      comments = comment+
      comment = '(*' inside-comment* '*)'
-     inside-comment =  ( !('*)' | '(*') #'.' ) | comment"))
+     inside-comment =  !( '*)' | '(*' ) #'.' | comment"))
 
 (def whitespace-or-comments
   (insta/parser
     "ws-or-comments = #'\\s+' | comments
      comments = comment+
      comment = '(*' inside-comment* '*)'
-     inside-comment =  ( !('*)' | '(*') #'.' ) | comment"
+     inside-comment =  !'*)' !'(*' #'.' | comment"
     :auto-whitespace whitespace))
 
 (def words-and-numbers-auto-whitespace-and-comments
