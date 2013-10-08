@@ -231,6 +231,47 @@
     (assoc t :span (insta/span t) :content (map spans-enlive (:content t)))
     t))
 
+(def whitespace 
+  (insta/parser
+    "whitespace = #'\\s+'"))
+
+(def words-and-numbers-auto-whitespace
+  (insta/parser
+    "sentence = token+
+     <token> = word | number
+     word = #'[a-zA-Z]+'
+     number = #'[0-9]+'"
+    :auto-whitespace whitespace))
+
+(def whitespace-or-comments-v1
+  (insta/parser
+    "ws-or-comment = #'\\s+' | comment
+	   comment = '(*' inside-comment* '*)'
+	   inside-comment =  ( !('*)' | '(*') #'.' ) | comment"))
+
+(def whitespace-or-comments-v2
+  (insta/parser
+    "ws-or-comments = #'\\s+' | comments
+     comments = comment+
+     comment = '(*' inside-comment* '*)'
+     inside-comment =  ( !('*)' | '(*') #'.' ) | comment"))
+
+(def whitespace-or-comments
+  (insta/parser
+    "ws-or-comments = #'\\s+' | comments
+     comments = comment+
+     comment = '(*' inside-comment* '*)'
+     inside-comment =  ( !('*)' | '(*') #'.' ) | comment"
+    :auto-whitespace whitespace))
+
+(def words-and-numbers-auto-whitespace-and-comments
+  (insta/parser
+    "sentence = token+
+     <token> = word | number
+     word = #'[a-zA-Z]+'
+     number = #'[0-9]+'"
+    :auto-whitespace whitespace-or-comments))
+
 (deftest parsing-tutorial
   (are [x y] (= x y)
     (as-and-bs "aaaaabbbaaaabb")
@@ -505,6 +546,12 @@
     '([:sentence [:token [:word "ab"]] [:whitespace " "] [:token [:number "123"]] [:whitespace " "] [:token [:word "cd"]]])
     
     ((insta/parser "S = epsilon") "") [:S]
+    
+    (words-and-numbers-auto-whitespace " abc 123   45 de ")
+    [:sentence [:word "abc"] [:number "123"] [:number "45"] [:word "de"]]
+    
+    (words-and-numbers-auto-whitespace-and-comments " abc 123 (* 456 *) (* (* 7*) 89 *)  def ")
+    [:sentence [:word "abc"] [:number "123"] [:word "def"]]
     ))    
 
 
