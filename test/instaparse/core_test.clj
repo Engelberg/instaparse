@@ -272,6 +272,8 @@
      number = #'[0-9]+'"
     :auto-whitespace whitespace-or-comments))
 
+(def eat-a (insta/parser "Aeater = #'[a]'+" :output-format :enlive))
+
 (deftest parsing-tutorial
   (are [x y] (= x y)
     (as-and-bs "aaaaabbbaaaabb")
@@ -552,6 +554,9 @@
     
     (words-and-numbers-auto-whitespace-and-comments " abc 123 (* 456 *) (* (* 7*) 89 *)  def ")
     [:sentence [:word "abc"] [:number "123"] [:word "def"]]
+    
+    (insta/parses eat-a "aaaaaaaabbbbbb" :total true)
+    '({:tag :Aeater, :content ("a" "a" "a" "a" "a" "a" "a" "a" {:tag :instaparse/failure, :content ("bbbbbb")})})
     ))    
 
 

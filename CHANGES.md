@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.2.4
+
+### Bugfixes
+
+* When parsing in :total mode with :enlive as the output format, changed the content of failure node from vector to list to match the rest of the enlive output.
+
 ## 1.2.3
 
 ### Bugfixes
