@@ -4,7 +4,8 @@
             [instaparse.cfg :as cfg]
             [instaparse.gll :as gll]
             [instaparse.reduction :as red])
-  (:use instaparse.combinators-source))
+  (:use instaparse.combinators-source)
+  (:import java.util.regex.Pattern))
 
 (def ^:dynamic *case-insensitive*
   "This is normally set to false, in which case the non-terminals
@@ -79,10 +80,15 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
        | #\"#\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"(?x) #Double-quoted regexp\"
 ")
 
+(defn escape-char
+  "Use Pattern's quote method to escape illegal characters in a regex."
+  [unescaped-char]
+  (Pattern/quote (str unescaped-char)))
+
 (defn char-range
   "Takes two chars and returns a combinator representing a range of characters."
   [char1 char2]
-  (regexp (str "[" char1 "-" char2 "]")))
+  (regexp (str "[" (escape-char char1) "-" (escape-char char2) "]")))
 
 (defn get-char-combinator
   ([num1]

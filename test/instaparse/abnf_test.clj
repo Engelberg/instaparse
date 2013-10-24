@@ -119,3 +119,6 @@ to test the lookahead"
        (reps "")
        (reps "bccddee")
        (reps "aaaabbbbcccddee")))
+
+(deftest char-range-exception
+  (is (instaparse.abnf/char-range (char 91) (char 92))))
