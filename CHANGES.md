@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.2.5
+
+### Bugfixes
+
+* Improved handling of unusual characters in ABNF grammars.
+
 ## 1.2.4
 
 ### Bugfixes
