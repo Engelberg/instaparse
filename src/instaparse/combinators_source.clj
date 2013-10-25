@@ -23,6 +23,7 @@
 
 (defn rep "Between m and n repetitions"
   [m n parser]
+  {:pre [(<= m n)]}
   (if (= parser Epsilon) Epsilon
     {:tag :rep :parser parser :min m :max n}))
 
@@ -91,3 +92,73 @@
   Wrap this combinator around the entire right-hand side."  
   [parser]
   (red parser raw-non-terminal-reduction))
+
+; Ways to alter a parser with hidden information, unhiding that information
+
+(defn hidden-tag?
+  "Tests whether parser was created with hide-tag combinator"
+  [parser]
+  (= (:red parser) raw-non-terminal-reduction))
+
+(defn unhide-content
+  "Recursively undoes the effect of hide on one parser"
+  [parser]
+  (let [parser (if (:hide parser) (dissoc parser :hide) parser)]
+    (cond
+      (:parser parser) (assoc parser :parser (unhide-content (:parser parser)))
+      (:parsers parser) (assoc parser :parsers (map unhide-content (:parsers parser)))
+      :else parser)))
+
+(defn unhide-all-content
+  "Recursively undoes the effect of hide on all parsers in the grammar"
+  [grammar]
+  (into {} (for [[k v] grammar]
+             [k (unhide-content v)])))
+
+(defn unhide-tags 
+  "Recursively undoes the effect of hide-tag"
+  [reduction-type grammar]
+  (if-let [reduction (reduction-types reduction-type)]
+    (into {} (for [[k v] grammar]
+               [k (assoc v :red (reduction k))]))
+    (throw (IllegalArgumentException. 
+             (format "Invalid output format %s. Use :enlive or :hiccup." reduction-type)))))
+
+(defn unhide-all
+  "Recursively undoes the effect of both hide and hide-tag"
+  [reduction-type grammar]
+  (if-let [reduction (reduction-types reduction-type)]
+    (into {} (for [[k v] grammar]
+               [k (assoc (unhide-content v) :red (reduction k))]))
+    (throw (IllegalArgumentException. 
+             (format "Invalid output format %s. Use :enlive or :hiccup." reduction-type)))))
+
+
+;; New beta feature: automatically add whitespace
+
+(defn auto-whitespace-parser [parser ws-parser]
+  (case (:tag parser)
+    (:nt :epsilon) parser  
+    (:opt :plus :star :rep :look :neg) (update-in parser [:parser] auto-whitespace-parser ws-parser)
+    (:alt :cat) (assoc parser :parsers  
+                       (map #(auto-whitespace-parser % ws-parser) (:parsers parser)))
+    :ord (assoc parser 
+                :parser1 (auto-whitespace-parser (:parser1 parser) ws-parser)
+                :parser2 (auto-whitespace-parser (:parser2 parser) ws-parser))
+    (:string :string-ci :regexp) (cat ws-parser parser)))
+
+(defn auto-whitespace [grammar start grammar-ws start-ws]
+  (let [ws-parser (hide (opt (nt start-ws)))
+        grammar-ws (assoc grammar-ws start-ws (hide-tag (grammar-ws start-ws)))
+        modified-grammar (into {} 
+                               (for [[nt parser] grammar] 
+                                 [nt (auto-whitespace-parser parser ws-parser)]))
+        final-grammar (assoc modified-grammar start 
+                             (assoc (cat (dissoc (modified-grammar start) :red) 
+                                         ws-parser)
+                                    :red (:red (modified-grammar start))))]
+    (merge final-grammar grammar-ws)))
+  
+    
+
+    

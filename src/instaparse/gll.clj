@@ -6,7 +6,8 @@
   
   ;; Incremental vector provides a more performant hashing strategy 
   ;; for this use-case for vectors
-  (:require [instaparse.incremental-vector :as iv])
+  ;; We use the auto flatten version
+  (:require [instaparse.auto-flatten-seq :as afs])
   
   ;; failure contains the augment-failure function, which is called to
   ;; add enough information to the failure object for pretty printing 
@@ -20,6 +21,10 @@
   
   ;; Need a way to convert parsers into strings for printing and error messages.
   (:require [instaparse.print :as print])
+  
+  ;; In Java 7, strings no longer have fast substring operation,
+  ;; so we use Segments instead.
+  (:import javax.swing.text.Segment)
   
   (:use clojure.pprint)
   )
@@ -54,7 +59,7 @@
     :cat (cat-parse parser index tramp)
     :string (string-parse parser index tramp)
     :string-ci (string-case-insensitive-parse parser index tramp)
-    :epsilon (epsilon-parse index tramp)
+    :epsilon (epsilon-parse parser index tramp)
     :opt (opt-parse parser index tramp)
     :plus (plus-parse parser index tramp)
     :rep (rep-parse parser index tramp)
@@ -76,7 +81,7 @@
     :cat (cat-full-parse parser index tramp)
     :string (string-full-parse parser index tramp)
     :string-ci (string-case-insensitive-full-parse parser index tramp)
-    :epsilon (epsilon-full-parse index tramp)
+    :epsilon (epsilon-full-parse parser index tramp)
     :opt (opt-full-parse parser index tramp)
     :plus (plus-full-parse parser index tramp)
     :rep (rep-full-parse parser index tramp)
@@ -91,6 +96,11 @@
   (binding [*out* writer]
     (fail/pprint-failure x)))
 
+(defn string->segment
+  "Converts a string to a Segment, which has fast subsequencing"
+  [s]
+  (Segment. (char-array s) 0 (count s)))
+
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
 ; grammar is a map from non-terminals to parsers
@@ -100,13 +110,16 @@
 ; success contains a successful parse
 ; failure contains the index of the furthest-along failure
 
-(defrecord Tramp [grammar text fail-index node-builder
+(defrecord Tramp [grammar text segment fail-index node-builder
                   stack next-stack generation negative-listeners 
                   msg-cache nodes success failure])
 (defn make-tramp 
-  ([grammar text] (make-tramp grammar text -1 nil))
-  ([grammar text fail-index node-builder]
-    (Tramp. grammar text fail-index node-builder
+  ([grammar text] (make-tramp grammar text (string->segment text) -1 nil))
+  ([grammar text segment] (make-tramp grammar text segment -1 nil))
+  ([grammar text fail-index node-builder] (make-tramp grammar text (string->segment text) fail-index node-builder))
+  ([grammar text segment fail-index node-builder]
+    (Tramp. grammar text segment
+            fail-index node-builder
             (atom []) (atom []) (atom 0) (atom []) 
             (atom {}) (atom {}) (atom nil) (atom (Failure. 0 [])))))
   
@@ -194,6 +207,11 @@
         (swap! nodes assoc node-key node)
         node))))
 
+(defn safe-with-meta [obj metamap]
+  (if (instance? clojure.lang.IObj obj)
+    (with-meta obj metamap)
+    obj))
+
 (defn push-result
   "Pushes a result into the trampoline's node.
    Categorizes as either result or full-result.
@@ -208,9 +226,11 @@
                  (assoc result :result nil)
                  result)
         result (if-let [reduction-function (:red parser)]
-                 (assoc result :result 
-                        (red/apply-reduction reduction-function
-                                           (:result result)))
+                 (make-success  
+                   (safe-with-meta 
+                     (red/apply-reduction reduction-function (:result result))
+                     {::start-index (node-key 0) ::end-index (:index result)})
+                   (:index result))                 
                  result)              
         total? (total-success? tramp result)
         results (if total? (:full-results node) (:results node))]
@@ -266,6 +286,7 @@
 (defmacro success [tramp node-key result end]
   `(push-result ~tramp ~node-key (make-success ~result ~end)))
 
+(declare build-node-with-meta)
 (defn fail [tramp node-key index reason]  
   (swap! (:failure tramp) 
          (fn [failure] 
@@ -277,7 +298,9 @@
   #_(dprintln "Fail index" (:fail-index tramp))
   (when (= index (:fail-index tramp))
     (success tramp node-key 
-             ((:node-builder tramp) :instaparse/failure (subs (:text tramp) index)) 
+             (build-node-with-meta
+               (:node-builder tramp) :instaparse/failure (subs (:text tramp) index)
+               index (count (:text tramp)))
              (count (:text tramp)))))
 
 ;; Stack helper functions
@@ -354,7 +377,7 @@
            :node-key [(node-key 0) (:tag (node-key 1))]})
   (fn [result] 
     (let [{parsed-result :result continue-index :index} result
-          new-results-so-far (conj results-so-far parsed-result)]
+          new-results-so-far (afs/conj-flat results-so-far parsed-result)]
       (if (seq parser-sequence)
         (push-listener tramp [continue-index (first parser-sequence)]
                        (CatListener new-results-so-far (next parser-sequence) node-key tramp))          
@@ -367,7 +390,7 @@
 ;           :node-key [(node-key 0) (:tag (node-key 1))]})
   (fn [result] 
     (let [{parsed-result :result continue-index :index} result
-          new-results-so-far (conj results-so-far parsed-result)]
+          new-results-so-far (afs/conj-flat results-so-far parsed-result)]
       (cond
         (red/singleton? parser-sequence)
         (push-full-listener tramp [continue-index (first parser-sequence)]
@@ -389,7 +412,7 @@
       (if (= continue-index prev-index)
         (when (zero? (count results-so-far)) 
           (success tramp node-key nil continue-index))        
-        (let [new-results-so-far (conj results-so-far parsed-result)]
+        (let [new-results-so-far (afs/conj-flat results-so-far parsed-result)]
           (push-listener tramp [continue-index parser]
                          (PlusListener new-results-so-far parser continue-index
                                        node-key tramp))            
@@ -401,7 +424,7 @@
       (if (= continue-index prev-index)
         (when (zero? (count results-so-far))
           (success tramp node-key nil continue-index))
-        (let [new-results-so-far (conj results-so-far parsed-result)]
+        (let [new-results-so-far (afs/conj-flat results-so-far parsed-result)]
           (if (= continue-index (count (:text tramp)))
             (success tramp node-key new-results-so-far continue-index)
             (push-listener tramp [continue-index parser]
@@ -414,7 +437,7 @@
   (fn [result]    
     (let [{parsed-result :result continue-index :index} result]      
       ;(dprintln "Rep" (type results-so-far))
-      (let [new-results-so-far (conj results-so-far parsed-result)]
+      (let [new-results-so-far (afs/conj-flat results-so-far parsed-result)]
         (when (<= m (count new-results-so-far) n)
           (success tramp node-key new-results-so-far continue-index))
         (when (< (count new-results-so-far) n)
@@ -426,7 +449,7 @@
   (fn [result]
     (let [{parsed-result :result continue-index :index} result]
       ;(dprintln "RepFull" (type parsed-result))
-      (let [new-results-so-far (conj results-so-far parsed-result)]        
+      (let [new-results-so-far (afs/conj-flat results-so-far parsed-result)]        
         (if (= continue-index (count (:text tramp)))
           (when (<= m (count new-results-so-far) n)
             (success tramp node-key new-results-so-far continue-index))
@@ -471,7 +494,7 @@
         text (:text tramp)
         end (min (count text) (+ index (count string)))
         head (subs text index end)]      
-    (if (.equalsIgnoreCase ^:String string head)
+    (if (.equalsIgnoreCase ^String string head)
       (success tramp [index this] string end)
       (fail tramp [index this] index
             {:tag :string :expecting string}))))
@@ -482,7 +505,7 @@
         text (:text tramp)
         end (min (count text) (+ index (count string)))
         head (subs text index end)]      
-    (if (and (= end (count text)) (.equalsIgnoreCase ^:String string head))
+    (if (and (= end (count text)) (.equalsIgnoreCase ^String string head))
       (success tramp [index this] string end)
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
@@ -494,8 +517,9 @@
 (defn regexp-parse
   [this index tramp]
   (let [regexp (:regexp this)
-        text (:text tramp)
-        matches (re-seq-no-submatches regexp (subs text index))]
+        ^Segment text (:segment tramp)
+        substring (.subSequence text index (.length text))
+        matches (re-seq-no-submatches regexp substring)]
     (if (seq matches)
       (doseq [match matches]
         (success tramp [index this] match (+ index (count match))))
@@ -505,8 +529,9 @@
 (defn regexp-full-parse
   [this index tramp]
   (let [regexp (:regexp this)
-        text (:text tramp)
-        matches (re-seq-no-submatches regexp (subs text index))
+        ^Segment text (:segment tramp)
+        substring (.subSequence text index (.length text))
+        matches (re-seq-no-submatches regexp substring)
         desired-length (- (count text) index)
         filtered-matches (filter #(= (count %) desired-length) matches)]
     (if-let [seq-filtered-matches (seq filtered-matches)]
@@ -515,7 +540,7 @@
       (fail tramp [index this] index
             {:tag :regexp :expecting regexp :full true}))))
         
-(let [empty-cat-result (red/make-flattenable iv/EMPTY)]
+(let [empty-cat-result afs/EMPTY]
 	(defn cat-parse
 	  [this index tramp]
 	  (let [parsers (:parsers this)]
@@ -680,7 +705,7 @@
                        (let [fail-send (delay (fail tramp [index this] index
                                                     {:tag :negative-lookahead
                                                      :expecting {:NOT 
-                                                                 (print/parser->str parser)}}))] 
+                                                                 (print/combinators->str parser)}}))] 
                          (fn [result] (force fail-send))))     
         (push-negative-listener 
           tramp
@@ -688,12 +713,12 @@
              (success tramp [index this] nil index)))))))      
 
 (defn epsilon-parse
-  [index tramp] (success tramp [index Epsilon] nil index))
+  [this index tramp] (success tramp [index this] nil index))
 (defn epsilon-full-parse
-  [index tramp] 
+  [this index tramp]
   (if (= index (count (:text tramp)))
-    (success tramp [index Epsilon] nil index)
-    (fail tramp [index Epsilon] index {:tag :Epsilon :expecting :end-of-string})))
+    (success tramp [index this] nil index)
+    (fail tramp [index this] index {:tag :Epsilon :expecting :end-of-string})))
     
 ;; Parsing functions
 
@@ -721,6 +746,21 @@
       (first all-parses) 
       (fail/augment-failure @(:failure tramp) text))))
 
+;; The node builder function is what we use to build the failure nodes
+;; but we want to include start and end metadata as well.
+
+(defn build-node-with-meta [node-builder tag content start end]
+  (with-meta
+    (node-builder tag content)
+    {::start-index start ::end-index end}))
+
+(defn build-total-failure-node [node-builder start text]
+  (let [build-failure-node
+        (build-node-with-meta node-builder :instaparse/failure text 0 (count text)),            
+        build-start-node
+        (build-node-with-meta node-builder start build-failure-node 0 (count text))]
+    build-start-node))
+
 (defn parses-total-after-fail 
   [grammar start text fail-index partial? node-builder]
   (dprintln "Parses-total-after-fail")  
@@ -729,15 +769,21 @@
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       all-parses
-      (node-builder start (node-builder :instaparse/failure text)))))      
+      (list (build-total-failure-node node-builder start text)))))
 
+(defn merge-meta
+  "A variation on with-meta that merges the existing metamap into the new metamap,
+rather than overwriting the metamap entirely."
+  [obj metamap]
+  (with-meta obj (merge metamap (meta obj))))
+      
 (defn parses-total 
   [grammar start text partial? node-builder]
   (debug (clear!))
   (let [all-parses (parses grammar start text partial?)]
     (if (seq all-parses)
       all-parses
-      (with-meta
+      (merge-meta
         (parses-total-after-fail grammar start text 
                                  (:index (meta all-parses)) 
                                  partial? node-builder)
@@ -751,7 +797,7 @@
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       (first all-parses)
-      (node-builder start (node-builder :instaparse/failure text)))))
+      (build-total-failure-node node-builder start text))))
 
 (defn parse-total 
   [grammar start text partial? node-builder]
@@ -759,7 +805,7 @@
   (let [result (parse grammar start text partial?)]
     (if-not (instance? Failure result)
       result
-      (with-meta        
+      (merge-meta        
         (parse-total-after-fail grammar start text 
                                 (:index result) 
                                 partial? node-builder)

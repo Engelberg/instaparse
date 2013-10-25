@@ -82,7 +82,9 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
 (defn char-range
   "Takes two chars and returns a combinator representing a range of characters."
   [char1 char2]
-  (regexp (str "[" char1 "-" char2 "]")))
+  (regexp (str "[\\u" (format "%04x" (int char1))
+               "-\\u" (format "%04x" (int char2))
+               "]")))
 
 (defn get-char-combinator
   ([num1]
@@ -141,11 +143,15 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
    ; since rulenames are case insensitive, convert it to upper case internally to be consistent
    :alternation alt
    :concatenation cat
-   :repeat (fn ([num1 _ num2] {:low num1, :high num2})
-             ([item1 item2] (if (= item1 "*")
-                              {:high item2}
-                              {:low item1}))
-             ([_] {}))
+   :repeat (fn [& items]
+             (case (count items)
+               1 (cond
+                   (= (first items) "*") {}                         ; *
+                   :else {:low (first items), :high (first items)}) ; x
+               2 (cond
+                   (= (first items) "*") {:high (second items)}     ; *x
+                   :else {:low (first items)})                      ; x*
+               3 {:low (first items), :high (nth items 2)}))        ; x*y
                  
    :repetition (fn 
                  ([repeat element]

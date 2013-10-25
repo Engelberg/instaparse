@@ -1,4 +1,4 @@
-# Instaparse
+# Instaparse 1.2.4
 
 *What if context-free grammars were as easy to use as regular expressions?*
 
@@ -22,12 +22,12 @@ Instaparse requires Clojure v1.5.1 or later.  (It may work with earlier versions
 
 Add the following line to your leiningen dependencies:
 
-	[instaparse "1.1.0-SNAPSHOT"]
+	[instaparse "1.2.4"]
 
 Require instaparse in your namespace header:
 
 	(ns example.core
-	  (:require [instaparse.core :as insta])
+	  (:require [instaparse.core :as insta]))
 
 ### Creating your first parser
 
@@ -247,6 +247,25 @@ You might wonder what would happen if we hid the root tag as well.  Let's take a
 	("a" "b" "a")
 
 With no root tag, the parser just returns a sequence of children.  So in the above example where *all* the tags are hidden, you just get a sequence of parsed elements.  Sometimes that's what you want, but in general, I recommend that you don't hide the root tag, ensuring the output is a well-formed tree.
+
+#### Revealing hidden information
+
+Sometimes, after setting up the parser to hide content and tags, you temporarily want to reveal the hidden information, perhaps for debugging purposes.
+
+The optional keyword argument `:unhide :content` reveals the hidden content in the tree output.
+
+	=> (paren-ab-hide-both-tags "(aba)" :unhide :content)
+	("(" "a" "b" "a" ")")
+
+The optional keyword argument `:unhide :tags` reveals the hidden tags in the tree output.
+
+	=> (paren-ab-hide-both-tags "(aba)" :unhide :tags)
+	[:paren-wrapped [:seq-of-A-or-B "a" "b" "a"]]
+
+The optional keyword argument `:unhide :all` reveals all hidden information.
+
+	=> (paren-ab-hide-both-tags "(aba)" :unhide :all)
+	[:paren-wrapped "(" [:seq-of-A-or-B "a" "b" "a"] ")"]
 
 ### No Grammar Left Behind
 
@@ -711,6 +730,58 @@ With the tree in this shape, it's trivial to evaluate it:
 	Expected:
 	"a"
 
+### Understanding the tree
+
+#### Character spans
+
+The trees produced by instaparse are annotated with metadata so that for each subtree, you can easily recover the start and end index of the input text parsed by that subtree.  The function for extracting this metadata is `insta/span`.  To demonstrate, let's revisit our first example.
+
+	=> (as-and-bs "aaaaabbbaaaabb")
+	[:S
+	 [:AB [:A "a" "a" "a" "a" "a"] [:B "b" "b" "b"]]
+	 [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]
+
+	=> (insta/span (as-and-bs "aaaaabbbaaaabb"))
+	[0 14]
+
+	=> (count "aaaaabbbaaaabb")
+	14
+
+As you can see, `insta/span` returns a pair containing the start index (inclusive) and end index (exclusive), the customary way to represent the start and end of a substring.  So far, this isn't particularly interesting -- we already knew that the entire string was successfully parsed.   But since `span` works on all the subtrees, this gives us a powerful tool for exploring the provenance of each portion of the tree.  To demonstrate this, here's a quick helper function (not part of instaparse's API) that takes a hiccup tree and replaces all the tags with the character spans.
+
+	(defn spans [t]
+	  (if (sequential? t)
+	    (cons (insta/span t) (map spans (next t)))
+	    t))
+
+	=> (spans (as-and-bs "aaaabbbaabbab"))
+	([0 13]
+	 ([0 7] ([0 4] "a" "a" "a" "a") ([4 7] "b" "b" "b"))
+	 ([7 11] ([7 9] "a" "a") ([9 11] "b" "b"))
+	 ([11 13] ([11 12] "a") ([12 13] "b")))
+
+`insta/span` works on all the tree types produced by instaparse.  Furthermore, when you use `insta/transform` to transform your parse tree, `insta/span` will work on the transformed tree as well -- the span metadata is preserved for every node in the transformed tree to which metadata can be attached.  Keep in mind that although most types of Clojure data support metadata, primitives such as strings or numbers do not, so if you transform any of your nodes into such primitive data types, `insta/span` on those nodes will simply return `nil`.
+
+#### Visualizing the tree
+
+Instaparse contains a function, `insta/visualize`, that will give you a visual overview of the parse tree, showing the tags, the character spans, and the leaves of the tree.
+
+	=> (insta/visualize (as-and-bs "aaabbab"))
+
+<img src="images/vizexample1.png?raw=true" alt="Tree Image"/>
+
+The visualize function, by default, pops open the tree in a new window.  To actually save the tree image as a file for this tutorial, I used both of the optional keyword arguments supported by `insta/visualize`.  First, the `:output-file` keyword argument supplies the destination where the image should be saved.  Second, the keyword `:options` is used to supply an option map of additional drawing parameters.  I lowered it to 63dpi so it wouldn't take up so much screen real estate.  So my function call looked like:
+
+	=> (insta/visualize (as-and-bs "aaabbab") :output-file "images/vizexample1.png" :options {:dpi 63})
+
+`insta/visualize` draws the tree using the [rhizome](https://github.com/ztellman/rhizome) library, which in turn uses [graphviz](http://www.graphviz.org).  Unfortunately, Java, and by extension Clojure, has a bit of a weakness when it comes to libraries depending on other libraries.  If you want to use two libraries that rely on two different versions of a third library, you're in for a headache.
+
+In this instance, rhizome is a particularly fast-moving target.  As of the time of this writing, rhizome 0.1.8 is the most current version, released just a few weeks after version 0.1.6.  If I were to make instaparse depend on rhizome 0.1.8, then in a few weeks when 0.1.9 is released, it will become more difficult to use instaparse in projects which rely on the most recent version of rhizome.
+
+For this reason, I've done something a bit unusual: rather than include rhizome directly in instaparse's dependencies, I've set things up so that `insta/visualize` will use whatever version of rhizome *you've* put in your project.clj dependencies (must be version 0.1.8 or greater).  On top of that, rhizome assumes that you have graphviz installed on your system.  If rhizome is not in your dependencies, or graphviz is not installed, `insta/visualize` will throw an error with a message reminding you of the necessary dependencies.  To find the most current version number for rhizome, and for links to graphviz installers, check out the [rhizome github site](https://github.com/ztellman/rhizome).
+
+If you don't want to use `insta/visualize`, there is no need to add rhizome to your dependencies and no need to install graphviz.  All the other instaparse functions will work just fine.
+
 ### Combinators
 
 I truly believe that ordinary EBNF notation is the clearest, most concise way to express a context-free grammar.  Nevertheless, there may be times where it is useful to build parsers with parser combinators.  If you want to use instaparse in this way, you'll need to use the `instaparse.combinators` namespace.  If you are not interested in the combinator interface, feel free to skip this section -- the combinators provide no additional power or expressiveness over the string representation.
@@ -841,9 +912,11 @@ I've also worked to remove "performance surprises".  For example, both left-recu
 
 One performance caveat: instaparse is fairly memory-hungry, relying on extensive caching of intermediate results to keep the computational costs reasonable.  This is not unusual -- caching is commonplace in many modern parsers, trading off space for time -- but it's worth bearing in mind.  Packrat/PEG parsers and many recursive descent parsers employ a similar memory-intensive strategy, but there are other alternatives out there if that kind of memory usage is unacceptable.  As one would expect, instaparse parsers do not hold onto the memory cache once the parse is complete; that memory is made available for garbage collection.
 
+The [performance notes document] (https://github.com/Engelberg/instaparse/blob/master/docs/Performance.md) contains a deeper discussion of performance and a few helpful hints for getting the best performance out of your parser.
+
 ## Reference
 
-All the functionality you've seen in this tutorial is packed into an API of just 7 functions.  Here are the doc strings:
+All the functionality you've seen in this tutorial is packed into an API of just 9 functions.  Here are the doc strings:
 
 	=> (doc insta/parser)
 	-------------------------
@@ -876,6 +949,8 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	   :start :keyword  (where :keyword is name of starting production rule)
 	   :partial true    (parses that don't consume the whole string are okay)
 	   :total true      (if parse fails, embed failure node in tree)
+	   :unhide <:tags or :content or :all> (for this parse, disable hiding)
+	   :optimize :memory   (when possible, employ strategy to use less memory)
 
 	=> (doc insta/parses)
 	-------------------------
@@ -889,6 +964,7 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	   :start :keyword  (where :keyword is name of starting production rule)
 	   :partial true    (parses that don't consume the whole string are okay)
 	   :total true      (if parse fails, embed failure node in tree)
+	   :unhide <:tags or :content or :all> (for this parse, disable hiding)
 
 	=> (doc insta/set-default-output-format!)
 	-------------------------
@@ -918,6 +994,33 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	   a replacement for the node, i.e.,
 	   {:node-tag (fn [child1 child2 ...] node-replacement),
 	    :another-node-tag (fn [child1 child2 ...] node-replacement)}
+
+	=> (doc insta/span)
+	-------------------------
+	instaparse.core/span
+	([tree])
+	  Takes a subtree of the parse tree and returns a [start-index end-index] pair
+	   indicating the span of text parsed by this subtree.
+	   start-index is inclusive and end-index is exclusive, as is customary
+	   with substrings.
+	   Returns nil if no span metadata is attached.
+
+	=> (doc insta/visualize)
+	-------------------------
+	instaparse.core/visualize
+	([tree & {output-file :output-file, options :options}])
+	  Creates a graphviz visualization of the parse tree.
+	   Optional keyword arguments:
+	   :output-file output-file (will save the tree image to output-file)
+	   :options options (options passed along to rhizome)
+
+	Important: This function will only work if you have added rhizome
+	to your dependencies, and installed graphviz on your system.
+	See https://github.com/ztellman/rhizome for more information.
+
+## Experimental Features
+
+See the [Experimental Features](docs/ExperimentalFeatures.md) page for a discussion of new features under active development.
 
 ## Special Thanks
 

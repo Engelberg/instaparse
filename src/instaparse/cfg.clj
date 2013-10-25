@@ -37,7 +37,7 @@
                 opt-whitespace
                 (nt :alt-or-ord)
                 (hide (alt (nt :opt-whitespace)
-                           (cat (nt :opt-whitespace) (string ";") (nt :opt-whitespace)))))          
+                           (cat (nt :opt-whitespace) (alt (string ";") (string ".")) (nt :opt-whitespace)))))          
      :nt (cat
            (neg (nt :epsilon))
            (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+(?x) #Non-terminal"))

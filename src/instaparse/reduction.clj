@@ -1,4 +1,5 @@
-(ns instaparse.reduction)
+(ns instaparse.reduction
+  (:require [instaparse.auto-flatten-seq :as afs]))
 
 ;; utilities
 
@@ -13,20 +14,6 @@
 (defn red [parser f] (assoc parser :red f))
 
 ;; Flattening and reductions
-
-(defn make-flattenable [s]
-  (with-meta s {:flattenable? true}))
-
-(defn flattenable? [s]
-  (:flattenable? (meta s)))
-
-(defn nt-flatten [s]
-  (when (seq s)
-    (let [fs (first s)]
-      (cond 
-        (nil? fs)         (recur (next s))
-        (flattenable? fs) (concat (nt-flatten fs) (nt-flatten (next s)))
-        :else             (lazy-seq (cons fs (nt-flatten (next s))))))))
 
 (def raw-non-terminal-reduction {:reduction-type :raw})
 
@@ -43,19 +30,19 @@
 (def ^:constant node-builders
   ; A map of functions for building a node that only has one item
   ; These functions are used in total-parse mode to build failure nodes
-  {:enlive (fn [tag item] {:tag tag :content [item]})
+  {:enlive (fn [tag item] {:tag tag :content (list item)})
    :hiccup (fn [tag item] [tag item])})
 
 (def standard-non-terminal-reduction :hiccup)
 
 (defn apply-reduction [f result]
-  (let [flattened-result (nt-flatten (make-flattenable [result]))]
-    (case (:reduction-type f)
-      :raw (when flattened-result 
-             (make-flattenable flattened-result))               
-      :hiccup (into [(:key f)] flattened-result)
-      :enlive {:tag (:key f), :content flattened-result}
-      (f result))))
+  (case (:reduction-type f)
+    :raw (afs/conj-flat afs/EMPTY result)               
+    :hiccup (afs/convert-afs-to-vec (afs/conj-flat (afs/auto-flatten-seq [(:key f)]) result))
+    :enlive 
+    (let [content (afs/conj-flat afs/EMPTY result)]
+      {:tag (:key f), :content (if (zero? (count content)) nil content)})
+    (f result)))
     
 (defn apply-standard-reductions 
   ([grammar] (apply-standard-reductions standard-non-terminal-reduction grammar))

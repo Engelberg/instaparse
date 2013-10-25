@@ -36,10 +36,10 @@ Aside from just wanting to adhere to the ABNF specifcation, I can think of a few
 
 ## Usage
 
-To get a feeling for what ABNF syntax looks like, first check out this [ABNF specification for phone URIs.](https://raw.github.com/Engelberg/instaparse/abnf/test/instaparse/phone_uri.txt)  I copied and pasted it directly from the formal spec -- found one typo which I fixed.
+To get a feeling for what ABNF syntax looks like, first check out this [ABNF specification for phone URIs.](https://raw.github.com/Engelberg/instaparse/master/test/instaparse/phone_uri.txt)  I copied and pasted it directly from the formal spec -- found one typo which I fixed.
 
 	(def phone-uri-parser
-	  (insta/parser "https://raw.github.com/Engelberg/instaparse/abnf/test/instaparse/phone_uri.txt"
+	  (insta/parser "https://raw.github.com/Engelberg/instaparse/master/test/instaparse/phone_uri.txt"
 	          :input-format :abnf))
 
 	=> (phone-uri-parser "tel:+1-201-555-0123")
@@ -188,7 +188,7 @@ As an example, let's revisit the usage example from above:
 
 	(def phone-uri-parser
 	  (binding [instaparse.abnf/*case-insensitive* true]
-	    (insta/parser "https://raw.github.com/Engelberg/instaparse/abnf/test/instaparse/phone_uri.txt"
+	    (insta/parser "https://raw.github.com/Engelberg/instaparse/master/test/instaparse/phone_uri.txt"
 	                  :input-format :abnf)))
 
 	=> (phone-uri-parser "tel:+1-201-555-0123")
