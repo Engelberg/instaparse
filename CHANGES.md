@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.2.6
+
+### Bugfixes
+
+* Changed pre-condition assertion for auto-whitespace option which was causing a problem with "lein jar".
+
 ## 1.2.5
 
 ### Bugfixes

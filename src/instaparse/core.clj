@@ -146,7 +146,8 @@
          (contains? #{:enlive :hiccup nil} (get options :output-format))
          (let [ws-parser (get options :auto-whitespace)]
            (or (nil? ws-parser)
-               (instance? Parser ws-parser)))]}
+               (and (contains? ws-parser :grammar)
+                    (contains? ws-parser :start-production))))]}
   (let [input-format (get options :input-format *default-input-format*)
         build-parser (case input-format 
                        :abnf abnf/build-parser
