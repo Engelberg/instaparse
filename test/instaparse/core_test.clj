@@ -574,5 +574,45 @@
     [:S "     "]
     ))    
 
+(defn round-trip [parser]
+  (insta/parser (prn-str parser)))
 
+(deftest round-trip-test
+  (are [p] (= (prn-str p) (prn-str (round-trip p)))
+       as-and-bs
+       as-and-bs-regex
+       as-and-bs-variation1
+       as-and-bs-variation2
+       paren-ab
+       paren-ab-hide-parens
+       paren-ab-manually-flattened
+       paren-ab-hide-tag
+       paren-ab-hide-both-tags
+       addition
+       addition-e
+       words-and-numbers
+       words-and-numbers-one-character-at-a-time
+       ambiguous
+       not-ambiguous
+       repeated-a
+       lookahead-example
+       negative-lookahead-example
+       abc
+       ambiguous-tokenizer
+       unambiguous-tokenizer
+       preferential-tokenizer
+       ord-test
+       ord2-test
+       even-odd
+       arithmetic
+       whitespace
+       words-and-numbers-auto-whitespace
+       whitespace-or-comments-v1
+       whitespace-or-comments-v2
+       whitespace-or-comments
+       words-and-numbers-auto-whitespace
+       eat-a
+       int-or-double))
+       
+       
             

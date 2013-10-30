@@ -1,5 +1,15 @@
 # Instaparse Change Log
 
+## 1.2.8
+
+### Bugfixes
+
+* Fixed bug introduced by 1.2.7, affecting printing of grammars with regexes.
+
+### Enhancements
+
+* Parser printing format now includes <> hidden information and tags.
+
 ## 1.2.7
 
 ### Bugfixes
