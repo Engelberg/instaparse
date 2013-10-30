@@ -68,9 +68,8 @@
 
 (defn regexp "Create a regexp terminal out of regular expression r"
   [r]
-  (let [s (str \^ r)]
-    (if (= s "^") Epsilon
-      {:tag :regexp :regexp (re-pattern s)})))
+  (if (= r "") Epsilon
+    {:tag :regexp :regexp (re-pattern r)}))
 
 (defn nt "Refers to a non-terminal defined by the grammar map"
   [s] 

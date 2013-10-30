@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.2.7
+
+### Bugfixes
+
+* Fixed bug when regular expression contains | character.
+
 ## 1.2.6
 
 ### Bugfixes

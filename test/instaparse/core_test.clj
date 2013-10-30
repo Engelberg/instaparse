@@ -274,6 +274,15 @@
 
 (def eat-a (insta/parser "Aeater = #'[a]'+" :output-format :enlive))
 
+(def int-or-double
+  (insta/parser
+    "ws = #'\\s+';
+     Int = #'[0-9]+';
+     Double = #'[0-9]+\\.[0-9]*|\\.[0-9]+';
+     <ConstExpr> = Int | Double;
+     Input = ConstExpr <ws> ConstExpr;"
+     :start :Input))
+
 (deftest parsing-tutorial
   (are [x y] (= x y)
     (as-and-bs "aaaaabbbaaaabb")
@@ -557,6 +566,12 @@
     
     (insta/parses eat-a "aaaaaaaabbbbbb" :total true)
     '({:tag :Aeater, :content ("a" "a" "a" "a" "a" "a" "a" "a" {:tag :instaparse/failure, :content ("bbbbbb")})})
+    
+    (int-or-double "31 0.2")
+    [:Input [:Int "31"] [:Double "0.2"]]
+    
+    ((insta/parser "S=#'\\s*'") "     ")
+    [:S "     "]
     ))    
 
 

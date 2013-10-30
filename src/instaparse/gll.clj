@@ -510,19 +510,20 @@
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
 
-(defn re-seq-no-submatches [regexp text]
-  (for [match (re-seq regexp text)]
-    (if (vector? match) (match 0) match)))
-
+(defn re-match-at-front [regexp text]
+  (let [^java.util.regex.Matcher matcher (re-matcher regexp text)
+        match? (.lookingAt matcher)]
+    (when match?
+      (.group matcher))))
+    
 (defn regexp-parse
   [this index tramp]
   (let [regexp (:regexp this)
         ^Segment text (:segment tramp)
         substring (.subSequence text index (.length text))
-        matches (re-seq-no-submatches regexp substring)]
-    (if (seq matches)
-      (doseq [match matches]
-        (success tramp [index this] match (+ index (count match))))
+        match (re-match-at-front regexp substring)]
+    (if match
+      (success tramp [index this] match (+ index (count match)))
       (fail tramp [index this] index
             {:tag :regexp :expecting regexp}))))
 
@@ -531,14 +532,12 @@
   (let [regexp (:regexp this)
         ^Segment text (:segment tramp)
         substring (.subSequence text index (.length text))
-        matches (re-seq-no-submatches regexp substring)
-        desired-length (- (count text) index)
-        filtered-matches (filter #(= (count %) desired-length) matches)]
-    (if-let [seq-filtered-matches (seq filtered-matches)]
-      (doseq [match seq-filtered-matches]
-        (success tramp [index this] match (count text)))
+        match (re-match-at-front regexp substring)
+        desired-length (- (count text) index)]
+    (if (= (count match) desired-length)
+      (success tramp [index this] match (count text)))
       (fail tramp [index this] index
-            {:tag :regexp :expecting regexp :full true}))))
+            {:tag :regexp :expecting regexp :full true})))
         
 (let [empty-cat-result afs/EMPTY]
 	(defn cat-parse
