@@ -1022,6 +1022,10 @@ All the functionality you've seen in this tutorial is packed into an API of just
 
 See the [Experimental Features](docs/ExperimentalFeatures.md) page for a discussion of new features under active development.
 
+## Communication
+
+I try to be very responsive to issues posted to the github issues page.  But if you have a general question, need some help troubleshooting a grammar, or have something interesting you've done in instaparse that you'd like to share, consider joining the [Instaparse Google Group](https://groups.google.com/d/forum/instaparse) and posting there.
+
 ## Special Thanks
 
 My interest in this project began while watching a video of Matt Might's [*Parsing with Derivatives*](http://www.youtube.com/watch?v=ZzsK8Am6dKU) talk.  That video convinced me that the world would be a better place if building parsers were as easy as working with regular expressions, and that the ability to handle arbitrary, possibly-ambiguous grammars was essential to that goal.
