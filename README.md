@@ -9,7 +9,7 @@ Instaparse aims to be the simplest way to build parsers in Clojure.
 + Turns *standard EBNF or ABNF notation* for context-free grammars into an executable parser that takes a string as an input and produces a parse tree for that string.
 + *No Grammar Left Behind*: Works for *any* context-free grammar, including *left-recursive*, *right-recursive*, and *ambiguous* grammars.
 + Extends the power of context-free grammars with PEG-like syntax for lookahead and negative lookahead.
-+ Supports both of Clojure's most popular tree formats (hiccup and enlive) as an output target.
++ Supports both of Clojure's most popular tree formats (hiccup and enlive) as output targets.
 + Detailed reporting of parse errors.
 + Optionally produces lazy sequence of all parses (especially useful for diagnosing and debugging ambiguous grammars).
 + "Total parsing" mode where leftover string is embedded in the parse tree.
@@ -269,7 +269,7 @@ The optional keyword argument `:unhide :all` reveals all hidden information.
 
 ### No Grammar Left Behind
 
-One of the things that really sets instaparse apart from other Clojure parser generators is that it can handle any context-free grammar.  For example, some parsers only accept LL(1) grammars, others accept LALR grammars.  Many of the libraries use a recursive-descent strategy that fail for left-recursive grammars.  If you are willing to learn the esoteric restrictions posed by the library, it is usually possible to rework your grammar to fit that mold.  But instaparse lets you write your grammar in whatever way is most natural.
+One of the things that really sets instaparse apart from other Clojure parser generators is that it can handle any context-free grammar.  For example, some parsers only accept LL(1) grammars, others accept LALR grammars.  Many of the libraries use a recursive-descent strategy that fails for left-recursive grammars.  If you are willing to learn the esoteric restrictions posed by the library, it is usually possible to rework your grammar to fit that mold.  But instaparse lets you write your grammar in whatever way is most natural.
 
 #### Right recursion
 
@@ -289,7 +289,7 @@ No problem:
 
 As you can see, either of these recursive parsers will generate a parse tree that is deeply nested.  Unfortunately, Clojure does not handle deeply-nested data structures very well.  If you were to run the above parser on, say, a string of 20,000 a's, instaparse will happily try to generate the corresponding parse tree but then Clojure will stack overflow when it tries to hash the tree.
 
-So, as is often the case in Clojure, use recursion judiciously in a way that will keep your trees a manageable depth.  For the above parser, it is almost certainly better to just do:
+So, as is often advisable in Clojure, use recursion judiciously in a way that will keep your trees a manageable depth.  For the above parser, it is almost certainly better to just do:
 
 	=> ((insta/parser "S = 'a'*") "aaaa")
 	[:S "a" "a" "a" "a"]
@@ -543,7 +543,7 @@ The ordered choice operator has its uses, but don't go overboard.  There are two
 
 ### Parse errors
 
-`(insta/parse my-parser "parse this text")` will either return a parse tree or a failure object.  The failure object will pretty-print at the REPL, showing you the furthest point it got in parsing your text, and listing all the possible tokens that would have allowed it to proceed.
+`(insta/parse my-parser "parse this text")` will either return a parse tree or a failure object.  The failure object will pretty-print at the REPL, showing you the furthest point it reached while parsing your text, and listing all the possible tokens that would have allowed it to proceed.
 
 `(insta/parses my-parser "parse this text")` will return a sequence of all the parse trees, so in the event that no parse can be found, it will simply return an empty list.  However, the failure object is still there, attached to the empty list as metadata.
 
@@ -784,7 +784,7 @@ If you don't want to use `insta/visualize`, there is no need to add rhizome to y
 
 ### Combinators
 
-I truly believe that ordinary EBNF notation is the clearest, most concise way to express a context-free grammar.  Nevertheless, there may be times where it is useful to build parsers with parser combinators.  If you want to use instaparse in this way, you'll need to use the `instaparse.combinators` namespace.  If you are not interested in the combinator interface, feel free to skip this section -- the combinators provide no additional power or expressiveness over the string representation.
+I truly believe that ordinary EBNF notation is the clearest, most concise way to express a context-free grammar.  Nevertheless, there may be times when it is useful to build parsers with parser combinators.  If you want to use instaparse in this way, you'll need to use the `instaparse.combinators` namespace.  If you are not interested in the combinator interface, feel free to skip this section -- the combinators provide no additional power or expressiveness over the string representation.
 
 Each construct you've seen from the string specification has a corresponding parser combinator.  Most are straightforward, but the last few lines of the table will require some additional explanation.
 
@@ -900,13 +900,13 @@ Instaparse's primary input format is based on EBNF syntax, but an alternative in
 
 You can serialize an instaparse parser with `print-dup`, and deserialize it with `read`.  (You can't use `clojure.edn/read` because edn does not support regular expressions.)
 
-Typically, it is more convenient to store and/or transmit the string specification used to generate the parser.  The string specification allows the parser to rebuilt with a different output format; `print-dup` captures the state of the parser after the output format has been "baked in".  However, if you have built the parser with the combinators, rather than via a string spec, or if you are storing the parser inside of other Clojure data structures that need to be serialized, then `print-dup` may be your best option.
+Typically, it is more convenient to store and/or transmit the string specification used to generate the parser.  The string specification allows the parser to be rebuilt with a different output format; `print-dup` captures the state of the parser after the output format has been "baked in".  However, if you have built the parser with the combinators, rather than via a string spec, or if you are storing the parser inside of other Clojure data structures that need to be serialized, then `print-dup` may be your best option.
 
 ## Performance notes
 
 Some of the parsing libraries out there were written as a learning exercise -- monadic parser combinators, for example, are a great way to develop an appreciation for monads.  There's nothing wrong with taking the fruits of a learning exercise and making it available to the public, but there are enough Clojure parser libraries out there that it is getting to be hard to tell the difference between those that are "ready for primetime" and those that aren't.  For example, some of the libraries rely heavily on nested continuations, a strategy that is almost certain to cause a stack overflow on moderately large inputs.  Others rely heavily on memoization, but never bother to clear the cache between inputs, eventually exhausting all available memory if you use the parser repeatedly.
 
-I'm not going to make any precise performance guarantees -- the flexible, general nature of instaparse means that it is possible to write grammars that behave poorly.  Nevertheless, I want to convey that performance is something I have taken seriously.  I spent countless hours profiling instaparse's behavior on strange grammars and large inputs, using that data to improve performance.  Just as one example, I discovered that for a large class of grammars, the biggest bottleneck was Clojure's hashing strategy, so I implemented a wrapper around Clojure's vectors that use an alternative hashing strategy, successfully reducing running time on many parsers from quadratic to linear.  (A shout-out to Christophe Grand who provided me with valuable guidance on this particular improvement.)
+I'm not going to make any precise performance guarantees -- the flexible, general nature of instaparse means that it is possible to write grammars that behave poorly.  Nevertheless, I want to convey that performance is something I have taken seriously.  I spent countless hours profiling instaparse's behavior on strange grammars and large inputs, using that data to improve performance.  Just as one example, I discovered that for a large class of grammars, the biggest bottleneck was Clojure's hashing strategy, so I implemented a wrapper around Clojure's vectors that uses an alternative hashing strategy, successfully reducing running time on many parsers from quadratic to linear.  (A shout-out to Christophe Grand who provided me with valuable guidance on this particular improvement.)
 
 I've also worked to remove "performance surprises".  For example, both left-recursion and right-recursion have sufficiently similar performance that you really don't need to agonize over which one to use -- choose whichever style best fits the problem at hand.  If you express your grammar in a natural way, odds are good that you'll find the performance of the generated parser to be satisfactory.  An additional performance boost in the form of multithreading is slated for the next release.
 
