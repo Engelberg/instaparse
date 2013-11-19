@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.2.10
+
+### Bugfixes
+
+* Fixed bug introduced by 1.2.9 affecting ordered choice.
+
 ## 1.2.9
 
 ### Bugfixes

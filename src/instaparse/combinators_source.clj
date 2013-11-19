@@ -34,7 +34,6 @@
     (singleton? parsers) (first parsers)
     :else {:tag :alt :parsers parsers}))
 
-;(declare neg)
 (defn- ord2 [parser1 parser2]
   (cond
     (= parser1 Epsilon) Epsilon
@@ -42,11 +41,12 @@
     {:tag :ord :parser1 parser1 :parser2 parser2}))
 
 (defn ord "Ordered choice, i.e., parser1 / parser2"
-  [& parsers]
-  (if (seq parsers)
-    (ord2 (first parsers) (apply ord (rest parsers)))
-    Epsilon))
-
+  ([] Epsilon)
+  ([parser1 & parsers]
+    (if (seq parsers)
+      (ord2 parser1 (apply ord parsers))
+      parser1)))
+  
 (defn cat "Concatenation, i.e., parser1 parser2 ..."
   [& parsers]
   (if (every? (partial = Epsilon) parsers) Epsilon
