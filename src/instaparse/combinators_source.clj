@@ -38,9 +38,7 @@
 (defn- ord2 [parser1 parser2]
   (cond
     (= parser1 Epsilon) Epsilon
-    (= parser2 Epsilon) parser1
     :else
-    ;(alt parser1 (cat (neg parser1) parser2))))
     {:tag :ord :parser1 parser1 :parser2 parser2}))
 
 (defn ord "Ordered choice, i.e., parser1 / parser2"

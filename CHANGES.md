@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.2.9
+
+### Bugfixes
+
+* Fixed bug where ordered choice was ignoring epsilon parser.
+
 ## 1.2.8
 
 ### Bugfixes

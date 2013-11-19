@@ -166,6 +166,32 @@
      identifier = #'[a-zA-Z]+'
      keyword = 'cond' | 'defn'"))
 
+(def unambiguous-tokenizer-improved
+  (insta/parser
+    "sentence = token (<whitespace> token)*
+     <token> = keyword | !keyword identifier
+     whitespace = #'\\s+'
+     end-of-string = !#'[\\s\\S]'
+     identifier = #'[a-zA-Z]+'
+     keyword = ('cond' | 'defn') &(whitespace | end-of-string)"))
+
+(def unambiguous-tokenizer-improved2
+  (insta/parser
+    "sentence = token (<whitespace> token)*
+     <token> = keyword | !(keyword (whitespace | end-of-string)) identifier
+     whitespace = #'\\s+'
+     end-of-string = !#'[\\s\\S]'
+     identifier = #'[a-zA-Z]+'
+     keyword = 'cond' | 'defn'"))
+
+(def unambiguous-tokenizer-improved3
+  (insta/parser
+    "sentence = token (<whitespace> token)*
+     <token> = keyword | !keyword identifier
+     whitespace = #'\\s+'
+     identifier = #'[a-zA-Z]+'
+     keyword = #'cond\\b' | #'defn\\b'"))
+
 (def preferential-tokenizer
   (insta/parser
     "sentence = token (<whitespace> token)*
@@ -572,6 +598,9 @@
     
     ((insta/parser "S=#'\\s*'") "     ")
     [:S "     "]
+    
+    ((insta/parser "S = 'a' / eps") "a") [:S "a"]
+    ((insta/parser "S = 'a' / eps") "") [:S]
     ))    
 
 (defn round-trip [parser]
