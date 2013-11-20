@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.2.11
+
+### Minor enhancements
+
+* Further refinements to the way ordered choice interacts with epsilon parsers.
+
 ## 1.2.10
 
 ### Bugfixes
@@ -79,7 +85,7 @@
     + `(my-parser text :unhide :tags)` - reveals tags, i.e., `<>` applied on the left-hand sides of rules. 
     + `(my-parser text :unhide :content)` - reveals content hidden on the right-hand side of rules with `<>`
     + `(my-parser text :unhide :all)` - reveals both tags and content.
- 
+
 ### Notable Performance Improvements
 
 * Dramatic performance improvement (quadratic time reduced to linear) when repetition parsers (+ or *) operate on text whose parse tree contains a large number of repetitions.

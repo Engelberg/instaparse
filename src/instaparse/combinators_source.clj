@@ -35,17 +35,17 @@
     :else {:tag :alt :parsers parsers}))
 
 (defn- ord2 [parser1 parser2]
-  (cond
-    (= parser1 Epsilon) Epsilon
-    :else
-    {:tag :ord :parser1 parser1 :parser2 parser2}))
+    {:tag :ord :parser1 parser1 :parser2 parser2})
 
 (defn ord "Ordered choice, i.e., parser1 / parser2"
   ([] Epsilon)
   ([parser1 & parsers]
-    (if (seq parsers)
-      (ord2 parser1 (apply ord parsers))
-      parser1)))
+    (let [parsers (if (= parser1 Epsilon)
+                    (remove #{Epsilon} parsers)
+                    parsers)]
+      (if (seq parsers)
+        (ord2 parser1 (apply ord parsers))
+        parser1))))
   
 (defn cat "Concatenation, i.e., parser1 parser2 ..."
   [& parsers]
