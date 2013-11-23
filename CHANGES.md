@@ -1,5 +1,12 @@
 # Instaparse Change Log
 
+## 1.2.12
+
+### Bugfixes
+
+* Fixed newline problem visualizing parse trees on Linux.
+* Fixed problem with visualizing rootless trees.
+
 ## 1.2.11
 
 ### Minor enhancements
