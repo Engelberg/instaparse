@@ -25,8 +25,8 @@
     (r/tree->image sequential? rest mytree 
                  :node->descriptor (fn [n] {:label (if (sequential? n) 
                                                      (apply str (first n)
-                                                            (when (span n) 
-                                                              ["\n" (span n)]))
+                                                            (when (span n)
+                                                              ["\\n" (span n)]))
                                                      (with-out-str (pr n)))})
                  :options options))
       
@@ -37,8 +37,8 @@
              :node->descriptor (fn [n] 
                                  {:label (if (and (map? n) (:tag n))
                                            (apply str (:tag n)
-                                                  (when (span n) 
-                                                    ["\n" (span n)]))
+                                                  (when (span n)
+                                                    ["\\n" (span n)]))
                                            (with-out-str (pr n)))})
              :options options))
 
