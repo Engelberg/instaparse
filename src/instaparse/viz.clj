@@ -73,16 +73,18 @@ to your dependencies, and installed graphviz on your system.
 See https://github.com/ztellman/rhizome for more information."
   [tree & {output-file :output-file options :options}]
   {:pre [(not= (tree-type tree) :invalid)]}
-  (let [image
-        (try
-          (case (tree-type tree)
-            :enlive (enlive-tree-viz tree options)
-            (:hiccup :nil) (hiccup-tree-viz tree options)
-            :rootless (tree-viz (fake-root tree) options))
-          (catch IOException e
-            (throw (UnsupportedOperationException. 
-                     "\n\nYou appear to have rhizome in your dependencies, but have not installed GraphViz on your system.
+  (let [ttype (tree-type tree)]
+    (if (= ttype :rootless)
+      (tree-viz (fake-root tree) :options options)
+      (let [image
+            (try
+              (case (tree-type tree)
+                :enlive (enlive-tree-viz tree options)
+                (:hiccup :nil) (hiccup-tree-viz tree options))
+              (catch IOException e
+                (throw (UnsupportedOperationException. 
+                         "\n\nYou appear to have rhizome in your dependencies, but have not installed GraphViz on your system.
 \nSee https://github.com/ztellman/rhizome for more information.\n"))))]
-    (if output-file 
-      (r/save-image image output-file)
-      (r/view-image image))))
+        (if output-file 
+          (r/save-image image output-file)
+          (r/view-image image))))))
