@@ -5,10 +5,10 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/clojurescript "0.0-2030"]
-                 [com.cemerick/clojurescript.test "0.0.4"]]
-
+                 [com.cemerick/clojurescript.test "0.2.1"]]
   :source-paths ["src/clj"] 
-  :plugins [[lein-cljsbuild "1.0.0"]]
+  :plugins [[lein-cljsbuild "1.0.0"]
+            [com.cemerick/clojurescript.test "0.2.1"]]
   :profiles {:dev {:dependencies 
                    [[org.clojure/tools.trace "0.7.5"]
                     [criterium "0.3.1"]
@@ -21,5 +21,5 @@
   :cljsbuild {:builds [{:source-paths ["src/cljs" "test/cljs"]
                         :compiler {:output-to "target/test.js"
                                    :pretty-print true}}]
-              :test-commands {"unit-tests" ["test/cljs/runners/phantomjs.js" "target/test.js"]}} 
+              :test-commands {"unit-tests" ["phantomjs" :runner "target/test.js"]}}
 )
