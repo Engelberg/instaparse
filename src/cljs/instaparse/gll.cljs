@@ -23,7 +23,7 @@
    ;; Need a way to convert parsers into strings for printing and error messages.
    [instaparse.print :as print])
 
-  (:use-macros [instaparse.gll-macros :only [debug dprintln dpprint success]]))
+  (:use-macros [instaparse.gll-macros :only [debug dprintln dpprint success swap-field!]]))
     
 
 (debug (def stats (atom {})))
