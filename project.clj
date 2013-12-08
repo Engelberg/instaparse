@@ -9,6 +9,7 @@
   :source-paths ["src/cljs" "src/clj"]
   :plugins [[lein-cljsbuild "1.0.0"]
             [com.cemerick/clojurescript.test "0.2.1"]]
+  :hooks  [leiningen.cljsbuild]
   :profiles {:dev {:dependencies 
                    [[org.clojure/tools.trace "0.7.5"]
                     [criterium "0.3.1"]
