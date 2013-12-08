@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/clojurescript "0.0-2030"]
                  [com.cemerick/clojurescript.test "0.2.1"]]
-  :source-paths ["src/clj"] 
+  :source-paths ["src/cljs" "src/clj"]
   :plugins [[lein-cljsbuild "1.0.0"]
             [com.cemerick/clojurescript.test "0.2.1"]]
   :profiles {:dev {:dependencies 
