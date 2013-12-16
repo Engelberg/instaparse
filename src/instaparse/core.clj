@@ -181,6 +181,11 @@
                 (cfg/build-parser-from-combinators (apply hash-map grammar-specification)
                                                    output-format
                                                    start)]
+            (map->Parser parser))
+
+          :else
+          (let [spec (slurp grammar-specification)
+                parser (build-parser spec output-format)]
             (map->Parser parser)))]
     
     (if-let [{ws-grammar :grammar ws-start :start-production}
