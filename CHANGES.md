@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.2.13
+
+### Minor enhancements
+
+* Support for arbitrary slurpable resources as an input to insta/parser.
+
 ## 1.2.12
 
 ### Bugfixes

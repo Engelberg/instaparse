@@ -1,4 +1,4 @@
-# Instaparse 1.2.12
+# Instaparse 1.2.13
 
 *What if context-free grammars were as easy to use as regular expressions?*
 
@@ -22,7 +22,7 @@ Instaparse requires Clojure v1.5.1 or later.  (It may work with earlier versions
 
 Add the following line to your leiningen dependencies:
 
-	[instaparse "1.2.12"]
+	[instaparse "1.2.13"]
 
 Require instaparse in your namespace header:
 
@@ -111,6 +111,10 @@ Building the parser from the URI is easy:
 	(insta/parser "https://gist.github.com/Engelberg/5283346/raw/77e0b1d0cd7388a7ddf43e307804861f49082eb6/SingleA")
 
 This provides a convenienent way to share parser specifications over the Internet.
+
+You can also use a specification contained in a local resource in your classpath:
+
+	(insta/parser (clojure.java.io/resource "myparser.bnf"))
 
 ### Escape characters
 
