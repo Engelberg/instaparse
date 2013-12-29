@@ -142,7 +142,8 @@
     :ord (assoc parser 
                 :parser1 (auto-whitespace-parser (:parser1 parser) ws-parser)
                 :parser2 (auto-whitespace-parser (:parser2 parser) ws-parser))
-    (:string :string-ci :regexp) (cat ws-parser parser)))
+    (:string :string-ci :regexp) (assoc (cat ws-parser (dissoc parser :red))(assoc (cat ws-parser (dissoc parser :red)) :red
+                                        (:red parser)))))
 
 (defn auto-whitespace [grammar start grammar-ws start-ws]
   (let [ws-parser (hide (opt (nt start-ws)))
