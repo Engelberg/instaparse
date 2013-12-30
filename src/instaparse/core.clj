@@ -126,6 +126,9 @@
   (binding [*out* writer]
     (println (print/Parser->str x))))
 
+(defn- ensure-vec [x]
+  (if (vector? x) x [x]))
+
 (defn parser
   "Takes a string specification of a context-free grammar,
    or a URI for a text file containing such a specification,
@@ -144,12 +147,15 @@
   [grammar-specification &{:as options}]
   {:pre [(contains? #{:abnf :ebnf nil} (get options :input-format))
          (contains? #{:enlive :hiccup nil} (get options :output-format))
-         (let [ws-parser (get options :auto-whitespace)]
+         (let [[ws-parser selector selected] (ensure-vec (get options :auto-whitespace))]
            (or (nil? ws-parser)
                (and
-                 (map? ws-parser)
-                 (contains? ws-parser :grammar)
-                 (contains? ws-parser :start-production))))]}
+                (map? ws-parser)
+                (contains? ws-parser :grammar)
+                (contains? ws-parser :start-production)
+                (or (nil? selector)
+                    (and (contains? #{:only :except} selector)
+                         (vector? selected))))))]}
   (let [input-format (get options :input-format *default-input-format*)
         build-parser (case input-format 
                        :abnf abnf/build-parser
@@ -187,13 +193,14 @@
           (let [spec (slurp grammar-specification)
                 parser (build-parser spec output-format)]
             (map->Parser parser)))]
-    
-    (if-let [{ws-grammar :grammar ws-start :start-production}
-             (get options :auto-whitespace)]
-      (assoc built-parser :grammar
-             (c/auto-whitespace (:grammar built-parser) (:start-production built-parser)
-                              ws-grammar ws-start))
-      built-parser)))
+
+    (let [[{ws-grammar :grammar ws-start :start-production} selector selected]
+          (ensure-vec (get options :auto-whitespace))]
+      (if ws-grammar
+        (assoc built-parser :grammar
+               (c/auto-whitespace (:grammar built-parser) (:start-production built-parser)
+                                  ws-grammar ws-start selector selected))
+        built-parser))))
         
 (defn failure?
   "Tests whether a parse result is a failure."
