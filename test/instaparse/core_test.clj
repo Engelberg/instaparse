@@ -305,6 +305,20 @@
      number = #'[0-9]+'"
     :auto-whitespace whitespace-or-comments))
 
+(def auto-whitespace-select-only
+  (insta/parser
+   "S = not-B B
+     not-B = (!B #'.')+
+     B = 'b'+"
+   :auto-whitespace [whitespace :only [:B]]))
+
+(def auto-whitespace-select-except
+  (insta/parser
+   "S = not-B B
+     not-B = (!B #'.')+
+     B = 'b'+"
+   :auto-whitespace [whitespace :except [:not-B]]))
+
 (def eat-a (insta/parser "Aeater = #'[a]'+" :output-format :enlive))
 
 (def int-or-double
@@ -597,6 +611,13 @@
     (words-and-numbers-auto-whitespace-and-comments " abc 123 (* 456 *) (* (* 7*) 89 *)  def ")
     [:sentence [:word "abc"] [:number "123"] [:word "def"]]
     
+
+    (auto-whitespace-select-only "aaa 123 b b b")
+    [:S [:not-B "a" "a" "a" " " "1" "2" "3"] [:B "b" "b" "b"]]
+
+    (auto-whitespace-select-except "aaa 123 b b b")
+    [:S [:not-B "a" "a" "a" " " "1" "2" "3"] [:B "b" "b" "b"]]
+
     (insta/parses eat-a "aaaaaaaabbbbbb" :total true)
     '({:tag :Aeater, :content ("a" "a" "a" "a" "a" "a" "a" "a" {:tag :instaparse/failure, :content ("bbbbbb")})})
     

@@ -150,14 +150,20 @@
       (assoc (cat ws-parser (dissoc parser :red)) :red (:red parser))
       (cat ws-parser parser))))
 
-(defn auto-whitespace [grammar start grammar-ws start-ws]
+(defn auto-whitespace [grammar start grammar-ws start-ws & {:keys [only except]}]
   (let [ws-parser (hide (opt (nt start-ws)))
         grammar-ws (assoc grammar-ws start-ws (hide-tag (grammar-ws start-ws)))
-        modified-grammar (into {} 
-                               (for [[nt parser] grammar] 
-                                 [nt (auto-whitespace-parser parser ws-parser)]))
-        final-grammar (assoc modified-grammar start 
-                             (assoc (cat (dissoc (modified-grammar start) :red) 
+        add-ws? (cond
+                  only (set only)
+                  except (complement (set except))
+                  :else (constantly true))
+        modified-grammar (into {}
+                             (for [[nt parser] grammar]
+                               [nt (if (add-ws? nt)
+                                     (auto-whitespace-parser parser ws-parser)
+                                     parser)]))
+        final-grammar (assoc modified-grammar start
+                             (assoc (cat (dissoc (modified-grammar start) :red)
                                          ws-parser)
                                     :red (:red (modified-grammar start))))]
     (merge final-grammar grammar-ws)))
