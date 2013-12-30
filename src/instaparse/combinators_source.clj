@@ -142,7 +142,13 @@
     :ord (assoc parser 
                 :parser1 (auto-whitespace-parser (:parser1 parser) ws-parser)
                 :parser2 (auto-whitespace-parser (:parser2 parser) ws-parser))
-    (:string :string-ci :regexp) (cat ws-parser parser)))
+    (:string :string-ci :regexp) 
+    ; If the string/regexp has a reduction associated with it,
+    ; we need to "lift" that reduction out to the (cat whitespace string)
+    ; parser that is being created.
+    (if (:red parser)
+      (assoc (cat ws-parser (dissoc parser :red)) :red (:red parser))
+      (cat ws-parser parser))))
 
 (defn auto-whitespace [grammar start grammar-ws start-ws]
   (let [ws-parser (hide (opt (nt start-ws)))

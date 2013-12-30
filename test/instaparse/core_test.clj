@@ -261,6 +261,13 @@
   (insta/parser
     "whitespace = #'\\s+'"))
 
+(def auto-whitespace-example
+  (insta/parser 
+    "S = A B 
+     <A> = 'foo' 
+     <B> = #'\\d+'" 
+    :auto-whitespace whitespace))
+
 (def words-and-numbers-auto-whitespace
   (insta/parser
     "sentence = token+
@@ -601,6 +608,9 @@
     
     ((insta/parser "S = 'a' / eps") "a") [:S "a"]
     ((insta/parser "S = 'a' / eps") "") [:S]
+    
+    (auto-whitespace-example "foo 123")
+    [:S "foo" "123"]    
     ))    
 
 (defn round-trip [parser]

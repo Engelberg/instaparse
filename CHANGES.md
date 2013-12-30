@@ -1,5 +1,12 @@
 # Instaparse Change Log
 
+## 1.2.14
+
+### Bugfixes
+
+* Fixed problem where auto-whitespace wasn't correctly handling strings/regexes in a 
+rule with a hidden tag.
+
 ## 1.2.13
 
 ### Minor enhancements
