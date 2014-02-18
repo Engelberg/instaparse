@@ -26,7 +26,7 @@
   {:pre [(#{:abnf :ebnf} type)]}
   (alter-var-root #'*default-input-format* (constantly type)))
 
-(declare failure?)
+(declare failure? standard-whitespace-parsers)
 
 (defn- unhide-parser [parser unhide]
   (case unhide
@@ -140,12 +140,17 @@
    or
    :output-format :hiccup
    
-   :start :keyword (where :keyword is name of starting production rule)"
+   :start :keyword (where :keyword is name of starting production rule)
+
+   :auto-whitespace (:standard or :comma)
+   or
+   :auto-whitespace custom-whitespace-parser"
   [grammar-specification &{:as options}]
   {:pre [(contains? #{:abnf :ebnf nil} (get options :input-format))
          (contains? #{:enlive :hiccup nil} (get options :output-format))
          (let [ws-parser (get options :auto-whitespace)]
            (or (nil? ws-parser)
+               (contains? standard-whitespace-parsers ws-parser)
                (and
                  (map? ws-parser)
                  (contains? ws-parser :grammar)
@@ -188,12 +193,16 @@
                 parser (build-parser spec output-format)]
             (map->Parser parser)))]
     
-    (if-let [{ws-grammar :grammar ws-start :start-production}
-             (get options :auto-whitespace)]
-      (assoc built-parser :grammar
-             (c/auto-whitespace (:grammar built-parser) (:start-production built-parser)
-                              ws-grammar ws-start))
-      built-parser)))
+    (let [auto-whitespace (get options :auto-whitespace)
+          ; auto-whitespace is keyword, parser, or nil
+          whitespace-parser (if (keyword? auto-whitespace)
+                              (get standard-whitespace-parsers auto-whitespace)
+                              auto-whitespace)]
+      (if-let [{ws-grammar :grammar ws-start :start-production} whitespace-parser]
+        (assoc built-parser :grammar
+               (c/auto-whitespace (:grammar built-parser) (:start-production built-parser)
+                                  ws-grammar ws-start))
+        built-parser))))
         
 (defn failure?
   "Tests whether a parse result is a failure."
@@ -218,3 +227,7 @@
 (defclone transform t/transform)
 
 (defclone visualize viz/tree-viz)
+
+(def ^:private standard-whitespace-parsers
+  {:standard (parser "whitespace = #'\\s+'")
+   :comma (parser "whitespace = #'[,\\s]+'")})

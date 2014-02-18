@@ -58,7 +58,7 @@ First, you want to develop a parser that consumes whitespace.  The simplest, mos
 	(def whitespace
 	  (insta/parser
 	    "whitespace = #'\\s+'"))
-	    
+
 Let's test it out:
 
 	=> (whitespace "       ")
@@ -220,5 +220,23 @@ Note that this feature is only useful in grammars where all the strings and rege
 If you try to use the auto-whitespace feature with a grammar like this, it will end up allowing space between the "m" and the "arch", which isn't what you want.  The key is to try to express such tokens using a single regular expression:
 
 	month = #'[Mm]arch'
+	
+### Predefined whitespace parsers
+
+There's no doubt that the following whitespace rule is by far the most common:
+
+	whitespace = #"\s+"
+
+So for this common case, there's no need to create a separate whitespace parser.  You can access this predefined whitespace parser with the option:
+
+	:auto-whitespace :standard
+
+At this time, one other predefined whitespace parser is available, for Clojure-like parsing tasks where the comma is also treated as whitespace.  The rule that will be added to your grammar is:
+
+	whitespace = #"[,\s]+"
+
+and you can access it with the option:
+
+	:auto-whitespace :comma
 
 Let me know what you think of the auto-whitespace feature.  Is it sufficiently simple and useful to belong in the instaparse library?

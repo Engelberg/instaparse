@@ -276,6 +276,21 @@
      number = #'[0-9]+'"
     :auto-whitespace whitespace))
 
+(def auto-whitespace-example2
+  (insta/parser 
+    "S = A B 
+     <A> = 'foo' 
+     <B> = #'\\d+'" 
+    :auto-whitespace :standard))
+
+(def words-and-numbers-auto-whitespace2
+  (insta/parser
+    "sentence = token+
+     <token> = word | number
+     word = #'[a-zA-Z]+'
+     number = #'[0-9]+'"
+    :auto-whitespace :standard))
+
 (def whitespace-or-comments-v1
   (insta/parser
     "ws-or-comment = #'\\s+' | comment
@@ -594,6 +609,9 @@
     (words-and-numbers-auto-whitespace " abc 123   45 de ")
     [:sentence [:word "abc"] [:number "123"] [:number "45"] [:word "de"]]
     
+    (words-and-numbers-auto-whitespace2 " abc 123   45 de ")
+    [:sentence [:word "abc"] [:number "123"] [:number "45"] [:word "de"]]
+    
     (words-and-numbers-auto-whitespace-and-comments " abc 123 (* 456 *) (* (* 7*) 89 *)  def ")
     [:sentence [:word "abc"] [:number "123"] [:word "def"]]
     
@@ -610,6 +628,9 @@
     ((insta/parser "S = 'a' / eps") "") [:S]
     
     (auto-whitespace-example "foo 123")
+    [:S "foo" "123"]
+
+    (auto-whitespace-example2 "foo 123")
     [:S "foo" "123"]    
     ))    
 

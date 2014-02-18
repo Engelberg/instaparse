@@ -1,19 +1,10 @@
 # Instaparse Change Log
 
-## 1.2.14
+## 1.2.15
 
-### Bugfixes
+### Enhancements
 
-* Fixed problem where auto-whitespace wasn't correctly handling strings/regexes in a 
-rule with a hidden tag.
-
-## 1.2.13
-
-### Minor enhancements
-
-* Support for arbitrary slurpable resources as an input to insta/parser.
-
-## 1.2.12
+* :auto-whitespace can now take the keyword :standard or :comma to access one of the predefined whitespace parsers.
 
 ### Bugfixes
 

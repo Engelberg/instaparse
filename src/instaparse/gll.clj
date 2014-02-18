@@ -26,7 +26,6 @@
   ;; so we use Segments instead.
   (:import javax.swing.text.Segment)
   
-  (:use clojure.pprint)
   )
     
 (def DEBUG false)

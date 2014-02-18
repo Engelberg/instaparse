@@ -1,4 +1,4 @@
-# Instaparse 1.2.14
+# Instaparse 1.2.15
 
 *What if context-free grammars were as easy to use as regular expressions?*
 
@@ -22,7 +22,7 @@ Instaparse requires Clojure v1.5.1 or later.  (It may work with earlier versions
 
 Add the following line to your leiningen dependencies:
 
-	[instaparse "1.2.14"]
+	[instaparse "1.2.15"]
 
 Require instaparse in your namespace header:
 

@@ -104,6 +104,10 @@
     (cond
       (:parser parser) (assoc parser :parser (unhide-content (:parser parser)))
       (:parsers parser) (assoc parser :parsers (map unhide-content (:parsers parser)))
+      (= (:tag parser) :ord) (assoc parser 
+                                    :parser1 (unhide-content (:parser1 parser))
+                                    :parser2 (unhide-content (:parser2 parser)))
+                                    
       :else parser)))
 
 (defn unhide-all-content
