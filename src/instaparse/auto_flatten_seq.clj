@@ -35,8 +35,8 @@
           (zero? n) (unchecked-multiply-int z y)
           :else (recur n (unchecked-multiply-int z y) (unchecked-multiply-int z z)))))))
 
-(defn- hash-conj [premix-hash-v item]
-  (unchecked-add-int (unchecked-multiply-int 31 premix-hash-v) (hash item)))  
+(defmacro hash-conj [premix-hash-v item]
+  `(unchecked-add-int (unchecked-multiply-int 31 ~premix-hash-v) (hash ~item)))  
 
 (defn- hash-pop [v top]
   (unchecked-multiply-int inverse-thirty-one
