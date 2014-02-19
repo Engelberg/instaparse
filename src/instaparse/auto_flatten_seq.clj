@@ -38,11 +38,11 @@
 (defmacro hash-conj [premix-hash-v item]
   `(unchecked-add-int (unchecked-multiply-int 31 ~premix-hash-v) (hash ~item)))  
 
-(defn- hash-pop [v top]
-  (unchecked-multiply-int inverse-thirty-one
-                          (unchecked-subtract-int (premix-hash v) (hash top))))
+(defmacro hash-pop [v top]
+  `(unchecked-multiply-int inverse-thirty-one
+                           (unchecked-subtract-int (premix-hash ~v) (hash ~top))))
 
-(defn- hash-cat [v1 v2]
+(defn- hash-cat ^long [v1 v2]
   (let [c (count v2)
         e (int (expt 31 c))]
     (unchecked-add-int
