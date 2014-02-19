@@ -1,5 +1,9 @@
 # Instaparse Change Log
 
+## 1.3.0
+
+### Compatibility with Clojure 1.6
+
 ## 1.2.15
 
 ### Enhancements

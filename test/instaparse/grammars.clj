@@ -278,8 +278,8 @@
        (parses amb-grammar :s "bbb")
        '([:s [:s "b"] [:s [:s "b"] [:s "b"]]] [:s [:s "b"] [:s "b"] [:s "b"]] [:s [:s [:s "b"] [:s "b"]] [:s "b"]])
 
-       (parses amb-grammar :s "bbbb")
-       '([:s [:s "b"] [:s [:s "b"] [:s [:s "b"] [:s "b"]]]] [:s [:s [:s "b"] [:s "b"]] [:s "b"] [:s "b"]] [:s [:s [:s "b"] [:s [:s "b"] [:s "b"]]] [:s "b"]] [:s [:s "b"] [:s [:s "b"] [:s "b"]] [:s "b"]] [:s [:s "b"] [:s "b"] [:s [:s "b"] [:s "b"]]] [:s [:s [:s "b"] [:s "b"]] [:s [:s "b"] [:s "b"]]] [:s [:s "b"] [:s [:s "b"] [:s "b"] [:s "b"]]] [:s [:s [:s "b"] [:s "b"] [:s "b"]] [:s "b"]] [:s [:s [:s [:s "b"] [:s "b"]] [:s "b"]] [:s "b"]] [:s [:s "b"] [:s [:s [:s "b"] [:s "b"]] [:s "b"]]])
+       (set (parses amb-grammar :s "bbbb"))
+       (set '([:s [:s "b"] [:s [:s "b"] [:s [:s "b"] [:s "b"]]]] [:s [:s [:s "b"] [:s "b"]] [:s "b"] [:s "b"]] [:s [:s [:s "b"] [:s [:s "b"] [:s "b"]]] [:s "b"]] [:s [:s "b"] [:s [:s "b"] [:s "b"]] [:s "b"]] [:s [:s "b"] [:s "b"] [:s [:s "b"] [:s "b"]]] [:s [:s [:s "b"] [:s "b"]] [:s [:s "b"] [:s "b"]]] [:s [:s "b"] [:s [:s "b"] [:s "b"] [:s "b"]]] [:s [:s [:s "b"] [:s "b"] [:s "b"]] [:s "b"]] [:s [:s [:s [:s "b"] [:s "b"]] [:s "b"]] [:s "b"]] [:s [:s "b"] [:s [:s [:s "b"] [:s "b"]] [:s "b"]]]))
        
        (parses paren-grammar :s "(()())()")
        '([:s [:s "(" [:s [:s "(" ")"] [:s "(" ")"]] ")"] [:s "(" ")"]])
