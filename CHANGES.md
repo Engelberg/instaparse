@@ -4,6 +4,12 @@
 
 ### Compatibility with Clojure 1.6
 
+## 1.2.16
+
+### Bugfixes
+
+* Calling `empty` on a FlattenOnDemandVector now returns [].
+
 ## 1.2.15
 
 ### Enhancements
