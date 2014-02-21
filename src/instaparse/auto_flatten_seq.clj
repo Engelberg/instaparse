@@ -3,15 +3,10 @@
   (:require [clojure.core.protocols :refer [IKVReduce]]))
 
 (def ^:const threshold 32)
-(def ^:const inverse-thirty-one -1108378657)
 
 (defprotocol ConjFlat
   (conj-flat [self obj])
   (cached? [self]))
-
-; For incremental hashing, need to store the hash prior to mixing step
-(defprotocol PremixHash
-  (premix-hash [self]))
 
 ; Need a backwards compatible version of mix-collection-hash
 (defmacro compile-if [test then else]
@@ -24,7 +19,7 @@
                (mix-collection-hash ~x ~y)
                ~x))
 
-(declare EMPTY)
+(declare EMPTY hash-cat afs? true-count)
 
 (defn- expt [base pow]
   (if (zero? pow) 1
@@ -38,27 +33,12 @@
 (defmacro hash-conj [premix-hash-v item]
   `(unchecked-add-int (unchecked-multiply-int 31 ~premix-hash-v) (hash ~item)))  
 
-(defmacro hash-pop [v top]
-  `(unchecked-multiply-int inverse-thirty-one
-                           (unchecked-subtract-int (premix-hash ~v) (hash ~top))))
-
-(defn- hash-cat ^long [v1 v2]
-  (let [c (count v2)
-        e (int (expt 31 c))]
-    (unchecked-add-int
-      (unchecked-multiply-int e (premix-hash v1))
-      (unchecked-subtract-int (premix-hash v2) e))))
-
-(declare afs?)
-
 (defn delve [v index]
   (loop [v (get-in v index)
          index index]
     (if (afs? v)
       (recur (get v 0) (conj index 0))
       index)))
-
-(declare true-count)
 
 (defn advance [v index]
   (cond
@@ -96,8 +76,6 @@
          (= v (.v ^AutoFlattenSeq other))))
   clojure.lang.IHashEq
   (hasheq [self] hashcode)
-  PremixHash
-  (premix-hash [self] premix-hashcode)
   java.util.Collection
   (iterator [self]
     (if-let [^java.util.Collection s (seq self)]
@@ -163,14 +141,24 @@
       (do
         (set! cached-seq (if dirty (flat-seq v) (seq v)))
         cached-seq))))
-     
-(defn hash-ordered-coll-without-mix [v]
+
+(defn- hash-cat ^long [^AutoFlattenSeq v1 ^AutoFlattenSeq v2]
+  (let [c (count v2)
+        e (int (expt 31 c))]
+    (unchecked-add-int
+      (unchecked-multiply-int e (.premix-hashcode v1))
+      (unchecked-subtract-int (.premix-hashcode v2) e))))
+
+(defn hash-ordered-coll-without-mix ^long [v]
   (compile-if (resolve 'clojure.core/mix-collection-hash)
-              (reduce (fn [acc e] (unchecked-add-int
-                                    (unchecked-multiply-int 31 acc)
-                                    (hash e)))
-                      1
-                      v)
+              (let [thirty-one (int 31)
+                    cnt (count v)]
+                (loop [acc (int 1) i (int 0)]
+                  (if (< i cnt)
+                    (recur (unchecked-add-int (unchecked-multiply-int thirty-one acc)
+                                              (hash (v i)))                    
+                           (inc i))
+                    acc)))
               (hash v)))
 
 (defn auto-flatten-seq [v]
@@ -323,6 +311,4 @@
                               (.cnt afs)
                               (ref nil)))
     :else
-    (.v afs)))
-    
-
+    (.v afs)))    
