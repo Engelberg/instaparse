@@ -209,7 +209,7 @@
       (and (== hashcode (hash other))
            (== cnt (count other))
            (= (get-vec self) other))))
-  (empty [self] (with-meta EMPTY (meta self))) 
+  (empty [self] (with-meta [] (meta self))) 
   clojure.lang.Counted
   (count [self] cnt)
   clojure.lang.IPersistentVector

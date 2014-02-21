@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.2.16
+
+### Bugfixes
+
+* Calling `empty` on a FlattenOnDemandVector now returns [].
+
 ## 1.2.15
 
 ### Enhancements
