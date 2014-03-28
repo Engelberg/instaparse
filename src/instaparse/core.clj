@@ -142,6 +142,8 @@
    
    :start :keyword (where :keyword is name of starting production rule)
 
+   :string-ci true (treat all string literals as case insensitive)
+
    :auto-whitespace (:standard or :comma)
    or
    :auto-whitespace custom-whitespace-parser"
@@ -158,7 +160,11 @@
   (let [input-format (get options :input-format *default-input-format*)
         build-parser (case input-format 
                        :abnf abnf/build-parser
-                       :ebnf cfg/build-parser)
+                       :ebnf (if (get options :string-ci)
+                               (fn [spec output-format]
+                                 (binding [cfg/*case-insensitive-literals* true]
+                                   (cfg/build-parser spec output-format)))
+                               cfg/build-parser))
         output-format (get options :output-format *default-output-format*)
         start (get options :start nil)
         
