@@ -626,6 +626,12 @@
     
     ((insta/parser "S = 'a' / eps") "a") [:S "a"]
     ((insta/parser "S = 'a' / eps") "") [:S]
+
+    (insta/failure? ((insta/parser "S = 'a'+") "AaaAaa"))
+    true
+
+    ((insta/parser "S = 'a'+" :string-ci true) "AaaAaa")
+    [:S "a" "a" "a" "a" "a" "a"]
     
     (auto-whitespace-example "foo 123")
     [:S "foo" "123"]
@@ -673,6 +679,5 @@
        words-and-numbers-auto-whitespace
        eat-a
        int-or-double))
-       
-       
-            
+
+
