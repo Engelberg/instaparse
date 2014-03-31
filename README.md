@@ -1,4 +1,4 @@
-# Instaparse 1.3.0
+# Instaparse 1.3.1
 
 *What if context-free grammars were as easy to use as regular expressions?*
 
@@ -22,7 +22,7 @@ Instaparse requires Clojure v1.5.1 or later.  (It may work with earlier versions
 
 Add the following line to your leiningen dependencies:
 
-	[instaparse "1.3.0"]
+	[instaparse "1.3.1"]
 
 Require instaparse in your namespace header:
 
@@ -900,9 +900,11 @@ This opens up the possibility of building a grammar from a mixture of combinator
 
 Instaparse's primary input format is based on EBNF syntax, but an alternative input format, ABNF, is available.  Most users will not need the ABNF input format, but if you need to implement a parser whose specification was written in ABNF syntax, it is very easy to do.  Please read [instaparse's ABNF documentation](https://github.com/Engelberg/instaparse/blob/master/docs/ABNF.md) for details.
 
-### String (literal) terminals case sensitivity
+### String case sensitivity
 
-By default parsers constructed from EBNF grammars, use case sensitive matching of string terminals. You can use `insta/parser` with `:string-ci true` keyword argument to make it case insensitive:
+One interesting difference between EBNF and ABNF grammars is that in EBNF, string terminals are case-sensitive whereas in ABNF, all string terminals are case-*in*sensitive.  If you like ABNF's case-insensitive approach, but want to use Instaparse's somewhat richer EBNF syntax, there are a couple options available to you.
+
+If you want *all* of the string terminals in your Instaparse EBNF grammar to be case-insensitive, the simplest solution is to use the `:string-ci true` keyword argument when calling `insta/parser` to make the strings case-insensitive:
 
 	=> ((insta/parser "S = 'a'+") "AaaAaa")
 	Parse error at line 1, column 1:
@@ -914,8 +916,7 @@ By default parsers constructed from EBNF grammars, use case sensitive matching o
 	=> ((insta/parser "S = 'a'+" :string-ci true) "AaaAaa")
 	[:S "a" "a" "a" "a" "a" "a"]
 
-There is also the `instaparse.cfg/*case-insensitive-literals*` dynamic var, which sets this generally for functions taking EBNF as input.
-If you use parser combinators you can match strings case insensitive with the `string-ci` combinator.
+On the other hand, if you want to cherry-pick certain string tokens to be case-insensitive, simply convert your string tokens into case-insensitive regexes, for example, replacing the string `'select'` with `#'(i?)select'`.
 
 ### Serialization
 
@@ -957,6 +958,12 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	   :output-format :hiccup
 
 	   :start :keyword (where :keyword is name of starting production rule)
+
+	   :string-ci true (treat all string literals as case insensitive)
+
+	   :auto-whitespace (:standard or :comma)
+	   or
+	   :auto-whitespace custom-whitespace-parser
 
 	=> (doc insta/parse)
 	-------------------------
@@ -1041,7 +1048,7 @@ All the functionality you've seen in this tutorial is packed into an API of just
 
 ## Experimental Features
 
-See the [Experimental Features](docs/ExperimentalFeatures.md) page for a discussion of new features under active development.
+See the [Experimental Features](docs/ExperimentalFeatures.md) page for a discussion of new features under active development, including memory optimization and automatic handling of whitespace.
 
 ## Communication
 
@@ -1053,7 +1060,7 @@ My interest in this project began while watching a video of Matt Might's [*Parsi
 
 Matt Might has published a [paper](http://matt.might.net/papers/might2011derivatives.pdf) about a specific approach to achieving that goal, but I had difficulty getting his *Parsing with Derivatives* technique to work in a performant way.
 
-I probably would have given up, but then Danny Yoo released the [Ragg parser generator](http://hashcollision.org/ragg/index.html) for the Racket language.  The Ragg library was a huge inspiration -- a model for what I wanted instaparse to become.  I asked Danny what technique he used, and he gave me more information about the algorithm he used.  However, he told me that if he were to do it again from scratch, he'd probably choose to use a [GLL algorithm](http://ldta.info/2009/ldta2009proceedings.pdf) by Adrian Johnstone and Elizabeth Scott, and he pointed me to a fantastic article about it by Vegard ï¿½ye, [posted on Github with source code in Racket](https://github.com/epsil/gll).
+I probably would have given up, but then Danny Yoo released the [Ragg parser generator](http://hashcollision.org/ragg/index.html) for the Racket language.  The Ragg library was a huge inspiration -- a model for what I wanted instaparse to become.  I asked Danny what technique he used, and he gave me more information about the algorithm he used.  However, he told me that if he were to do it again from scratch, he'd probably choose to use a [GLL algorithm](http://ldta.info/2009/ldta2009proceedings.pdf) by Adrian Johnstone and Elizabeth Scott, and he pointed me to a fantastic article about it by Vegard Øye, [posted on Github with source code in Racket](https://github.com/epsil/gll).
 
 That article had a link to a [paper](http://www.cs.uwm.edu/%7Edspiewak/papers/generalized-parser-combinators.pdf) and [Scala code](https://github.com/djspiewak/gll-combinators) by Daniel Spiewak, which was also extremely helpful.
 

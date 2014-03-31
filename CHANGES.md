@@ -1,5 +1,12 @@
 # Instaparse Change Log
 
+## 1.3.1
+
+### Enhancements
+
+* Updated tests to use Clojure 1.6.0's final release.
+* Added `:ci-string true` flag to `insta/parser`.
+
 ## 1.3.0
 
 ### Compatibility with Clojure 1.6
