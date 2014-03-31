@@ -5,6 +5,11 @@
   (:use [instaparse.gll :only [parse]])
   (:require [clojure.string :as str]))
 
+(def ^:dynamic *case-insensitive-literals*
+  "When true all string literal terminals in built grammar will be treated as case insensitive"
+  false)
+
+
 (def single-quoted-string #"'[^'\\]*(?:\\.[^'\\]*)*'(?x) #Single-quoted string")
 (def single-quoted-regexp #"#'[^'\\]*(?:\\.[^'\\]*)*'(?x) #Single-quoted regexp")
 (def double-quoted-string #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"(?x) #Double-quoted string")
@@ -207,7 +212,8 @@
     :paren (recur (content tree))
     :hide (hide (build-rule (content tree)))
     :cat (apply cat (map build-rule (contents tree)))
-    :string (string (process-string (content tree)))
+    :string ((if *case-insensitive-literals* string-ci string)
+              (process-string (content tree)))
     :regexp (regexp (process-regexp (content tree)))
     :opt (opt (build-rule (content tree)))
     :star (star (build-rule (content tree)))
