@@ -16,3 +16,4 @@ benchmarks.txt
 todo.txt
 /.settings
 .nrepl-port
+.lein-repl-history
