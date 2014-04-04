@@ -916,7 +916,7 @@ If you want *all* of the string terminals in your Instaparse EBNF grammar to be 
 	=> ((insta/parser "S = 'a'+" :string-ci true) "AaaAaa")
 	[:S "a" "a" "a" "a" "a" "a"]
 
-On the other hand, if you want to cherry-pick certain string tokens to be case-insensitive, simply convert your string tokens into case-insensitive regexes, for example, replacing the string `'select'` with `#'(i?)select'`.
+On the other hand, if you want to cherry-pick certain string tokens to be case-insensitive, simply convert your string tokens into case-insensitive regexes, for example, replacing the string `'select'` with `#'(?i)select'`.
 
 ### Serialization
 
