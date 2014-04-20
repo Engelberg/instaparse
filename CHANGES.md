@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.3.2
+
+### Bugfixes
+
+* Regular expressions on empty strings weren't properly returning a failure.
+
 ## 1.3.1
 
 ### Enhancements

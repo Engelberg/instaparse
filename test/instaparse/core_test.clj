@@ -638,6 +638,9 @@
 
     (auto-whitespace-example2 "foo 123")
     [:S "foo" "123"]    
+    
+    (insta/failure? ((insta/parser "f = #'asdf'" ) ""))
+    true
     ))    
 
 (defn round-trip [parser]

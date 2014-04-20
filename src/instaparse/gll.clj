@@ -533,7 +533,7 @@
         substring (.subSequence text index (.length text))
         match (re-match-at-front regexp substring)
         desired-length (- (count text) index)]
-    (if (= (count match) desired-length)
+    (if (and match (= (count match) desired-length))
       (success tramp [index this] match (count text)))
       (fail tramp [index this] index
             {:tag :regexp :expecting regexp :full true})))
