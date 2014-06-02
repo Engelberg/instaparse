@@ -22,12 +22,21 @@
   ;; Need a way to convert parsers into strings for printing and error messages.
   (:require [instaparse.print :as print])
   
-  ;; In Java 7, strings no longer have fast substring operation,
-  ;; so we use Segments instead.
-  (:import javax.swing.text.Segment)
-  
   )
     
+  ;; In Java 7, strings no longer have fast substring operation,
+  ;; so we use Segments instead.
+(deftype Segment [array offset count]
+  CharSequence
+  (length [this]
+          (.count this))
+  (subSequence [this start end]
+               (Segment. (.array this) (+ (.offset this) start) (- end start)))
+  (charAt [this index]
+          (nth array (+ (.offset this) index)))
+  (toString [this]
+            (String. (.array this) (.offset this) (.count this))))
+
 (def DEBUG false)
 (def PRINT false)
 (defmacro debug [& body]

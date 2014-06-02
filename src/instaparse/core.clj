@@ -172,10 +172,16 @@
         (cond
           (string? grammar-specification)
           (let [parser
+              (if (> (.length grammar-specification) 500)
+                ;; String too long to be a filename. String itself is the grammar.
+                (build-parser grammar-specification output-format)
+
+                ;; Shorter string. Could be filename.
                 (try (let [spec (slurp grammar-specification)]
                        (build-parser spec output-format))
                   (catch java.io.FileNotFoundException e 
-                    (build-parser grammar-specification output-format)))]
+                    ;; Not a file then. String itself must be the grammar.
+                    (build-parser grammar-specification output-format))))]
             (if start (map->Parser (assoc parser :start-production start))
               (map->Parser parser)))
           
