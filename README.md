@@ -1,4 +1,4 @@
-# Instaparse 1.3.2
+# Instaparse 1.3.3
 
 *What if context-free grammars were as easy to use as regular expressions?*
 
@@ -22,7 +22,7 @@ Instaparse requires Clojure v1.5.1 or later.  (It may work with earlier versions
 
 Add the following line to your leiningen dependencies:
 
-	[instaparse "1.3.2"]
+	[instaparse "1.3.3"]
 
 Require instaparse in your namespace header:
 
@@ -960,6 +960,11 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	   :start :keyword (where :keyword is name of starting production rule)
 
 	   :string-ci true (treat all string literals as case insensitive)
+
+	   :no-slurp true (disables use of slurp to auto-detect whether
+	                   input is a URI.  When using this option, input
+	                   must be a grammar string or grammar map.  Useful
+	                   for platforms where slurp is slow or not available.)
 
 	   :auto-whitespace (:standard or :comma)
 	   or

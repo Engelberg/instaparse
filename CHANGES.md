@@ -1,5 +1,14 @@
 # Instaparse Change Log
 
+## 1.3.3
+
+### Enhancements
+
+Made two changes to make it possible to use instaparse on Google App Engine.
+
+* Removed dependency on javax.swing.text.Segment class.
+* Added `:no-slurp true` keyword option to `insta/parser` to disable URI slurping behavior, since GAE does not support slurp.
+
 ## 1.3.2
 
 ### Bugfixes

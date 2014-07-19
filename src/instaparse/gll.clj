@@ -33,15 +33,15 @@
 ;; to support the use of instaparse on Google App Engine,
 ;; we simply create our own Segment type.
 
-(deftype Segment [^chars array ^int offset ^int count]
+(deftype Segment [^String s ^int offset ^int count]
   CharSequence
   (length [this] count)
   (subSequence [this start end]
-    (Segment. array (+ offset start) (- end start)))
+    (Segment. s (+ offset start) (- end start)))
   (charAt [this index]
-    (nth array (+ offset index)))
+    (.charAt s (+ offset index)))
   (toString [this]
-    (String. array offset count)))
+    (.substring s offset (+ offset count))))
 
 (def DEBUG false)
 (def PRINT false)
@@ -113,7 +113,7 @@
 (defn string->segment
   "Converts a string to a Segment, which has fast subsequencing"
   [s]
-  (Segment. (char-array s) 0 (count s)))
+  (Segment. s 0 (count s)))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.

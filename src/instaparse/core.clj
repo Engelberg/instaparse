@@ -144,6 +144,11 @@
 
    :string-ci true (treat all string literals as case insensitive)
 
+   :no-slurp true (disables use of slurp to auto-detect whether
+                   input is a URI.  When using this option, input
+                   must be a grammar string or grammar map.  Useful
+                   for platforms where slurp is slow or not available.)
+
    :auto-whitespace (:standard or :comma)
    or
    :auto-whitespace custom-whitespace-parser"
@@ -172,10 +177,15 @@
         (cond
           (string? grammar-specification)
           (let [parser
-                (try (let [spec (slurp grammar-specification)]
-                       (build-parser spec output-format))
-                  (catch java.io.FileNotFoundException e 
-                    (build-parser grammar-specification output-format)))]
+                (if (get options :no-slurp)
+                  ; if :no-slurp is set to true, string is a grammar spec
+                  (build-parser grammar-specification output-format)                  
+                  ; otherwise, grammar-specification might be a URI,
+                  ; let's slurp to see
+                  (try (let [spec (slurp grammar-specification)]
+                         (build-parser spec output-format))
+                    (catch java.io.FileNotFoundException e 
+                      (build-parser grammar-specification output-format))))]            
             (if start (map->Parser (assoc parser :start-production start))
               (map->Parser parser)))
           
