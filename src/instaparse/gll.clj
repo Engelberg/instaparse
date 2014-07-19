@@ -20,14 +20,29 @@
   (:require [instaparse.combinators-source :refer [Epsilon nt]])
   
   ;; Need a way to convert parsers into strings for printing and error messages.
-  (:require [instaparse.print :as print])
-  
-  ;; In Java 7, strings no longer have fast substring operation,
-  ;; so we use Segments instead.
-  (:import javax.swing.text.Segment)
-  
+  (:require [instaparse.print :as print])  
   )
-    
+
+;; As of Java 7, strings no longer have fast substring operation,
+;; so we use Segments instead, which implement the CharSequence
+;; interface with a fast subSequence operation.  Fortunately,
+;; Java regular expressions work on anything that adheres
+;; to the CharSequence interface.  There is a built-in class
+;; javax.swing.text.Segment which does the trick, but
+;; this class is not available on Google App Engine.  So
+;; to support the use of instaparse on Google App Engine,
+;; we simply create our own Segment type.
+
+(deftype Segment [^chars array ^int offset ^int count]
+  CharSequence
+  (length [this] count)
+  (subSequence [this start end]
+    (Segment. array (+ offset start) (- end start)))
+  (charAt [this index]
+    (nth array (+ offset index)))
+  (toString [this]
+    (String. array offset count)))
+
 (def DEBUG false)
 (def PRINT false)
 (defmacro debug [& body]
