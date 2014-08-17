@@ -15,10 +15,10 @@
 (def ^:constant failure-signal (gll/->Failure nil nil))
 
 (defn get-end 
-  (^long [parse]
+  (^number [parse]
     (let [[start end] (viz/span parse)]
       (if end (long end) (count parse))))
-  (^long [parse ^long index]
+  (^number [parse ^number index]
     (let [[start end] (viz/span parse)]
       (if end (long end) (+ index (count parse))))))
 

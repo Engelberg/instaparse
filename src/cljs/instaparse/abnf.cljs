@@ -161,7 +161,7 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
                      (= (:low repeat) 1) (plus element)
                      (= (:high repeat) 1) (opt element)
                      :else (rep (or (:low repeat) 0)
-                                (or (:high repeat) Double/POSITIVE_INFINITY)
+                                (or (:high repeat) js/Infinity)
                                 element)))
                  ([element]
                    element))
@@ -174,15 +174,15 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
                ; case insensitive string
                (string-ci (apply str cs)))
    :bin-char (fn [& cs]
-               (Integer/parseInt (apply str cs) 2))
+               (js/parseInt (apply str cs) 2))
    :dec-char (fn [& cs]
-               (Integer/parseInt (apply str cs)))
+               (js/parseInt (apply str cs)))
    :hex-char (fn [& cs]
-               (Integer/parseInt (apply str cs) 16))
+               (js/parseInt (apply str cs) 16))
    :bin-val get-char-combinator
    :dec-val get-char-combinator
    :hex-val get-char-combinator
-   :NUM #(Integer/parseInt (apply str %&))})
+   :NUM #(js/parseInt (apply str %&))})
 
 ;; (def abnf-parser (red/apply-standard-reductions 
 ;;                    :hiccup (cfg/ebnf abnf-grammar)))

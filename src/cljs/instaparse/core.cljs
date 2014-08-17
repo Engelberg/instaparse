@@ -113,11 +113,11 @@
  
 (defrecord Parser [grammar start-production output-format]
   IFn
-  (invoke [parser text] (parse parser text))
-  (invoke [parser text key1 val1] (parse parser text key1 val1))
-  (invoke [parser text key1 val1 key2 val2] (parse parser text key1 val1 key2 val2))
-  (invoke [parser text key1 val1 key2 val2 key3 val3] (parse parser text key1 val1 key2 val2 key3 val3))
-  (applyTo [parser args] (apply parse parser args))) 
+  (-invoke [parser text] (parse parser text))
+  (-invoke [parser text key1 val1] (parse parser text key1 val1))
+  (-invoke [parser text key1 val1 key2 val2] (parse parser text key1 val1 key2 val2))
+  (-invoke [parser text key1 val1 key2 val2 key3 val3] (parse parser text key1 val1 key2 val2 key3 val3))
+  #_(-applyTo [parser args] (apply parse parser args))) 
 
 (defn parser
   "Takes a string specification of a context-free grammar,

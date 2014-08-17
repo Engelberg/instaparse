@@ -46,7 +46,7 @@
     :cat (cat-parse parser index tramp)
     :string (string-parse parser index tramp)
     :string-ci (string-case-insensitive-parse parser index tramp)
-    :epsilon (epsilon-parse index tramp)
+    :epsilon (epsilon-parse parser index tramp)
     :opt (opt-parse parser index tramp)
     :plus (plus-parse parser index tramp)
     :rep (rep-parse parser index tramp)
@@ -68,7 +68,7 @@
     :cat (cat-full-parse parser index tramp)
     :string (string-full-parse parser index tramp)
     :string-ci (string-case-insensitive-full-parse parser index tramp)
-    :epsilon (epsilon-full-parse index tramp)
+    :epsilon (epsilon-full-parse parser index tramp)
     :opt (opt-full-parse parser index tramp)
     :plus (plus-full-parse parser index tramp)
     :rep (rep-full-parse parser index tramp)
@@ -80,17 +80,20 @@
 
 (defrecord Failure [index reason])  
 
-(defn- chop-off-repetition [s]
-  (let [[before-repeats repeats] (->> (partition-all 2 1 s)
-                                      (split-with (fn [[x y]] (not= x y))))]
-    (concat (map first before-repeats)
-            (map first (take 1 repeats)))))
+(defn re-start-match? [re]
+  (= \^ (nth (str re) 1)))
 
-(defn- re-seq-hack
-  "As of clojurescript 1913, re-seq can sometimes return an infinite
-   sequence.  This is a hack to avoid that."
+(defn re-seq-hack
+  "Returns a lazy sequence of successive matches of re in s."
   [re s]
-  (chop-off-repetition (re-seq re s)))
+  (let  [match-data (re-find re s)
+         match-idx (.search s re)
+         match-str (if (coll? match-data) (first match-data) match-data)
+         post-match (subs s (+ match-idx (count match-str)))]
+    (when match-data (lazy-seq (cons match-data (when (and (seq post-match)
+                                                           (not (and (zero? match-idx)
+                                                                     (re-start-match? re)))) 
+                                                  (re-seq-hack re post-match)))))))
 
 (defn re-seq-no-submatches [regexp text]
   (for [match (re-seq-hack regexp text)]
@@ -525,6 +528,8 @@
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
 
+
+; FIXME: out of sync with clj - see re-match-at-front
 (defn regexp-parse
   [this index tramp]
   (let [regexp (:regexp this)
@@ -724,13 +729,14 @@
              (success tramp [index this] nil index)))))))      
 
 (defn epsilon-parse
-  [index tramp] (success tramp [index Epsilon] nil index))
+  [this index tramp] (success tramp [index this] nil index))
 (defn epsilon-full-parse
-  [index tramp] 
+  [this index tramp]
   (if (= index (count (:text tramp)))
-    (success tramp [index Epsilon] nil index)
-    (fail tramp [index Epsilon] index {:tag :Epsilon :expecting :end-of-string})))
-    
+    (success tramp [index this] nil index)
+    (fail tramp [index this] index {:tag :Epsilon :expecting :end-of-string})))
+
+
 ;; Parsing functions
 
 (defn start-parser [tramp parser partial?]

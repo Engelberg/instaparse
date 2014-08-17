@@ -45,7 +45,7 @@
       (imul e (.-premix-hashcode v1))
       (- (.-premix-hashcode v2) e))))
 
-(defn- hash-cat ^long [^AutoFlattenSeq v1 ^AutoFlattenSeq v2]
+(defn- hash-cat ^number [^AutoFlattenSeq v1 ^AutoFlattenSeq v2]
   ;(hash-cat-naive v1 v2)
   ;(assert (= (hash-cat-naive v1 v2) (mix-collection-hash (hash-cat-better v1 v2) (+ (count v1) (count v2)))))
   (hash-cat-combine v1 v2))
@@ -87,7 +87,7 @@
   (conj-flat [self obj])
   (cached? [self]))
 
-(deftype AutoFlattenSeq [^PersistentVector v ^int premix-hashcode ^int hashcode ^int cnt ^boolean dirty
+(deftype AutoFlattenSeq [^PersistentVector v ^number premix-hashcode ^number hashcode ^number cnt ^boolean dirty
                          ^:unsynchronized-mutable ^ISeq cached-seq]
   IHash
   (-hash [self] hashcode)
@@ -100,9 +100,9 @@
   IEquiv
   (-equiv [self other]
     (and (instance? AutoFlattenSeq other)
-         (== hashcode (.-hashcode ^AutoFlattenSeq other))
-         (== cnt (count other))
-         (or (== cnt 0)
+         (= hashcode (.-hashcode ^AutoFlattenSeq other))
+         (= cnt (count other))
+         (or (= cnt 0)
              (= (seq self) other))))
   IEmptyableCollection
   (-empty [self] (with-meta EMPTY (meta self))) 
@@ -210,8 +210,8 @@
   IEquiv
   (-equiv [self other]
     (or 
-      (and (== hashcode (hash other))
-           (== cnt (count other))
+      (and (= hashcode (hash other))
+           (= cnt (count other))
            (= (get-vec self) other))))
   IEmptyableCollection
   (-empty [self] (with-meta EMPTY (meta self))) 
