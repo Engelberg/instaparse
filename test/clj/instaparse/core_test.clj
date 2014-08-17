@@ -166,6 +166,32 @@
      identifier = #'[a-zA-Z]+'
      keyword = 'cond' | 'defn'"))
 
+(def unambiguous-tokenizer-improved
+  (insta/parser
+    "sentence = token (<whitespace> token)*
+     <token> = keyword | !keyword identifier
+     whitespace = #'\\s+'
+     end-of-string = !#'[\\s\\S]'
+     identifier = #'[a-zA-Z]+'
+     keyword = ('cond' | 'defn') &(whitespace | end-of-string)"))
+
+(def unambiguous-tokenizer-improved2
+  (insta/parser
+    "sentence = token (<whitespace> token)*
+     <token> = keyword | !(keyword (whitespace | end-of-string)) identifier
+     whitespace = #'\\s+'
+     end-of-string = !#'[\\s\\S]'
+     identifier = #'[a-zA-Z]+'
+     keyword = 'cond' | 'defn'"))
+
+(def unambiguous-tokenizer-improved3
+  (insta/parser
+    "sentence = token (<whitespace> token)*
+     <token> = keyword | !keyword identifier
+     whitespace = #'\\s+'
+     identifier = #'[a-zA-Z]+'
+     keyword = #'cond\\b' | #'defn\\b'"))
+
 (def preferential-tokenizer
   (insta/parser
     "sentence = token (<whitespace> token)*
@@ -230,6 +256,80 @@
   (if (map? t)
     (assoc t :span (insta/span t) :content (map spans-enlive (:content t)))
     t))
+
+(def whitespace 
+  (insta/parser
+    "whitespace = #'\\s+'"))
+
+(def auto-whitespace-example
+  (insta/parser 
+    "S = A B 
+     <A> = 'foo' 
+     <B> = #'\\d+'" 
+    :auto-whitespace whitespace))
+
+(def words-and-numbers-auto-whitespace
+  (insta/parser
+    "sentence = token+
+     <token> = word | number
+     word = #'[a-zA-Z]+'
+     number = #'[0-9]+'"
+    :auto-whitespace whitespace))
+
+(def auto-whitespace-example2
+  (insta/parser 
+    "S = A B 
+     <A> = 'foo' 
+     <B> = #'\\d+'" 
+    :auto-whitespace :standard))
+
+(def words-and-numbers-auto-whitespace2
+  (insta/parser
+    "sentence = token+
+     <token> = word | number
+     word = #'[a-zA-Z]+'
+     number = #'[0-9]+'"
+    :auto-whitespace :standard))
+
+(def whitespace-or-comments-v1
+  (insta/parser
+    "ws-or-comment = #'\\s+' | comment
+	   comment = '(*' inside-comment* '*)'
+	   inside-comment =  ( !('*)' | '(*') #'.' ) | comment"))
+
+(def whitespace-or-comments-v2
+  (insta/parser
+    "ws-or-comments = #'\\s+' | comments
+     comments = comment+
+     comment = '(*' inside-comment* '*)'
+     inside-comment =  !( '*)' | '(*' ) #'.' | comment"))
+
+(def whitespace-or-comments
+  (insta/parser
+    "ws-or-comments = #'\\s+' | comments
+     comments = comment+
+     comment = '(*' inside-comment* '*)'
+     inside-comment =  !'*)' !'(*' #'.' | comment"
+    :auto-whitespace whitespace))
+
+(def words-and-numbers-auto-whitespace-and-comments
+  (insta/parser
+    "sentence = token+
+     <token> = word | number
+     word = #'[a-zA-Z]+'
+     number = #'[0-9]+'"
+    :auto-whitespace whitespace-or-comments))
+
+(def eat-a (insta/parser "Aeater = #'[a]'+" :output-format :enlive))
+
+(def int-or-double
+  (insta/parser
+    "ws = #'\\s+';
+     Int = #'[0-9]+';
+     Double = #'[0-9]+\\.[0-9]*|\\.[0-9]+';
+     <ConstExpr> = Int | Double;
+     Input = ConstExpr <ws> ConstExpr;"
+     :start :Input))
 
 (deftest parsing-tutorial
   (are [x y] (= x y)
@@ -503,7 +603,84 @@
     
     (insta/parses words-and-numbers "ab 123 cd" :unhide :all)
     '([:sentence [:token [:word "ab"]] [:whitespace " "] [:token [:number "123"]] [:whitespace " "] [:token [:word "cd"]]])
+    
+    ((insta/parser "S = epsilon") "") [:S]
+    
+    (words-and-numbers-auto-whitespace " abc 123   45 de ")
+    [:sentence [:word "abc"] [:number "123"] [:number "45"] [:word "de"]]
+    
+    (words-and-numbers-auto-whitespace2 " abc 123   45 de ")
+    [:sentence [:word "abc"] [:number "123"] [:number "45"] [:word "de"]]
+    
+    (words-and-numbers-auto-whitespace-and-comments " abc 123 (* 456 *) (* (* 7*) 89 *)  def ")
+    [:sentence [:word "abc"] [:number "123"] [:word "def"]]
+    
+    (insta/parses eat-a "aaaaaaaabbbbbb" :total true)
+    '({:tag :Aeater, :content ("a" "a" "a" "a" "a" "a" "a" "a" {:tag :instaparse/failure, :content ("bbbbbb")})})
+    
+    (int-or-double "31 0.2")
+    [:Input [:Int "31"] [:Double "0.2"]]
+    
+    ((insta/parser "S=#'\\s*'") "     ")
+    [:S "     "]
+    
+    ((insta/parser "S = 'a' / eps") "a") [:S "a"]
+    ((insta/parser "S = 'a' / eps") "") [:S]
+
+    (insta/failure? ((insta/parser "S = 'a'+") "AaaAaa"))
+    true
+
+    ((insta/parser "S = 'a'+" :string-ci true) "AaaAaa")
+    [:S "a" "a" "a" "a" "a" "a"]
+    
+    (auto-whitespace-example "foo 123")
+    [:S "foo" "123"]
+
+    (auto-whitespace-example2 "foo 123")
+    [:S "foo" "123"]    
+    
+    (insta/failure? ((insta/parser "f = #'asdf'" ) ""))
+    true
     ))    
 
+(defn round-trip [parser]
+  (insta/parser (prn-str parser)))
 
-            
+(deftest round-trip-test
+  (are [p] (= (prn-str p) (prn-str (round-trip p)))
+       as-and-bs
+       as-and-bs-regex
+       as-and-bs-variation1
+       as-and-bs-variation2
+       paren-ab
+       paren-ab-hide-parens
+       paren-ab-manually-flattened
+       paren-ab-hide-tag
+       paren-ab-hide-both-tags
+       addition
+       addition-e
+       words-and-numbers
+       words-and-numbers-one-character-at-a-time
+       ambiguous
+       not-ambiguous
+       repeated-a
+       lookahead-example
+       negative-lookahead-example
+       abc
+       ambiguous-tokenizer
+       unambiguous-tokenizer
+       preferential-tokenizer
+       ord-test
+       ord2-test
+       even-odd
+       arithmetic
+       whitespace
+       words-and-numbers-auto-whitespace
+       whitespace-or-comments-v1
+       whitespace-or-comments-v2
+       whitespace-or-comments
+       words-and-numbers-auto-whitespace
+       eat-a
+       int-or-double))
+
+

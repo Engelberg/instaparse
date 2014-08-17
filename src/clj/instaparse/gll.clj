@@ -20,15 +20,29 @@
   (:require [instaparse.combinators-source :refer [Epsilon nt]])
   
   ;; Need a way to convert parsers into strings for printing and error messages.
-  (:require [instaparse.print :as print])
-  
-  ;; In Java 7, strings no longer have fast substring operation,
-  ;; so we use Segments instead.
-  (:import javax.swing.text.Segment)
-  
-  (:use clojure.pprint)
+  (:require [instaparse.print :as print])  
   )
-    
+
+;; As of Java 7, strings no longer have fast substring operation,
+;; so we use Segments instead, which implement the CharSequence
+;; interface with a fast subSequence operation.  Fortunately,
+;; Java regular expressions work on anything that adheres
+;; to the CharSequence interface.  There is a built-in class
+;; javax.swing.text.Segment which does the trick, but
+;; this class is not available on Google App Engine.  So
+;; to support the use of instaparse on Google App Engine,
+;; we simply create our own Segment type.
+
+(deftype Segment [^String s ^int offset ^int count]
+  CharSequence
+  (length [this] count)
+  (subSequence [this start end]
+    (Segment. s (+ offset start) (- end start)))
+  (charAt [this index]
+    (.charAt s (+ offset index)))
+  (toString [this]
+    (.substring s offset (+ offset count))))
+
 (def DEBUG false)
 (def PRINT false)
 (defmacro debug [& body]
@@ -59,7 +73,7 @@
     :cat (cat-parse parser index tramp)
     :string (string-parse parser index tramp)
     :string-ci (string-case-insensitive-parse parser index tramp)
-    :epsilon (epsilon-parse index tramp)
+    :epsilon (epsilon-parse parser index tramp)
     :opt (opt-parse parser index tramp)
     :plus (plus-parse parser index tramp)
     :rep (rep-parse parser index tramp)
@@ -81,7 +95,7 @@
     :cat (cat-full-parse parser index tramp)
     :string (string-full-parse parser index tramp)
     :string-ci (string-case-insensitive-full-parse parser index tramp)
-    :epsilon (epsilon-full-parse index tramp)
+    :epsilon (epsilon-full-parse parser index tramp)
     :opt (opt-full-parse parser index tramp)
     :plus (plus-full-parse parser index tramp)
     :rep (rep-full-parse parser index tramp)
@@ -99,7 +113,7 @@
 (defn string->segment
   "Converts a string to a Segment, which has fast subsequencing"
   [s]
-  (Segment. (char-array s) 0 (count s)))
+  (Segment. s 0 (count s)))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
@@ -510,19 +524,20 @@
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
 
-(defn re-seq-no-submatches [regexp text]
-  (for [match (re-seq regexp text)]
-    (if (vector? match) (match 0) match)))
-
+(defn re-match-at-front [regexp text]
+  (let [^java.util.regex.Matcher matcher (re-matcher regexp text)
+        match? (.lookingAt matcher)]
+    (when match?
+      (.group matcher))))
+    
 (defn regexp-parse
   [this index tramp]
   (let [regexp (:regexp this)
         ^Segment text (:segment tramp)
         substring (.subSequence text index (.length text))
-        matches (re-seq-no-submatches regexp substring)]
-    (if (seq matches)
-      (doseq [match matches]
-        (success tramp [index this] match (+ index (count match))))
+        match (re-match-at-front regexp substring)]
+    (if match
+      (success tramp [index this] match (+ index (count match)))
       (fail tramp [index this] index
             {:tag :regexp :expecting regexp}))))
 
@@ -531,14 +546,12 @@
   (let [regexp (:regexp this)
         ^Segment text (:segment tramp)
         substring (.subSequence text index (.length text))
-        matches (re-seq-no-submatches regexp substring)
-        desired-length (- (count text) index)
-        filtered-matches (filter #(= (count %) desired-length) matches)]
-    (if-let [seq-filtered-matches (seq filtered-matches)]
-      (doseq [match seq-filtered-matches]
-        (success tramp [index this] match (count text)))
+        match (re-match-at-front regexp substring)
+        desired-length (- (count text) index)]
+    (if (and match (= (count match) desired-length))
+      (success tramp [index this] match (count text)))
       (fail tramp [index this] index
-            {:tag :regexp :expecting regexp :full true}))))
+            {:tag :regexp :expecting regexp :full true})))
         
 (let [empty-cat-result afs/EMPTY]
 	(defn cat-parse
@@ -713,12 +726,12 @@
              (success tramp [index this] nil index)))))))      
 
 (defn epsilon-parse
-  [index tramp] (success tramp [index Epsilon] nil index))
+  [this index tramp] (success tramp [index this] nil index))
 (defn epsilon-full-parse
-  [index tramp] 
+  [this index tramp]
   (if (= index (count (:text tramp)))
-    (success tramp [index Epsilon] nil index)
-    (fail tramp [index Epsilon] index {:tag :Epsilon :expecting :end-of-string})))
+    (success tramp [index this] nil index)
+    (fail tramp [index this] index {:tag :Epsilon :expecting :end-of-string})))
     
 ;; Parsing functions
 

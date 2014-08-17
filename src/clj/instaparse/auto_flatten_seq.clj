@@ -4,7 +4,22 @@
 
 (def ^:const threshold 32)
 
-(declare EMPTY)
+(defprotocol ConjFlat
+  (conj-flat [self obj])
+  (cached? [self]))
+
+; Need a backwards compatible version of mix-collection-hash
+(defmacro compile-if [test then else]
+  (if (eval test)
+    then
+    else))
+
+(defmacro mix-collection-hash-bc [x y] ;backwards-compatible
+  `(compile-if (resolve 'clojure.core/mix-collection-hash)
+               (mix-collection-hash ~x ~y)
+               ~x))
+
+(declare EMPTY hash-cat afs? true-count)
 
 (defn- expt [base pow]
   (if (zero? pow) 1
@@ -15,23 +30,8 @@
           (zero? n) (unchecked-multiply-int z y)
           :else (recur n (unchecked-multiply-int z y) (unchecked-multiply-int z z)))))))
 
-(def ^:const inverse-thirty-one -1108378657)
-
-(defn- hash-conj [hash-v item]
-  (unchecked-add-int (unchecked-multiply-int 31 hash-v) (hash item)))  
-
-(defn- hash-pop [v top]
-  (unchecked-multiply-int inverse-thirty-one
-                          (unchecked-subtract-int (hash v) (hash top))))
-
-(defn- hash-cat [v1 v2]
-  (let [c (count v2)
-        e (int (expt 31 c))]
-    (unchecked-add-int
-      (unchecked-multiply-int e (hash v1))
-      (unchecked-subtract-int (hash v2) e))))
-
-(declare afs?)
+(defmacro hash-conj [premix-hash-v item]
+  `(unchecked-add-int (unchecked-multiply-int 31 ~premix-hash-v) (hash ~item)))  
 
 (defn delve [v index]
   (loop [v (get-in v index)
@@ -39,8 +39,6 @@
     (if (afs? v)
       (recur (get v 0) (conj index 0))
       index)))
-
-(declare true-count)
 
 (defn advance [v index]
   (cond
@@ -64,11 +62,8 @@
             (when-let [next-index (advance v index)] 
               (flat-seq v next-index))))))  
 
-(defprotocol ConjFlat
-  (conj-flat [self obj])
-  (cached? [self]))
-
-(deftype AutoFlattenSeq [^PersistentVector v ^int hashcode ^int cnt ^boolean dirty
+(deftype AutoFlattenSeq [^PersistentVector v ^int premix-hashcode ^int hashcode
+                         ^int cnt ^boolean dirty
                          ^:unsynchronized-mutable ^clojure.lang.ISeq cached-seq]
   Object
   (toString [self] (.toString (seq self)))
@@ -113,12 +108,19 @@
       (cond
         (zero? cnt) obj
         (<= (count obj) threshold)
-        (AutoFlattenSeq. (into v obj) (hash-cat self obj) (+ (count obj) cnt)
-                            (or dirty (.dirty ^AutoFlattenSeq obj)) nil)
+        (let [phc (hash-cat self obj)
+              new-cnt (+ cnt (count obj))]
+          (AutoFlattenSeq. (into v obj) phc (mix-collection-hash-bc phc new-cnt) new-cnt
+                           (or dirty (.dirty ^AutoFlattenSeq obj)) nil))
         :else
-        (AutoFlattenSeq. (conj v obj) (hash-cat self obj) (+ (count obj) cnt)
-                            true nil))
-      :else (AutoFlattenSeq. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty nil)))
+        (let [phc (hash-cat self obj)
+              new-cnt (+ cnt (count obj))]
+          (AutoFlattenSeq. (conj v obj) phc (mix-collection-hash-bc phc new-cnt) new-cnt
+                           true nil)))
+      :else 
+      (let [phc (hash-conj premix-hashcode obj)
+            new-cnt (inc cnt)]
+        (AutoFlattenSeq. (conj v obj) phc (mix-collection-hash-bc phc new-cnt) new-cnt dirty nil))))
   (cached? [self] cached-seq)
   clojure.lang.Counted
   (count [self] cnt)
@@ -129,7 +131,7 @@
     (.valAt v key not-found))
   clojure.lang.IObj
   (withMeta [self metamap]
-    (AutoFlattenSeq. (with-meta v metamap) hashcode cnt dirty nil))
+    (AutoFlattenSeq. (with-meta v metamap) premix-hashcode hashcode cnt dirty nil))
   clojure.lang.IMeta
   (meta [self]
     (meta v))
@@ -139,10 +141,29 @@
       (do
         (set! cached-seq (if dirty (flat-seq v) (seq v)))
         cached-seq))))
-     
+
+(defn- hash-cat ^long [^AutoFlattenSeq v1 ^AutoFlattenSeq v2]
+  (let [c (count v2)
+        e (int (expt 31 c))]
+    (unchecked-add-int
+      (unchecked-multiply-int e (.premix-hashcode v1))
+      (unchecked-subtract-int (.premix-hashcode v2) e))))
+
+(defn hash-ordered-coll-without-mix ^long [v]
+  (compile-if (resolve 'clojure.core/mix-collection-hash)
+              (let [thirty-one (int 31)
+                    cnt (count v)]
+                (loop [acc (int 1) i (int 0)]
+                  (if (< i cnt)
+                    (recur (unchecked-add-int (unchecked-multiply-int thirty-one acc)
+                                              (hash (v i)))                    
+                           (inc i))
+                    acc)))
+              (hash v)))
+
 (defn auto-flatten-seq [v]
   (let [v (vec v)]
-    (AutoFlattenSeq. v (hash v) (count v) false nil)))
+    (AutoFlattenSeq. v (hash-ordered-coll-without-mix v) (hash v) (count v) false nil)))
 
 (def EMPTY (auto-flatten-seq []))
 
@@ -209,7 +230,7 @@
       (and (== hashcode (hash other))
            (== cnt (count other))
            (= (get-vec self) other))))
-  (empty [self] (with-meta EMPTY (meta self))) 
+  (empty [self] (with-meta [] (meta self))) 
   clojure.lang.Counted
   (count [self] cnt)
   clojure.lang.IPersistentVector
@@ -290,6 +311,4 @@
                               (.cnt afs)
                               (ref nil)))
     :else
-    (.v afs)))
-    
-
+    (.v afs)))    

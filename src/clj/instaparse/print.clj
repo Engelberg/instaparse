@@ -5,10 +5,10 @@
 
 (declare combinators->str) ; mutual recursion
 
-(defn paren-for-tags [tag-set parser]
-  (if (tag-set (parser :tag))
-    (str "(" (combinators->str parser) ")")
-    (combinators->str parser)))
+(defn paren-for-tags [tag-set hidden? parser]
+  (if (and (not hidden?) (tag-set (parser :tag)))
+    (str "(" (combinators->str parser false) ")")
+    (combinators->str parser false)))
 
 (def paren-for-compound 
   (partial paren-for-tags #{:alt :ord :cat}))
@@ -26,42 +26,48 @@
 
 (defn regexp->str [r]
   (str/replace 
-    (str "#\"" (subs (str r) 1) "\"")
+    (str "#\"" (str r) "\"")
     #"[\s]" regexp-replace))
 
 (defn combinators->str
   "Stringifies a parser built from combinators"
-  [{:keys [parser parser1 parser2 parsers tag] :as p}]
-  (case tag
-    :epsilon "\u03b5"
-    :opt (str (paren-for-compound parser) "?")
-    :plus (str (paren-for-compound parser) "+")
-    :star (str (paren-for-compound parser) "*")
-    :rep (if (not= (:min p) (:max p))
-           (str (paren-for-compound parser) \{ 
-                (:min p) \, (:max p) \})
-           (str (paren-for-compound parser) \{ 
-                (:min p)\}))
-    :alt (str/join " | " (map (partial paren-for-tags #{:ord}) parsers))
-    :ord (str (paren-for-tags #{:alt} parser1)
-              " / "
-              (paren-for-tags #{:alt} parser2))
-    :cat (str/join " " (map (partial paren-for-tags #{:alt :ord}) parsers))
-    :string (with-out-str (pr (:string p)))
-    :string-ci (with-out-str (pr (:string p)))
-    :regexp (regexp->str (:regexp p))
-    :nt (subs (str (:keyword p)) 1)
-    :look (str "&" (paren-for-compound parser))
-    :neg (str "!" (paren-for-compound parser))
-    :hide (str "<" (combinators->str parser) ">")))
-              
+  ([p] (combinators->str p false))
+  ([{:keys [parser parser1 parser2 parsers tag] :as p} hidden?]
+    (if (and (not hidden?) (:hide p))
+      (str \< (combinators->str p true) \>)
+      (case tag
+        :epsilon "\u03b5"
+        :opt (str (paren-for-compound hidden? parser) "?")
+        :plus (str (paren-for-compound hidden? parser) "+")
+        :star (str (paren-for-compound hidden? parser) "*")
+        :rep (if (not= (:min p) (:max p))
+               (str (paren-for-compound hidden? parser) \{ 
+                    (:min p) \, (:max p) \})
+               (str (paren-for-compound hidden? parser) \{ 
+                    (:min p)\}))
+        :alt (str/join " | " (map (partial paren-for-tags #{:ord} hidden?) parsers))
+        :ord (str (paren-for-tags #{:alt} hidden? parser1)
+                  " / "
+                  (paren-for-tags #{:alt} hidden? parser2))
+        :cat (str/join " " (map (partial paren-for-tags #{:alt :ord} hidden?) parsers))
+        :string (with-out-str (pr (:string p)))
+        :string-ci (with-out-str (pr (:string p)))
+        :regexp (regexp->str (:regexp p))
+        :nt (subs (str (:keyword p)) 1)
+        :look (str "&" (paren-for-compound hidden? parser))
+        :neg (str "!" (paren-for-compound hidden? parser))))))
+  
 (defn rule->str
   "Takes a terminal symbol and a parser built from combinators,
    and returns a string for the rule."
   [terminal parser]
-  (str (subs (str terminal) 1)
-       " = " 
-       (combinators->str parser)))
+  (if (= (-> parser :red :reduction-type) :raw)
+    (str \< (name terminal) \> 
+         " = " 
+         (combinators->str parser))
+    (str (name terminal)
+         " = " 
+         (combinators->str parser))))
 
 (defn Parser->str
   "Takes a Parser object, i.e., something with a grammar map and a start 

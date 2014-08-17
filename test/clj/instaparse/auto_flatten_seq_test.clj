@@ -23,7 +23,11 @@
           (is (= v iv))
           (is (= iv v))        
           (is (= (hash v) (hash iv)))
-          (is (= (seq v) (seq iv)))        
+          (is (= (seq v) (seq iv)))
+          (is (= v (convert-afs-to-vec iv)))
+          (is (= (convert-afs-to-vec iv) v))
+          (is (= (type (empty (convert-afs-to-vec iv))) (type v)))
+          (is (= (hash v) (hash (convert-afs-to-vec iv))))
           (recur v iv (dec n) loops))))))
 
 (defn depth [v]

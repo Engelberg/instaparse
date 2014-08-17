@@ -82,7 +82,9 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
 (defn char-range
   "Takes two chars and returns a combinator representing a range of characters."
   [char1 char2]
-  (regexp (str "[" char1 "-" char2 "]")))
+  (regexp (str "[\\u" (format "%04x" (int char1))
+               "-\\u" (format "%04x" (int char2))
+               "]")))
 
 (defn get-char-combinator
   ([num1]

@@ -1,5 +1,110 @@
 # Instaparse Change Log
 
+## 1.3.3
+
+### Enhancements
+
+Made two changes to make it possible to use instaparse on Google App Engine.
+
+* Removed dependency on javax.swing.text.Segment class.
+* Added `:no-slurp true` keyword option to `insta/parser` to disable URI slurping behavior, since GAE does not support slurp.
+
+## 1.3.2
+
+### Bugfixes
+
+* Regular expressions on empty strings weren't properly returning a failure.
+
+## 1.3.1
+
+### Enhancements
+
+* Updated tests to use Clojure 1.6.0's final release.
+* Added `:ci-string true` flag to `insta/parser`.
+
+## 1.3.0
+
+### Compatibility with Clojure 1.6
+
+## 1.2.16
+
+### Bugfixes
+
+* Calling `empty` on a FlattenOnDemandVector now returns [].
+
+## 1.2.15
+
+### Enhancements
+
+* :auto-whitespace can now take the keyword :standard or :comma to access one of the predefined whitespace parsers.
+
+### Bugfixes
+
+* Fixed newline problem visualizing parse trees on Linux.
+* Fixed problem with visualizing rootless trees.
+
+## 1.2.11
+
+### Minor enhancements
+
+* Further refinements to the way ordered choice interacts with epsilon parsers.
+
+## 1.2.10
+
+### Bugfixes
+
+* Fixed bug introduced by 1.2.9 affecting ordered choice.
+
+## 1.2.9
+
+### Bugfixes
+
+* Fixed bug where ordered choice was ignoring epsilon parser.
+
+## 1.2.8
+
+### Bugfixes
+
+* Fixed bug introduced by 1.2.7, affecting printing of grammars with regexes.
+
+### Enhancements
+
+* Parser printing format now includes <> hidden information and tags.
+
+## 1.2.7
+
+### Bugfixes
+
+* Fixed bug when regular expression contains | character.
+
+## 1.2.6
+
+### Bugfixes
+
+* Changed pre-condition assertion for auto-whitespace option which was causing a problem with "lein jar".
+
+## 1.2.5
+
+### Bugfixes
+
+* Improved handling of unusual characters in ABNF grammars.
+
+## 1.2.4
+
+### Bugfixes
+
+* When parsing in :total mode with :enlive as the output format, changed the content of failure node from vector to list to match the rest of the enlive output.
+
+## 1.2.3
+
+### Bugfixes
+
+* Fixed problem when epsilon was the only thing in a nonterminal, e.g., "S = epsilon"
+
+### Features
+
+* Added experimental `:auto-whitespace` feature.  See the [Experimental Features Document](docs/ExperimentalFeatures.md) for more details.
+
 ## 1.2.2
 
 ### Bugfixes
@@ -23,7 +128,7 @@
     + `(my-parser text :unhide :tags)` - reveals tags, i.e., `<>` applied on the left-hand sides of rules. 
     + `(my-parser text :unhide :content)` - reveals content hidden on the right-hand side of rules with `<>`
     + `(my-parser text :unhide :all)` - reveals both tags and content.
- 
+
 ### Notable Performance Improvements
 
 * Dramatic performance improvement (quadratic time reduced to linear) when repetition parsers (+ or *) operate on text whose parse tree contains a large number of repetitions.

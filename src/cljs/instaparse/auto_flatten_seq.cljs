@@ -87,8 +87,6 @@
   (conj-flat [self obj])
   (cached? [self]))
 
-
-
 (deftype AutoFlattenSeq [^PersistentVector v ^int premix-hashcode ^int hashcode ^int cnt ^boolean dirty
                          ^:unsynchronized-mutable ^ISeq cached-seq]
   IHash

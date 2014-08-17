@@ -34,21 +34,19 @@
     (singleton? parsers) (first parsers)
     :else {:tag :alt :parsers parsers}))
 
-;(declare neg)
 (defn- ord2 [parser1 parser2]
-  (cond
-    (= parser1 Epsilon) Epsilon
-    (= parser2 Epsilon) parser1
-    :else
-    ;(alt parser1 (cat (neg parser1) parser2))))
-    {:tag :ord :parser1 parser1 :parser2 parser2}))
+    {:tag :ord :parser1 parser1 :parser2 parser2})
 
 (defn ord "Ordered choice, i.e., parser1 / parser2"
-  [& parsers]
-  (if (seq parsers)
-    (ord2 (first parsers) (apply ord (rest parsers)))
-    Epsilon))
-
+  ([] Epsilon)
+  ([parser1 & parsers]
+    (let [parsers (if (= parser1 Epsilon)
+                    (remove #{Epsilon} parsers)
+                    parsers)]
+      (if (seq parsers)
+        (ord2 parser1 (apply ord parsers))
+        parser1))))
+  
 (defn cat "Concatenation, i.e., parser1 parser2 ..."
   [& parsers]
   (if (every? (partial = Epsilon) parsers) Epsilon
@@ -68,9 +66,8 @@
 
 (defn regexp "Create a regexp terminal out of regular expression r"
   [r]
-  (let [s (str \^ r)]
-    (if (= s "^") Epsilon
-      {:tag :regexp :regexp (re-pattern s)})))
+  (if (= r "") Epsilon
+    {:tag :regexp :regexp (re-pattern r)}))
 
 (defn nt "Refers to a non-terminal defined by the grammar map"
   [s] 
@@ -107,6 +104,10 @@
     (cond
       (:parser parser) (assoc parser :parser (unhide-content (:parser parser)))
       (:parsers parser) (assoc parser :parsers (map unhide-content (:parsers parser)))
+      (= (:tag parser) :ord) (assoc parser 
+                                    :parser1 (unhide-content (:parser1 parser))
+                                    :parser2 (unhide-content (:parser2 parser)))
+                                    
       :else parser)))
 
 (defn unhide-all-content
@@ -132,3 +133,39 @@
                [k (assoc (unhide-content v) :red (reduction k))]))
     (throw (IllegalArgumentException. 
              (format "Invalid output format %s. Use :enlive or :hiccup." reduction-type)))))
+
+
+;; New beta feature: automatically add whitespace
+
+(defn auto-whitespace-parser [parser ws-parser]
+  (case (:tag parser)
+    (:nt :epsilon) parser  
+    (:opt :plus :star :rep :look :neg) (update-in parser [:parser] auto-whitespace-parser ws-parser)
+    (:alt :cat) (assoc parser :parsers  
+                       (map #(auto-whitespace-parser % ws-parser) (:parsers parser)))
+    :ord (assoc parser 
+                :parser1 (auto-whitespace-parser (:parser1 parser) ws-parser)
+                :parser2 (auto-whitespace-parser (:parser2 parser) ws-parser))
+    (:string :string-ci :regexp) 
+    ; If the string/regexp has a reduction associated with it,
+    ; we need to "lift" that reduction out to the (cat whitespace string)
+    ; parser that is being created.
+    (if (:red parser)
+      (assoc (cat ws-parser (dissoc parser :red)) :red (:red parser))
+      (cat ws-parser parser))))
+
+(defn auto-whitespace [grammar start grammar-ws start-ws]
+  (let [ws-parser (hide (opt (nt start-ws)))
+        grammar-ws (assoc grammar-ws start-ws (hide-tag (grammar-ws start-ws)))
+        modified-grammar (into {} 
+                               (for [[nt parser] grammar] 
+                                 [nt (auto-whitespace-parser parser ws-parser)]))
+        final-grammar (assoc modified-grammar start 
+                             (assoc (cat (dissoc (modified-grammar start) :red) 
+                                         ws-parser)
+                                    :red (:red (modified-grammar start))))]
+    (merge final-grammar grammar-ws)))
+  
+    
+
+    

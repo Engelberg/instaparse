@@ -26,7 +26,7 @@
   {:pre [(#{:abnf :ebnf} type)]}
   (alter-var-root #'*default-input-format* (constantly type)))
 
-(declare failure?)
+(declare failure? standard-whitespace-parsers)
 
 (defn- unhide-parser [parser unhide]
   (case unhide
@@ -140,40 +140,85 @@
    or
    :output-format :hiccup
    
-   :start :keyword (where :keyword is name of starting production rule)"
+   :start :keyword (where :keyword is name of starting production rule)
+
+   :string-ci true (treat all string literals as case insensitive)
+
+   :no-slurp true (disables use of slurp to auto-detect whether
+                   input is a URI.  When using this option, input
+                   must be a grammar string or grammar map.  Useful
+                   for platforms where slurp is slow or not available.)
+
+   :auto-whitespace (:standard or :comma)
+   or
+   :auto-whitespace custom-whitespace-parser"
   [grammar-specification &{:as options}]
   {:pre [(contains? #{:abnf :ebnf nil} (get options :input-format))
-         (contains? #{:enlive :hiccup nil} (get options :output-format))]}
+         (contains? #{:enlive :hiccup nil} (get options :output-format))
+         (let [ws-parser (get options :auto-whitespace)]
+           (or (nil? ws-parser)
+               (contains? standard-whitespace-parsers ws-parser)
+               (and
+                 (map? ws-parser)
+                 (contains? ws-parser :grammar)
+                 (contains? ws-parser :start-production))))]}
   (let [input-format (get options :input-format *default-input-format*)
         build-parser (case input-format 
                        :abnf abnf/build-parser
-                       :ebnf cfg/build-parser)
+                       :ebnf (if (get options :string-ci)
+                               (fn [spec output-format]
+                                 (binding [cfg/*case-insensitive-literals* true]
+                                   (cfg/build-parser spec output-format)))
+                               cfg/build-parser))
         output-format (get options :output-format *default-output-format*)
-        start (get options :start nil)]    
-    (cond
-      (string? grammar-specification)
-      (let [parser
-            (try (let [spec (slurp grammar-specification)]
-                   (build-parser spec output-format))
-              (catch java.io.FileNotFoundException e 
-                (build-parser grammar-specification output-format)))]
-        (if start (map->Parser (assoc parser :start-production start))
-          (map->Parser parser)))
-      
-      (map? grammar-specification)
-      (let [parser
-            (cfg/build-parser-from-combinators grammar-specification
-                                               output-format
-                                               start)]
-        (map->Parser parser))
-      
-      (vector? grammar-specification)
-      (let [start (if start start (grammar-specification 0))
-            parser
-            (cfg/build-parser-from-combinators (apply hash-map grammar-specification)
-                                               output-format
-                                               start)]
-        (map->Parser parser)))))
+        start (get options :start nil)
+        
+        built-parser
+        (cond
+          (string? grammar-specification)
+          (let [parser
+                (if (get options :no-slurp)
+                  ; if :no-slurp is set to true, string is a grammar spec
+                  (build-parser grammar-specification output-format)                  
+                  ; otherwise, grammar-specification might be a URI,
+                  ; let's slurp to see
+                  (try (let [spec (slurp grammar-specification)]
+                         (build-parser spec output-format))
+                    (catch java.io.FileNotFoundException e 
+                      (build-parser grammar-specification output-format))))]            
+            (if start (map->Parser (assoc parser :start-production start))
+              (map->Parser parser)))
+          
+          (map? grammar-specification)
+          (let [parser
+                (cfg/build-parser-from-combinators grammar-specification
+                                                   output-format
+                                                   start)]
+            (map->Parser parser))
+          
+          (vector? grammar-specification)
+          (let [start (if start start (grammar-specification 0))
+                parser
+                (cfg/build-parser-from-combinators (apply hash-map grammar-specification)
+                                                   output-format
+                                                   start)]
+            (map->Parser parser))
+
+          :else
+          (let [spec (slurp grammar-specification)
+                parser (build-parser spec output-format)]
+            (map->Parser parser)))]
+    
+    (let [auto-whitespace (get options :auto-whitespace)
+          ; auto-whitespace is keyword, parser, or nil
+          whitespace-parser (if (keyword? auto-whitespace)
+                              (get standard-whitespace-parsers auto-whitespace)
+                              auto-whitespace)]
+      (if-let [{ws-grammar :grammar ws-start :start-production} whitespace-parser]
+        (assoc built-parser :grammar
+               (c/auto-whitespace (:grammar built-parser) (:start-production built-parser)
+                                  ws-grammar ws-start))
+        built-parser))))
         
 (defn failure?
   "Tests whether a parse result is a failure."
@@ -198,3 +243,7 @@
 (defclone transform t/transform)
 
 (defclone visualize viz/tree-viz)
+
+(def ^:private standard-whitespace-parsers
+  {:standard (parser "whitespace = #'\\s+'")
+   :comma (parser "whitespace = #'[,\\s]+'")})

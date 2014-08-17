@@ -12,4 +12,8 @@ pom.xml
 .lein-failures
 .lein-plugins
 ideas.txt
+benchmarks.txt
+todo.txt
 /.settings
+.nrepl-port
+.lein-repl-history

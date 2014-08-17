@@ -30,7 +30,7 @@
 (def ^:constant node-builders
   ; A map of functions for building a node that only has one item
   ; These functions are used in total-parse mode to build failure nodes
-  {:enlive (fn [tag item] {:tag tag :content [item]})
+  {:enlive (fn [tag item] {:tag tag :content (list item)})
    :hiccup (fn [tag item] [tag item])})
 
 (def standard-non-terminal-reduction :hiccup)
