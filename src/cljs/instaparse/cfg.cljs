@@ -8,6 +8,10 @@
             [clojure.string :as str]
             [cljs.reader :as reader]))
 
+(def ^:dynamic *case-insensitive-literals*
+  "When true all string literal terminals in built grammar will be treated as case insensitive"
+  false)
+
 (def single-quoted-string #"'[^'\\]*(?:\\.[^'\\]*)*'")
 (def single-quoted-regexp #"#'[^'\\]*(?:\\.[^'\\]*)*'")
 (def double-quoted-string #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
