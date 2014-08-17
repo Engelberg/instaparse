@@ -1,17 +1,54 @@
 (ns instaparse.auto-flatten-seq
-  (:import cljs.core.PersistentVector))
+  #_(:import cljs.core.PersistentVector)
+  )
 
 (def ^:const threshold 32)
 
 (declare EMPTY)
 
-(defn- hash-conj [hash-v item]
-  (hash-combine hash-v (hash item)))  
+(defn ^number hash-ordered-coll-without-mix
+  "Returns the partially calculated hash code, still requires a call to mix-collection-hash"
+  ([coll]
+   (hash-ordered-coll-without-mix 1 coll))
+  ([existing-unmixed-hash coll]
+   (loop [unmixed-hash existing-unmixed-hash coll (seq coll)]
+     (if-not (nil? coll)
+       (recur (bit-or (+ (imul 31 unmixed-hash) (hash (first coll))) 0) 
+              (next coll))
+       unmixed-hash))))
+
+(defn ^number hash-conj
+  "Returns the hash code, consistent with =, for an external ordered
+  collection implementing Iterable.
+  See http://clojure.org/data_structures#hash for full algorithms."
+  [unmixed-hash item]
+  (bit-or (+ (imul 31 unmixed-hash) (hash item)) 0))
 
 ;; The clojurscript vector hash algorithm is different from the clojure one, 
 ;; with no obvious way to optimize this operation. 
-(defn- hash-cat [v1 v2]
+(defn- hash-cat-naive [v1 v2]
   (hash (concat v1 v2)))
+
+(defn- expt [base pow]
+  (if (zero? pow) 1
+    (loop [n (int pow), y (int 1), z (int base)]
+      (let [t (even? n), n (quot n 2)]
+        (cond
+          t (recur n y (imul z z))
+          (zero? n) (imul z y)
+          :else (recur n (imul z y) (imul z z)))))))
+
+(defn- hash-cat-combine [v1 v2]
+  (let [c (count v2)
+        e (int (expt 31 c))]
+    (+
+      (imul e (.-premix-hashcode v1))
+      (- (.-premix-hashcode v2) e))))
+
+(defn- hash-cat ^long [^AutoFlattenSeq v1 ^AutoFlattenSeq v2]
+  ;(hash-cat-naive v1 v2)
+  ;(assert (= (hash-cat-naive v1 v2) (mix-collection-hash (hash-cat-better v1 v2) (+ (count v1) (count v2)))))
+  (hash-cat-combine v1 v2))
 
 (declare afs?)
 
@@ -50,7 +87,9 @@
   (conj-flat [self obj])
   (cached? [self]))
 
-(deftype AutoFlattenSeq [^PersistentVector v ^int hashcode ^int cnt ^boolean dirty
+
+
+(deftype AutoFlattenSeq [^PersistentVector v ^int premix-hashcode ^int hashcode ^int cnt ^boolean dirty
                          ^:unsynchronized-mutable ^ISeq cached-seq]
   IHash
   (-hash [self] hashcode)
@@ -58,11 +97,12 @@
   ISeq
   (-first [self] (first (seq self)))
   (-rest [self] (rest (seq self)))
-  ;; (cons [self obj]
+  ;coun; (cons [self obj]
   ;;   (cons obj self))
   IEquiv
   (-equiv [self other]
-    (and (== hashcode (hash other))
+    (and (instance? AutoFlattenSeq other)
+         (== hashcode (.-hashcode ^AutoFlattenSeq other))
          (== cnt (count other))
          (or (== cnt 0)
              (= (seq self) other))))
@@ -78,12 +118,19 @@
       (cond
         (zero? cnt) obj
         (<= (count obj) threshold)
-        (AutoFlattenSeq. (into v obj) (hash-cat self obj) (+ (count obj) cnt)
-                            (or dirty (.-dirty ^AutoFlattenSeq obj)) nil)
+        (let [phc (hash-cat self obj)
+              new-cnt (+ cnt (count obj))]
+          (AutoFlattenSeq. (into v obj) phc (mix-collection-hash phc new-cnt) new-cnt
+                           (or dirty (.-dirty ^AutoFlattenSeq obj)) nil))
         :else
-        (AutoFlattenSeq. (conj v obj) (hash-cat self obj) (+ (count obj) cnt)
-                            true nil))
-      :else (AutoFlattenSeq. (conj v obj) (hash-conj hashcode obj) (inc cnt) dirty nil)))
+        (let [phc (hash-cat self obj)
+              new-cnt (+ cnt (count obj))]
+          (AutoFlattenSeq. (conj v obj) phc (mix-collection-hash phc new-cnt) new-cnt
+                           true nil)))
+      :else
+      (let [phc (hash-conj premix-hashcode obj)
+            new-cnt (inc cnt)]
+        (AutoFlattenSeq. (conj v obj) phc (mix-collection-hash phc new-cnt) new-cnt dirty nil))))
   (cached? [self] cached-seq)
   ICounted
   (-count [self] cnt)
@@ -94,7 +141,7 @@
     (-lookup v key not-found))
   IWithMeta
   (-with-meta [self metamap]
-    (AutoFlattenSeq. (with-meta v metamap) hashcode cnt dirty nil))
+    (AutoFlattenSeq. (with-meta v metamap) premix-hashcode hashcode cnt dirty nil))
   IMeta
   (-meta [self]
     (meta v))
@@ -106,8 +153,10 @@
         cached-seq))))
      
 (defn auto-flatten-seq [v]
-  (let [v (vec v)]
-    (AutoFlattenSeq. v (hash v) (count v) false nil)))
+  (let [v (vec v)
+        c (count v)
+        unmixed-hash (hash-ordered-coll-without-mix v)]
+    (AutoFlattenSeq. v unmixed-hash (mix-collection-hash unmixed-hash c) c false nil)))
 
 (def EMPTY (auto-flatten-seq []))
 
@@ -162,11 +211,10 @@
   (-hash [self] hashcode)
   IEquiv
   (-equiv [self other]
-    (and (instance? FlattenOnDemandVector other)
-         (== hashcode (.-hashcode ^FlattenOnDemandVector other))
-         (== cnt (.-cnt ^FlattenOnDemandVector other))
-         (= v (.-v ^FlattenOnDemandVector other))
-         (= flat (.-flat ^FlattenOnDemandVector other))))
+    (or 
+      (and (== hashcode (hash other))
+           (== cnt (count other))
+           (= (get-vec self) other))))
   IEmptyableCollection
   (-empty [self] (with-meta EMPTY (meta self))) 
   ICounted
@@ -237,4 +285,6 @@
                               (.-cnt afs)
                               (atom nil)))
     :else
-    (.-v afs)))
+    (do
+      (set! (.-__hash (.-v afs)) (.-hashcode afs))
+      (.-v afs))))
