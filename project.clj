@@ -9,7 +9,6 @@
   :profiles {:dev {:dependencies 
                    [[org.clojure/tools.trace "0.7.5"]
                     [criterium "0.3.1"]
-                    [org.flatland/useful "0.11.2"]
                     [rhizome "0.1.8"]]
                    :plugins [[com.cemerick/austin "0.1.4"]]}
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}

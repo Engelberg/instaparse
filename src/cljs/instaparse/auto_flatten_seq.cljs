@@ -24,10 +24,6 @@
   [unmixed-hash item]
   (bit-or (+ (imul 31 unmixed-hash) (hash item)) 0))
 
-;; The clojurscript vector hash algorithm is different from the clojure one, 
-;; with no obvious way to optimize this operation. 
-(defn- hash-cat-naive [v1 v2]
-  (hash (concat v1 v2)))
 
 (defn- expt [base pow]
   (if (zero? pow) 1
@@ -38,17 +34,17 @@
           (zero? n) (imul z y)
           :else (recur n (imul z y) (imul z z)))))))
 
-(defn- hash-cat-combine [v1 v2]
+
+;; Naive hash-cat for comparison purposes
+(defn- hash-cat-naive [v1 v2]
+  (hash (concat v1 v2)))
+
+(defn- hash-cat ^number [^AutoFlattenSeq v1 ^AutoFlattenSeq v2]
   (let [c (count v2)
         e (int (expt 31 c))]
     (+
       (imul e (.-premix-hashcode v1))
       (- (.-premix-hashcode v2) e))))
-
-(defn- hash-cat ^number [^AutoFlattenSeq v1 ^AutoFlattenSeq v2]
-  ;(hash-cat-naive v1 v2)
-  ;(assert (= (hash-cat-naive v1 v2) (mix-collection-hash (hash-cat-better v1 v2) (+ (count v1) (count v2)))))
-  (hash-cat-combine v1 v2))
 
 (declare afs?)
 
@@ -99,8 +95,8 @@
   ;;   (cons obj self))
   IEquiv
   (-equiv [self other]
-    (and (instance? AutoFlattenSeq other)
-         (= hashcode (.-hashcode ^AutoFlattenSeq other))
+    (and ;(instance? AutoFlattenSeq other)
+         (= hashcode (hash other))
          (= cnt (count other))
          (or (= cnt 0)
              (= (seq self) other))))
@@ -284,5 +280,7 @@
                               (atom nil)))
     :else
     (do
-      (set! (.-__hash (.-v afs)) (.-hashcode afs))
+      ; Seed hash on vector, as it's already been calculated
+      ; Disable for now, since it's a hack
+      ; (set! (.-__hash (.-v afs)) (.-hashcode afs))
       (.-v afs))))
