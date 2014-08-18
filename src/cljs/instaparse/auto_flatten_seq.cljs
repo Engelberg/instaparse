@@ -181,8 +181,8 @@
   (^PersistentVector get-vec [self]))
 
 (deftype FlattenOnDemandVector [v   ; atom containing PersistentVector or nil 
-                                ^int hashcode
-                                ^int cnt
+                                ^number hashcode
+                                ^number cnt
                                 flat] ; atom containing PersistentVector or nil
   GetVec
   (get-vec [self] 
