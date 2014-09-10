@@ -1,5 +1,6 @@
 (ns instaparse.cfg
   "This is the context free grammar that recognizes context free grammars."
+  (:refer-clojure :exclude [cat])
   (:use instaparse.combinators-source)
   (:use [instaparse.reduction :only [apply-standard-reductions]])
   (:use [instaparse.gll :only [parse]])
