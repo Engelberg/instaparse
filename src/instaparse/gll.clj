@@ -33,7 +33,7 @@
 ;; to support the use of instaparse on Google App Engine,
 ;; we simply create our own Segment type.
 
-(deftype Segment [^String s ^int offset ^int count]
+(deftype Segment [^CharSequence s ^int offset ^int count]
   CharSequence
   (length [this] count)
   (subSequence [this start end]
@@ -41,7 +41,8 @@
   (charAt [this index]
     (.charAt s (+ offset index)))
   (toString [this]
-    (.substring s offset (+ offset count))))
+    (.toString (doto (StringBuilder. count)
+                 (.append s offset (+ offset count))))))
 
 (def DEBUG false)
 (def PRINT false)
