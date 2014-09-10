@@ -314,7 +314,8 @@
   (when (= index (:fail-index tramp))
     (success tramp node-key 
              (build-node-with-meta
-               (:node-builder tramp) :instaparse/failure (subs (:text tramp) index)
+               (:node-builder tramp) :instaparse/failure
+               (.subSequence (:text tramp) index (count (:text tramp)))
                index (count (:text tramp)))
              (count (:text tramp)))))
 
@@ -486,7 +487,7 @@
   (let [string (:string this)
         text (:text tramp)
         end (min (count text) (+ index (count string)))
-        head (subs text index end)]      
+        head (.subSequence text index end)]      
     (if (= string head)
       (success tramp [index this] string end)
       (fail tramp [index this] index
@@ -497,7 +498,7 @@
   (let [string (:string this)
         text (:text tramp)
         end (min (count text) (+ index (count string)))
-        head (subs text index end)]      
+        head (.subSequence text index end)]      
     (if (and (= end (count text)) (= string head))
       (success tramp [index this] string end)
       (fail tramp [index this] index
@@ -508,7 +509,7 @@
   (let [string (:string this)
         text (:text tramp)
         end (min (count text) (+ index (count string)))
-        head (subs text index end)]      
+        head (.subSequence text index end)]      
     (if (.equalsIgnoreCase ^String string head)
       (success tramp [index this] string end)
       (fail tramp [index this] index
@@ -519,7 +520,7 @@
   (let [string (:string this)
         text (:text tramp)
         end (min (count text) (+ index (count string)))
-        head (subs text index end)]      
+        head (.subSequence text index end)]      
     (if (and (= end (count text)) (.equalsIgnoreCase ^String string head))
       (success tramp [index this] string end)
       (fail tramp [index this] index
@@ -703,7 +704,8 @@
 ;(defn negative-lookahead-parse
 ;  [this index tramp]
 ;  (let [parser (:parser this)
-;        remaining-text (subs (:text tramp) index)]
+;        text (:text tramp)
+;        remaining-text (.subSequence text index (.length text))]
 ;    (if (negative-parse? (:grammar tramp) parser remaining-text)
 ;      (success tramp [index this] nil index)
 ;      (fail tramp index :negative-lookahead))))
