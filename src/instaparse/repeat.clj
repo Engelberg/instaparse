@@ -118,18 +118,18 @@
                        (select-parse grammar initial-parser text segment end follow-ups)))))))
 
 (defn repeat-parse 
-  ([grammar initial-parser output-format text] (repeat-parse-no-tag grammar initial-parser text (gll/string->segment text)))
+  ([grammar initial-parser output-format text] (repeat-parse-no-tag grammar initial-parser text (gll/text->segment text)))
   ([grammar initial-parser output-format root-tag text]
     {:pre [(#{:hiccup :enlive} output-format)]} 
     (cond
       (= output-format :hiccup)
-      (repeat-parse-hiccup grammar initial-parser root-tag text (gll/string->segment text))
+      (repeat-parse-hiccup grammar initial-parser root-tag text (gll/text->segment text))
       (= output-format :enlive)
-      (repeat-parse-enlive grammar initial-parser root-tag text (gll/string->segment text)))))
+      (repeat-parse-enlive grammar initial-parser root-tag text (gll/text->segment text)))))
 
 (defn repeat-parse-with-header
   ([grammar header-parser repeating-parser output-format root-tag text]
-    (let [segment (gll/string->segment text)
+    (let [segment (gll/text->segment text)
           length (count text)
           header-results (parse-from-index grammar header-parser text segment 0)]
       (if (or (empty? header-results)

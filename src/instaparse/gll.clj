@@ -111,10 +111,10 @@
   (binding [*out* writer]
     (fail/pprint-failure x)))
 
-(defn string->segment
-  "Converts a string to a Segment, which has fast subsequencing"
-  [s]
-  (Segment. s 0 (count s)))
+(defn text->segment
+  "Converts text to a Segment, which has fast subsequencing"
+  [^CharSequence text]
+  (Segment. text 0 (count text)))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
@@ -129,9 +129,9 @@
                   stack next-stack generation negative-listeners 
                   msg-cache nodes success failure])
 (defn make-tramp 
-  ([grammar text] (make-tramp grammar text (string->segment text) -1 nil))
+  ([grammar text] (make-tramp grammar text (text->segment text) -1 nil))
   ([grammar text segment] (make-tramp grammar text segment -1 nil))
-  ([grammar text fail-index node-builder] (make-tramp grammar text (string->segment text) fail-index node-builder))
+  ([grammar text fail-index node-builder] (make-tramp grammar text (text->segment text) fail-index node-builder))
   ([grammar text segment fail-index node-builder]
     (Tramp. grammar text segment
             fail-index node-builder
