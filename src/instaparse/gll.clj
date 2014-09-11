@@ -116,6 +116,13 @@
   [^CharSequence text]
   (Segment. text 0 (count text)))
 
+(defn sub-sequence
+  "Like clojure.core/subs but consumes and returns a CharSequence"
+  (^CharSequence [^CharSequence text start]
+     (.subSequence text start (.length text)))
+  (^CharSequence [^CharSequence text start end]
+     (.subSequence text start end)))
+
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
 ; grammar is a map from non-terminals to parsers
@@ -315,7 +322,7 @@
     (success tramp node-key 
              (build-node-with-meta
                (:node-builder tramp) :instaparse/failure
-               (.subSequence (:text tramp) index (count (:text tramp)))
+               (sub-sequence (:text tramp) index)
                index (count (:text tramp)))
              (count (:text tramp)))))
 
@@ -487,7 +494,7 @@
   (let [string (:string this)
         text (:text tramp)
         end (min (count text) (+ index (count string)))
-        head (.subSequence text index end)]      
+        head (sub-sequence text index end)]      
     (if (= string head)
       (success tramp [index this] string end)
       (fail tramp [index this] index
@@ -498,7 +505,7 @@
   (let [string (:string this)
         text (:text tramp)
         end (min (count text) (+ index (count string)))
-        head (.subSequence text index end)]      
+        head (sub-sequence text index end)]      
     (if (and (= end (count text)) (= string head))
       (success tramp [index this] string end)
       (fail tramp [index this] index
@@ -509,7 +516,7 @@
   (let [string (:string this)
         text (:text tramp)
         end (min (count text) (+ index (count string)))
-        head (.subSequence text index end)]      
+        head (sub-sequence text index end)]      
     (if (.equalsIgnoreCase ^String string head)
       (success tramp [index this] string end)
       (fail tramp [index this] index
@@ -520,7 +527,7 @@
   (let [string (:string this)
         text (:text tramp)
         end (min (count text) (+ index (count string)))
-        head (.subSequence text index end)]      
+        head (sub-sequence text index end)]      
     (if (and (= end (count text)) (.equalsIgnoreCase ^String string head))
       (success tramp [index this] string end)
       (fail tramp [index this] index
@@ -536,7 +543,7 @@
   [this index tramp]
   (let [regexp (:regexp this)
         ^Segment text (:segment tramp)
-        substring (.subSequence text index (.length text))
+        substring (sub-sequence text index)
         match (re-match-at-front regexp substring)]
     (if match
       (success tramp [index this] match (+ index (count match)))
@@ -547,7 +554,7 @@
   [this index tramp]
   (let [regexp (:regexp this)
         ^Segment text (:segment tramp)
-        substring (.subSequence text index (.length text))
+        substring (sub-sequence text index)
         match (re-match-at-front regexp substring)
         desired-length (- (count text) index)]
     (if (and match (= (count match) desired-length))
@@ -704,8 +711,7 @@
 ;(defn negative-lookahead-parse
 ;  [this index tramp]
 ;  (let [parser (:parser this)
-;        text (:text tramp)
-;        remaining-text (.subSequence text index (.length text))]
+;        remaining-text (sub-sequence (:text tramp) index)]
 ;    (if (negative-parse? (:grammar tramp) parser remaining-text)
 ;      (success tramp [index this] nil index)
 ;      (fail tramp index :negative-lookahead))))
