@@ -24,7 +24,6 @@
   [unmixed-hash item]
   (bit-or (+ (imul 31 unmixed-hash) (hash item)) 0))
 
-
 (defn- expt [base pow]
   (if (zero? pow) 1
     (loop [n (int pow), y (int 1), z (int base)]
@@ -43,8 +42,8 @@
   (let [c (count v2)
         e (int (expt 31 c))]
     (+
-      (imul e (.-premix-hashcode v1))
-      (- (.-premix-hashcode v2) e))))
+     (bit-or (imul e (.-premix-hashcode v1)) 0)
+     (- (.-premix-hashcode v2) e))))
 
 (declare afs?)
 
