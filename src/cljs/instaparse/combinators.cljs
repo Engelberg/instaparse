@@ -1,5 +1,6 @@
 (ns instaparse.combinators
   "The combinator public API for instaparse"
+  (:refer-clojure :exclude [cat])
   (:require [instaparse.combinators-source :as c]
             [instaparse.cfg :as cfg]
             [instaparse.abnf :as abnf]))

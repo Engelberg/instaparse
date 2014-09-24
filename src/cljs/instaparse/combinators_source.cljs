@@ -1,5 +1,6 @@
 (ns instaparse.combinators-source
   "This is the underlying implementation of the various combinators."
+  (:refer-clojure :exclude [cat])
   (:require [instaparse.reduction :refer [singleton? red
                                           raw-non-terminal-reduction
                                           reduction-types]]))
@@ -48,6 +49,7 @@
       (if (seq parsers)
         (ord2 parser1 (apply ord parsers))
         parser1))))
+
 (defn cat "Concatenation, i.e., parser1 parser2 ..."
   [& parsers]
   (if (every? (partial = Epsilon) parsers) Epsilon

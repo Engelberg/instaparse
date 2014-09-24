@@ -6,7 +6,7 @@
             [instaparse.reduction :as red]
             [instaparse.transform :as t]
             [instaparse.abnf :as abnf]
-            [instaparse.viz :as viz]
+            ;[instaparse.viz :as viz]
             [instaparse.repeat :as repeat]
             [instaparse.combinators-source :as c]))
 
@@ -213,11 +213,11 @@
     :else
     nil))
 
-(def span viz/span)
+;(def span viz/span)
    
 (def transform t/transform)
 
-(def visualize viz/tree-viz)
+;(def visualize viz/tree-viz)
 (def ^:private standard-whitespace-parsers
   {:standard (parser "whitespace = #'\\s+'")
    :comma (parser "whitespace = #'[,\\s]+'")})
