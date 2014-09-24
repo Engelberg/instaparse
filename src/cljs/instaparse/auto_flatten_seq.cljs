@@ -212,9 +212,6 @@
   (-empty [self] (with-meta EMPTY (meta self))) 
   ICounted
   (-count [self] cnt)
-  IAssociative
-  (-assoc [self i val]
-    (assoc (get-vec self) i val))
   IVector
   (-assoc-n [self i val]
     (-assoc-n (get-vec self) i val))
@@ -258,6 +255,8 @@
   (-pop [self] 
     (-pop (get-vec self)))
   IAssociative
+  (-assoc [self i val]
+    (assoc (get-vec self) i val))
   (-contains-key? [self k]
     (-contains-key? (get-vec self) k))
   IKVReduce
