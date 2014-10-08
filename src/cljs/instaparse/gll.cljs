@@ -506,13 +506,16 @@
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
 
+(defn equals-ignore-case [^String s1 ^String s2]
+  (= (.toUpperCase s1) (.toUpperCase s2)))
+
 (defn string-case-insensitive-parse
   [this index tramp]
   (let [string (:string this)
         text (.-text tramp)
         end (min (count text) (+ index (count string)))
         head (subs text index end)]      
-    (if (.equalsIgnoreCase ^String string head)
+    (if (equals-ignore-case string head)
       (success tramp [index this] string end)
       (fail tramp [index this] index
             {:tag :string :expecting string}))))
@@ -523,7 +526,7 @@
         text (.-text tramp)
         end (min (count text) (+ index (count string)))
         head (subs text index end)]      
-    (if (and (= end (count text)) (.equalsIgnoreCase ^String string head))
+    (if (and (= end (count text)) (equals-ignore-case string head))
       (success tramp [index this] string end)
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))

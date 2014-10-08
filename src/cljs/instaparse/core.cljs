@@ -137,6 +137,8 @@
 
   :string-ci true (treat all string literals as case insensitive)
 
+  :no-slurp (ignored in cljs as slurping is not supported)
+
   :auto-whitespace (:standard or :comma)
   or
   :auto-whitespace custom-whitespace-parser"

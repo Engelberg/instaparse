@@ -204,7 +204,7 @@
   (insta/parser
     "expr = add-sub
      <add-sub> = mul-div | add | sub
-     add = add-sub <'+'> mul-div (* a comment *)
+     add = add-sub <'+'> mul-div
      sub = add-sub <'-'> mul-div
      <mul-div> = term | mul | div
      mul = mul-div <'*'> term

@@ -61,8 +61,8 @@ neg = <'!' opt-whitespace> element;
 <group> = <'(' opt-whitespace> alternation <opt-whitespace ')'>;
 option = <'[' opt-whitespace> alternation <opt-whitespace ']'>;
 hide = <'<' opt-whitespace> alternation <opt-whitespace '>'>;
-char-val = <'\\u0022'> #'[\\u0020-\\u0021\\u0023-\\u007E]'* <'\\u0022'> (* double-quoted strings *)
-         | <'\\u0027'> #'[\\u0020-\\u0026\u0028-\u007E]'* <'\\u0027'>;  (* single-quoted strings *)
+char-val = <'\\u0022'> #'[\\u0020-\\u0021\\u0023-\\u007E]'* <'\\u0022'> 
+         | <'\\u0027'> #'[\\u0020-\\u0026\u0028-\u007E]'* <'\\u0027'>;  
 <num-val> = <'%'> (bin-val | dec-val | hex-val);
 bin-val = <'b'> bin-char
           [ (<'.'> bin-char)+ | ('-' bin-char) ];
@@ -185,14 +185,14 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
    :hex-val get-char-combinator
    :NUM #(js/parseInt (apply str %&))})
 
-#_(def abnf-parser (red/apply-standard-reductions 
+(def abnf-parser (red/apply-standard-reductions 
                    :hiccup (cfg/ebnf abnf-grammar)))
 
-#_(defn rules->grammar-map
+(defn rules->grammar-map
   [rules]
   (merge-core (apply merge-with alt-preserving-hide-tag rules)))
 
-#_(defn abnf
+(defn abnf
   "Takes an ABNF grammar specification string and returns the combinator version.
   If you give it the right-hand side of a rule, it will return the combinator equivalent.
   If you give it a series of rules, it will give you back a grammar map.   
@@ -211,7 +211,7 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
                     (with-out-str (println rhs-tree))))        
         (t/transform abnf-transformer rhs-tree)))))
 
-#_(defn build-parser [spec output-format]
+(defn build-parser [spec output-format]
   (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
     (if (instance? instaparse.gll.Failure rule-tree)
       (throw (str "Error parsing grammar specification:\n"
