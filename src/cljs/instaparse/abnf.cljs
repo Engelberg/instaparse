@@ -61,8 +61,8 @@ neg = <'!' opt-whitespace> element;
 <group> = <'(' opt-whitespace> alternation <opt-whitespace ')'>;
 option = <'[' opt-whitespace> alternation <opt-whitespace ']'>;
 hide = <'<' opt-whitespace> alternation <opt-whitespace '>'>;
-char-val = <'\\u0022'> #'[\\u0020-\\u0021\\u0023-\\u007E]'* <'\\u0022'> 
-         | <'\\u0027'> #'[\\u0020-\\u0026\u0028-\u007E]'* <'\\u0027'>;  
+char-val = <'\\u0022'> #'[\\u0020-\\u0021\\u0023-\\u007E]'* <'\\u0022'> (* double-quoted strings *)
+         | <'\\u0027'> #'[\\u0020-\\u0026\u0028-\u007E]'* <'\\u0027'>;  (* single-quoted strings *)
 <num-val> = <'%'> (bin-val | dec-val | hex-val);
 bin-val = <'b'> bin-char
           [ (<'.'> bin-char)+ | ('-' bin-char) ];

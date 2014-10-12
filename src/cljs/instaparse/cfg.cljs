@@ -16,8 +16,7 @@
 (def single-quoted-regexp #"#'[^'\\]*(?:\\.[^'\\]*)*'")
 (def double-quoted-string #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
 (def double-quoted-regexp #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
-;(def inside-comment #"(?:(?!(?:\(\*|\*\)))[.\n])*")
-(def inside-comment #"(?:(?!(?:\(\*|\*\))).)*")
+(def inside-comment #"(?:(?!(?:\(\*|\*\)))[\s\S])*")
 (def ws "[,\\s]*")
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
