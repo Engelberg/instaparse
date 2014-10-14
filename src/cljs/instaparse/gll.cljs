@@ -24,7 +24,22 @@
    [instaparse.print :as print])
 
   (:use-macros [instaparse.gll-macros :only [debug dprintln dpprint success swap-field!]]))
-    
+
+(defprotocol ISegment
+  (subsegment [this start-index end-index-minus-one])
+  (toString [this]))
+
+(deftype Segment [text offset count]
+  ISegment
+  (subsegment [this start end]
+    (Segment. text (+ offset start) (- end start)))
+
+  (toString [this]
+    (subs text offset (+ offset count)))
+
+  ICounted
+  (-count [_] count))
+
 
 (debug (def stats (atom {})))
 (debug (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
@@ -79,47 +94,6 @@
     :ord (ordered-alt-full-parse parser index tramp)))
 
 (defrecord Failure [index reason])  
-
-(defn re-start-match? [re]
-  (= \^ (nth (str re) 1)))
-
-(defn re-seq-hack
-  "Returns a lazy sequence of successive matches of re in s."
-  [re s]
-  (let  [match-data (re-find re s)
-         match-idx (.search s re)
-         match-str (if (coll? match-data) (first match-data) match-data)
-         post-match (subs s (+ match-idx (count match-str)))]
-    (when match-data (lazy-seq (cons match-data (when (and (seq post-match)
-                                                           (not (and (zero? match-idx)
-                                                                     (re-start-match? re)))) 
-                                                  (re-seq-hack re post-match)))))))
-
-(defn re-seq-no-submatches [regexp text]
-  (for [match (re-seq-hack regexp text)]
-    (if (vector? match) (match 0) match)))
-
-(defprotocol ISegment
-  (subsegment [this start-index end-index-minus-one])
-  (segment-re-seq [this re]))
-
-(deftype Segment [text offset count]
-  ISegment
-  (subsegment [this start end]
-    (Segment. text (+ offset start) (- end start)))
-
-  (segment-re-seq [_ regexp]
-    ;; This silly implementation defeats the entire purpose of the
-    ;; Segment record.  A possible way to optimize this: prepend
-    ;; ([.\n]{start-index}) to the regular expression and keep
-    ;; start-index small by preemptively running substring inside the
-    ;; subsegment method when it gets too large. This may not work because
-    ;; any compiled regexes would be thrown out.
-    (let [substring (subs text offset (+ offset count))]
-      (re-seq-no-submatches regexp substring)))
-  ICounted
-  (-count [_] count))
-
 (defn string->segment
   "Converts a string to a Segment, which has fast subsequencing"
   [s]
@@ -531,33 +505,44 @@
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
 
+(defn- regexp->str
+  "(str regexp) in clojurescript puts slashes around the result, unlike
+   in clojure. Work around that."
+  [r]
+  (if (regexp? r)
+    (let [s (str r)]
+      (subs s 1 (dec (count s))))
+    r))
 
-; FIXME: out of sync with clj - see re-match-at-front
+(defn re-match-at-front [regexp text]
+  (let [re (js/RegExp. (.-source regexp) "g")
+        m (.exec re text)]
+    (when (and m (zero? (.-index m)))
+      (first m))))
+
 (defn regexp-parse
   [this index tramp]
   (let [regexp (:regexp this)
         ^Segment text (.-segment tramp)
-        substring (subsegment text index (count text))
-        matches (segment-re-seq substring regexp)]
-    (if (seq matches)
-      (doseq [match matches]
-        (success tramp [index this] match (+ index (count match))))
+        substring (toString (subsegment text index (count text)))
+        match (re-match-at-front regexp substring)]
+    (if match
+      (success tramp [index this] match (+ index (count match)))
       (fail tramp [index this] index
             {:tag :regexp :expecting regexp}))))
 
 (defn regexp-full-parse
   [this index tramp]
   (let [regexp (:regexp this)
-        ^Segment text (.-segment tramp)
-        substring (subsegment text index (count text))
-        matches (segment-re-seq substring regexp)
-        desired-length (- (count text) index)
-        filtered-matches (filter #(= (count %) desired-length) matches)]
-    (if-let [seq-filtered-matches (seq filtered-matches)]
-      (doseq [match seq-filtered-matches]
-        (success tramp [index this] match (count text)))
+        ^Segment text (:segment tramp)
+        substring (toString (subsegment text index (count text)))
+        match (re-match-at-front regexp substring)
+        desired-length (- (count text) index)]
+    (if (and match (= (count match) desired-length))
+      (success tramp [index this] match (count text)))
       (fail tramp [index this] index
-            {:tag :regexp :expecting regexp :full true}))))
+            {:tag :regexp :expecting regexp :full true})))
+
         
 (let [empty-cat-result afs/EMPTY]
 	(defn cat-parse
