@@ -34,10 +34,6 @@
           :else (recur n (imul z y) (imul z z)))))))
 
 
-;; Naive hash-cat for comparison purposes
-(defn- hash-cat-naive [v1 v2]
-  (hash (concat v1 v2)))
-
 (defn- hash-cat ^number [^AutoFlattenSeq v1 ^AutoFlattenSeq v2]
   (let [c (count v2)
         e (int (expt 31 c))]
@@ -277,8 +273,4 @@
                               (.-cnt afs)
                               (atom nil)))
     :else
-    (do
-      ; Seed hash on vector, as it's already been calculated
-      ; Disable for now, since it's a hack
-      ; (set! (.-__hash (.-v afs)) (.-hashcode afs))
-      (.-v afs))))
+    (.-v afs)))
