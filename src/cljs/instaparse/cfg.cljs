@@ -12,11 +12,11 @@
   "When true all string literal terminals in built grammar will be treated as case insensitive"
   false)
 
-(def single-quoted-string #"'[^'\\]*(?:\\.[^'\\]*)*'")
-(def single-quoted-regexp #"#'[^'\\]*(?:\\.[^'\\]*)*'")
-(def double-quoted-string #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
-(def double-quoted-regexp #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"")
-(def inside-comment #"(?:(?!(?:\(\*|\*\)))[\s\S])*")
+(def single-quoted-string #"'[^'\\]*(?:\\.[^'\\]*)*'") ; Single-quoted string
+(def single-quoted-regexp #"#'[^'\\]*(?:\\.[^'\\]*)*'") ; Single-quoted regexp
+(def double-quoted-string #"\"[^\"\\]*(?:\\.[^\"\\]*)*\"") ; Double-quoted string
+(def double-quoted-regexp #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"") ; Double-quoted regexp
+(def inside-comment #"(?:(?!(?:\(\*|\*\)))[\s\S])*") ; Comment text
 (def ws "[,\\s]*")
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
@@ -47,7 +47,7 @@
                            (cat (nt :opt-whitespace) (alt (string ";") (string ".")) (nt :opt-whitespace)))))          
      :nt (cat
            (neg (nt :epsilon))
-           (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+"))
+           (regexp "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+")) ; Non-terminal
           :hide-nt (cat (hide (string "<"))
                         opt-whitespace
                         (nt :nt)
