@@ -1,5 +1,6 @@
 (ns instaparse.combinators-source
   "This is the underlying implementation of the various combinators."
+  (:refer-clojure :exclude [cat])
   (:use instaparse.reduction))
 
 ;; Ways to build parsers

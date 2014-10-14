@@ -1,4 +1,5 @@
 (ns instaparse.grammars
+  (:refer-clojure :exclude [cat])
   (:use clojure.test)
   (:use instaparse.combinators instaparse.reduction)
   (:require [instaparse.core :as insta])

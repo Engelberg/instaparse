@@ -1,5 +1,6 @@
 (ns instaparse.abnf
   "This is the context free grammar that recognizes ABNF notation."
+  (:refer-clojure :exclude [cat])
   (:require [instaparse.transform :as t]
             [instaparse.cfg :as cfg]
             [instaparse.gll :as gll]

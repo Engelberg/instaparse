@@ -1,4 +1,5 @@
 (ns instaparse.core-test
+  (:refer-clojure :exclude [cat])
   (:use clojure.test)
   (:require clojure.edn)
   (:require [instaparse.core :as insta])  

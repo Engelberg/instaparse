@@ -1,4 +1,4 @@
-(defproject instaparse "1.3.3.1"
+(defproject instaparse "1.3.5"
   :description "Instaparse: No grammar left behind"
   :url "https://github.com/Engelberg/instaparse"
   :license {:name "Eclipse Public License"
@@ -22,7 +22,7 @@
   :target-path "target"
   :scm {:name "git"
         :url "https://github.com/Engelberg/instaparse"}
-  :cljsbuild {:builds [{:source-paths ["src/cljs" "test/cljs"]
+  :cljsbuild {:builds [{:source-paths ["src/cljs" "test/cljs" "test/clj"]
                         :compiler {:output-to "target/test.js"
                                    :pretty-print true}}]
               :test-commands {"unit-tests" ["phantomjs" :runner "target/test.js"]}})

@@ -2,9 +2,15 @@
   (:use clojure.test)
   (:use instaparse.core))
 
+(defmacro abnf-uri-data []
+  (slurp "test/data/abnf_uri.txt"))
+
+(defmacro phone-uri-data [] 
+  (slurp "test/data/phone_uri.txt"))
+
 (deftest abnf-uri
   (let [uri-parser (binding [instaparse.abnf/*case-insensitive* true]
-                     (parser (slurp "test/data/abnf_uri.txt") :input-format :abnf))]
+                     (parser (abnf-uri-data) :input-format :abnf))]
     (are [x y] (= x y)
          (uri-parser "http://www.google.com")
          [:URI [:SCHEME [:ALPHA "h"] [:ALPHA "t"] [:ALPHA "t"] [:ALPHA "p"]] ":" [:HIER-PART "//" [:AUTHORITY [:HOST [:REG-NAME [:UNRESERVED [:ALPHA "w"]] [:UNRESERVED [:ALPHA "w"]] [:UNRESERVED [:ALPHA "w"]] [:UNRESERVED "."] [:UNRESERVED [:ALPHA "g"]] [:UNRESERVED [:ALPHA "o"]] [:UNRESERVED [:ALPHA "o"]] [:UNRESERVED [:ALPHA "g"]] [:UNRESERVED [:ALPHA "l"]] [:UNRESERVED [:ALPHA "e"]] [:UNRESERVED "."] [:UNRESERVED [:ALPHA "c"]] [:UNRESERVED [:ALPHA "o"]] [:UNRESERVED [:ALPHA "m"]]]]] [:PATH-ABEMPTY]]]
@@ -29,7 +35,7 @@
 
 (deftest phone-uri
   (let [phone-uri-parser (binding [instaparse.abnf/*case-insensitive* true]
-                           (parser (slurp "test/data/phone_uri.txt") :input-format :abnf))]
+                           (parser (phone-uri-data) :input-format :abnf))]
     (are [x y] (= x y)
          (phone-uri-parser "tel:+1-201-555-0123")
          [:TELEPHONE-URI
