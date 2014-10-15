@@ -1,6 +1,6 @@
 (ns instaparse.viz-test
   (:require instaparse.core)
-  (:use instaparse.viz))
+  #+clj (:use instaparse.viz))
 
 (def make-tree-e
      "simple tree parser"
@@ -30,6 +30,7 @@
               leaf: #'a+'
               " :output-format :hiccup))
 
+#+clj
 (defn view-test-trees [t]
   (tree-viz (make-tree-e "((a)((a)))(a)"))
   (Thread/sleep t)
