@@ -1,10 +1,8 @@
 (ns instaparse.auto-flatten-seq-test
-  (:require [cemerick.cljs.test :as t]
-            [instaparse.auto-flatten-seq :refer [auto-flatten-seq conj-flat
-                                                 convert-afs-to-vec
-                                                 hash-conj hash-cat]])
-  (:require-macros [cemerick.cljs.test :refer (is deftest with-test 
-                                                  run-tests testing)]))
+  (:require #+cljs [cemerick.cljs.test :as t]
+            #+clj [clojure.test :refer [deftest are is]]
+            [instaparse.auto-flatten-seq :refer [auto-flatten-seq conj-flat convert-afs-to-vec]])
+  #+cljs (:require-macros [cemerick.cljs.test :refer [is are deftest]]))
 
 (defn rand-mutation [v iv]
   (let [rnd (int (rand-int 3))]

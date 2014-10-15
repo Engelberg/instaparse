@@ -1,10 +1,18 @@
 (ns instaparse.grammars
-  (:refer-clojure :exclude [cat])
-  (:use clojure.test)
-  (:use instaparse.combinators instaparse.reduction)
-  (:require [instaparse.core :as insta])
-  (:require [instaparse.gll :as gll]))
-
+  #+clj (:refer-clojure :exclude [cat])
+  (:require #+clj [clojure.test :refer [deftest are]]
+            #+cljs [cemerick.cljs.test :as t]
+            [instaparse.reduction :refer [apply-standard-reductions]]
+            [instaparse.combinators :refer [Epsilon opt plus 
+                                            star rep alt ord 
+                                            cat string string-ci 
+                                            regexp nt look neg 
+                                            hide hide-tag
+                                            ebnf abnf]]
+            [instaparse.gll :as gll]
+            [instaparse.core :as insta])
+  #+cljs (:require-macros [cemerick.cljs.test :refer [is are deftest with-test 
+                                               run-tests testing]]))
 (defn- parse [grammar start text]
   (gll/parse (apply-standard-reductions grammar) start text false))
 

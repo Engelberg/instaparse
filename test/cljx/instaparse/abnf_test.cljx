@@ -1,9 +1,16 @@
 (ns instaparse.abnf-test
-  (:require [cemerick.cljs.test :as t]
+  (:require #+cljs [cemerick.cljs.test :as t]
+            #+clj [clojure.test :refer [deftest are]]
             [instaparse.core :refer [parser]])
-  (:require-macros [instaparse.abnf-test :refer [abnf-uri-data phone-uri-data]]
-                   [cemerick.cljs.test :refer [is are deftest with-test 
-                                               run-tests testing]]))
+  #+cljs (:require-macros [instaparse.abnf-test :refer [abnf-uri-data phone-uri-data]]
+                          [cemerick.cljs.test :refer [are deftest]]))
+
+(defmacro abnf-uri-data []
+  (slurp "test/data/abnf_uri.txt"))
+
+(defmacro phone-uri-data [] 
+  (slurp "test/data/phone_uri.txt"))
+
 (deftest abnf-uri
   (let [uri-parser (binding [instaparse.abnf/*case-insensitive* true]
                      (parser (abnf-uri-data) :input-format :abnf))]
@@ -54,7 +61,6 @@
              [:PHONEDIGIT [:DIGIT "1"]]
              [:PHONEDIGIT [:DIGIT "2"]]
              [:PHONEDIGIT [:DIGIT "3"]]]]]])))
-
 
 (def abnf-german
   "Testing the ABNF regular expressions"
