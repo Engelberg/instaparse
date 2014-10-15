@@ -24,5 +24,6 @@
         :url "https://github.com/Engelberg/instaparse"}
   :cljsbuild {:builds [{:source-paths ["src/cljs" "test/cljs" "test/clj"]
                         :compiler {:output-to "target/test.js"
+                                   :optimizations :advanced
                                    :pretty-print true}}]
               :test-commands {"unit-tests" ["phantomjs" :runner "target/test.js"]}})
