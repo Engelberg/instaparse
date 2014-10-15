@@ -118,6 +118,11 @@
   (-invoke [parser text key1 val1 key2 val2 key3 val3] (parse parser text key1 val1 key2 val2 key3 val3))
   #_(-applyTo [parser args] (apply parse parser args))) 
 
+(extend-protocol IPrintWithWriter
+  instaparse.core/Parser
+  (-pr-writer  [parser writer _]
+    (-write writer (print/Parser->str parser))))
+
 (defn parser
   "Takes a string specification of a context-free grammar,
   or a URI for a text file containing such a specification,

@@ -505,15 +505,6 @@
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
 
-(defn- regexp->str
-  "(str regexp) in clojurescript puts slashes around the result, unlike
-   in clojure. Work around that."
-  [r]
-  (if (regexp? r)
-    (let [s (str r)]
-      (subs s 1 (dec (count s))))
-    r))
-
 (defn re-match-at-front [regexp text]
   (let [re (js/RegExp. (.-source regexp) "g")
         m (.exec re text)]

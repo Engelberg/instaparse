@@ -24,11 +24,9 @@
     "\t" "\\t"
     s)) 
 
-
-
 (defn regexp->str [r]
   (str/replace 
-    (str "#\"" (subs (str r) 1) "\"")
+    (str "#\"" (subs (.-source r) 1) "\"")
     #"[\s]" regexp-replace))
 
 (defn combinators->str

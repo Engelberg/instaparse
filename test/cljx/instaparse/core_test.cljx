@@ -659,7 +659,7 @@
 (defn round-trip [parser]
   (insta/parser (prn-str parser)))
 
-#_(deftest round-trip-test
+(deftest round-trip-test
   (are [p] (= (prn-str p) (prn-str (round-trip p)))
        as-and-bs
        as-and-bs-regex
@@ -695,5 +695,3 @@
        words-and-numbers-auto-whitespace
        eat-a
        int-or-double))
-
-
