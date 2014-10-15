@@ -15,8 +15,7 @@
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}}
   :aliases {"test-all" ["with-profile" "+1.5:+1.6" "test"]}
   :test-paths ["target/generated/src/clj" "target/generated/test/clj"]
-  :source-paths ["src/cljs" "src/clj" ;"target/generated/src/clj" "target/generated/src/cljs"
-                 ]
+  :source-paths ["src/cljs" "src/clj"]
   :clj {:source-paths  ["src/clj",  "target/generated/src/clj"]
         :test-paths  ["test/clj",  "target/generated/test/clj"]}
   :cljx {:builds [{:source-paths  ["src/cljx"]
@@ -39,9 +38,7 @@
   :scm {:name "git"
         :url "https://github.com/Engelberg/instaparse"}
   :cljsbuild {:builds [{:source-paths ["src/cljs" 
-                                       ;"test/cljs" 
                                        "target/generated/test/clj"
-                                       ;"target/generated/src/cljs" 
                                        "target/generated/test/cljs"]
                         :compiler {:output-to "target/test.js"
                                    :optimizations :advanced
