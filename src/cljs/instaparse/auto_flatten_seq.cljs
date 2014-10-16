@@ -37,9 +37,8 @@
 (defn- hash-cat ^number [^AutoFlattenSeq v1 ^AutoFlattenSeq v2]
   (let [c (count v2)
         e (int (expt 31 c))]
-    (+
-     (bit-or (imul e (.-premix-hashcode v1)) 0)
-     (- (.-premix-hashcode v2) e))))
+    (+ (bit-or (imul e (.-premix-hashcode v1)) 0)
+       (- (.-premix-hashcode v2) e))))
 
 (declare afs?)
 
@@ -86,8 +85,6 @@
   ISeq
   (-first [self] (first (seq self)))
   (-rest [self] (rest (seq self)))
-  ;coun; (cons [self obj]
-  ;;   (cons obj self))
   IEquiv
   (-equiv [self other]
     (and ;(instance? AutoFlattenSeq other)
@@ -189,13 +186,6 @@
   Object
   (toString [self]
     (pr-str* (get-vec self)))
-  ;; (hashCode [self] hashcode)
-  ;; (equals [self other]
-  ;;   (and (instance? FlattenOnDemandVector other)
-  ;;        (== hashcode (.hashcode ^FlattenOnDemandVector other))
-  ;;        (== cnt (.cnt ^FlattenOnDemandVector other))
-  ;;        (= v (.v ^FlattenOnDemandVector other))
-  ;;        (= flat (.flat ^FlattenOnDemandVector other))))
   IHash
   (-hash [self] hashcode)
   IEquiv
