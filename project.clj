@@ -43,4 +43,6 @@
                         :compiler {:output-to "target/test.js"
                                    :optimizations :advanced
                                    :pretty-print true}}]
-              :test-commands {"unit-tests" ["phantomjs" :runner "target/test.js"]}})
+              :test-commands {"unit-tests" ["node"
+                                            :node-runner
+                                            "target/test.js"]}})
