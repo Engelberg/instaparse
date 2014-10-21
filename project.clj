@@ -1,6 +1,6 @@
-(defproject instaparse "1.3.5-SNAPSHOT"
+(defproject instaparse "1.3.4.1-SNAPSHOT"
   :description "Instaparse: No grammar left behind"
-  :url "https://github.com/Engelberg/instaparse"
+  :url "https://github.com/lbradstreet/instaparse-cljs"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.6.0"]
@@ -36,7 +36,7 @@
   :hooks  [leiningen.cljsbuild cljx.hooks]
   :target-path "target"
   :scm {:name "git"
-        :url "https://github.com/Engelberg/instaparse"}
+        :url "https://github.com/lbradstreet/instaparse-cljs"}
   :cljsbuild {:builds [{:source-paths ["src/cljs" 
                                        "target/generated/test/clj"
                                        "target/generated/test/cljs"]
