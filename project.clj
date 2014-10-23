@@ -33,7 +33,7 @@
   :plugins [[lein-cljsbuild "1.0.3"]
             [com.keminglabs/cljx "0.4.0" :exclusions [org.clojure/clojure]]
             [com.cemerick/clojurescript.test "0.3.1"]]
-  :hooks  [leiningen.cljsbuild cljx.hooks]
+  :hooks  [cljx.hooks leiningen.cljsbuild]
   :target-path "target"
   :scm {:name "git"
         :url "https://github.com/lbradstreet/instaparse-cljs"}

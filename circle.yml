@@ -1,0 +1,10 @@
+machine:
+        java:
+                version: oraclejdk8
+
+dependencies:
+        override:
+                - echo Y | lein upgrade 2.4.3 :
+                        timeout: 900
+        post:
+                - lein cljx
