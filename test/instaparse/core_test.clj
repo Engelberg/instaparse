@@ -625,6 +625,9 @@
     ((insta/parser "S=#'\\s*'") "     ")
     [:S "     "]
     
+    ((insta/parser "S = #'a+'") "aaaaaa")
+    [:S "aaaaaa"]
+    
     ((insta/parser "S = 'a' / eps") "a") [:S "a"]
     ((insta/parser "S = 'a' / eps") "") [:S]
 

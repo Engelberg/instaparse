@@ -549,9 +549,9 @@
         match (re-match-at-front regexp substring)
         desired-length (- (count text) index)]
     (if (and match (= (count match) desired-length))
-      (success tramp [index this] match (count text)))
+      (success tramp [index this] match (count text))
       (fail tramp [index this] index
-            {:tag :regexp :expecting regexp :full true})))
+            {:tag :regexp :expecting regexp :full true}))))
         
 (let [empty-cat-result afs/EMPTY]
 	(defn cat-parse
