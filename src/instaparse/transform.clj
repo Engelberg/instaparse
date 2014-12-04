@@ -30,21 +30,18 @@ something that can have a metamap attached."
 
 (defn- hiccup-transform
   [transform-map parse-tree]
-  (let [transform (transform-map (first parse-tree))]
-    (cond
-      transform
+  (if (and (sequential? parse-tree) (seq parse-tree))
+    (if-let [transform (transform-map (first parse-tree))]
       (merge-meta
         (apply transform (map (partial hiccup-transform transform-map)
                               (next parse-tree)))
         (meta parse-tree))
-      (and (sequential? parse-tree) (seq parse-tree))
       (with-meta 
         (into [(first parse-tree)]
               (map (partial hiccup-transform transform-map) 
                    (next parse-tree)))
-        (meta parse-tree))
-      :else
-      parse-tree)))
+        (meta parse-tree)))
+    parse-tree))
 
 (defn transform
   "Takes a transform map and a parse tree (or seq of parse-trees).
