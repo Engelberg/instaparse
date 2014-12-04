@@ -645,6 +645,9 @@
     
     (insta/failure? ((insta/parser "f = #'asdf'" ) ""))
     true
+    
+    (insta/transform {:ADD +} [:ADD 10 5])
+    15
     ))    
 
 (defn round-trip [parser]
