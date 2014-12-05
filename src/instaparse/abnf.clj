@@ -92,7 +92,7 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
     (let [v (vec (concat [num1 num2] nums))]
       (if (= (v 1) "-")
         (char-range (v 0) (v 2))
-        (apply alt (for [n v]
+        (apply cat (for [n v]
                      (string (String. (Character/toChars n)))))))))
 
 (defn project
