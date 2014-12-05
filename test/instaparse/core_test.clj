@@ -637,6 +637,9 @@
     ((insta/parser "S = 'a'+" :string-ci true) "AaaAaa")
     [:S "a" "a" "a" "a" "a" "a"]
     
+    ((insta/parser "S = %x30.31" :input-format :abnf) "01")
+    [:S "0" "1"]
+    
     (auto-whitespace-example "foo 123")
     [:S "foo" "123"]
 
