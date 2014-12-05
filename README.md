@@ -1,4 +1,4 @@
-# Instaparse 1.3.4
+# Instaparse 1.3.5
 
 *What if context-free grammars were as easy to use as regular expressions?*
 
@@ -18,11 +18,11 @@ Instaparse aims to be the simplest way to build parsers in Clojure.
 
 ## Quickstart
 
-Instaparse requires Clojure v1.5.1 or later.  (It may work with earlier versions, but its speed relies extensively on features new to 1.5.)
+Instaparse requires Clojure v1.5.1 or later.  (It may work with earlier versions, but its speed relies extensively on features new to 1.5.)  A [Clojurescript port](https://github.com/lbradstreet/instaparse-cljs) is also available.
 
 Add the following line to your leiningen dependencies:
 
-	[instaparse "1.3.4"]
+	[instaparse "1.3.5"]
 
 Require instaparse in your namespace header:
 
