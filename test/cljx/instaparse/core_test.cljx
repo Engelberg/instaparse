@@ -576,6 +576,9 @@
     ((insta/parser "S=#'\\s*'") "     ")
     [:S "     "]
     
+    ((insta/parser "S = #'a+'") "aaaaaa")
+    [:S "aaaaaa"]
+    
     ((insta/parser "S = 'a' / eps") "a") [:S "a"]
     ((insta/parser "S = 'a' / eps") "") [:S]
 
@@ -585,6 +588,9 @@
     ((insta/parser "S = 'a'+" :string-ci true) "AaaAaa")
     [:S "a" "a" "a" "a" "a" "a"]
     
+    ((insta/parser "S = %x30.31" :input-format :abnf) "01")
+    [:S "0" "1"]
+    
     (auto-whitespace-example "foo 123")
     [:S "foo" "123"]
 
@@ -593,6 +599,9 @@
     
     (insta/failure? ((insta/parser "f = #'asdf'" ) ""))
     true
+    
+    (insta/transform {:ADD +} [:ADD 10 5])
+    15
     ))    
 
 #+clj

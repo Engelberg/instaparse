@@ -81,22 +81,19 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
 ")
 
 (defn char-range
-  "Takes two chars and returns a combinator representing a range of characters."
-  [char1 char2]
-  (regexp (str "[\\u" (format "%04x" (int char1))
-               "-\\u" (format "%04x" (int char2))
-               "]")))
+  "Takes two codepoints and returns a combinator representing a range of characters."
+  [codepoint1 codepoint2]
+  (regexp (format "[\\x{%x}-\\x{%x}]" codepoint1 codepoint2))) 
 
 (defn get-char-combinator
   ([num1]
-    (string (str (char num1))))
+    (string (String. (Character/toChars num1))))
   ([num1 num2 & nums]
     (let [v (vec (concat [num1 num2] nums))]
       (if (= (v 1) "-")
-        (char-range (char (v 0))
-                    (char (v 2)))
-        (apply alt (for [n v]
-                     (string (str (char n)))))))))
+        (char-range (v 0) (v 2))
+        (apply cat (for [n v]
+                     (string (String. (Character/toChars n)))))))))
 
 (defn project
   "Restricts map to certain keys"

@@ -1,5 +1,17 @@
 # Instaparse Change Log
 
+## 1.3.5
+
+### Bugfixes
+
+* Fixed bug with `transform` on hiccup data structures with numbers or other atomic data as leaves.
+
+* Fixed bug with character concatenation support in ABNF grammar
+
+### Enhancements
+
+* Added support for Unicode characters to ABNF.
+
 ## 1.3.4
 
 ### Enhancements

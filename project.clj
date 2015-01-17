@@ -1,4 +1,4 @@
-(defproject com.lucasbradstreet/instaparse-cljs "1.3.4.2"
+(defproject com.lucasbradstreet/instaparse-cljs "1.3.5"
   :description "Instaparse: No grammar left behind"
   :url "https://github.com/lbradstreet/instaparse-cljs"
   :license {:name "Eclipse Public License"
@@ -12,8 +12,9 @@
                     [rhizome "0.1.8"]]
                    :plugins [[com.cemerick/austin "0.1.4"]]}
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}
-             :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}}
-  :aliases {"test-all" ["with-profile" "+1.5:+1.6" "test"]}
+             :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
+             :1.7 {:dependencies [[org.clojure/clojure "1.7.0-alpha4"]]}}
+  :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7" "test"]}
   :test-paths ["target/generated/src/clj" "target/generated/test/clj"]
   :source-paths ["src/cljs" "src/clj"]
   :clj {:source-paths  ["src/clj",  "target/generated/src/clj"]
