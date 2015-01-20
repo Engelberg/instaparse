@@ -25,7 +25,7 @@ you'll have to keep in mind when transforming)."
    :CTL (regexp "[\\u0000-\\u001F|\\u007F]")
    :DIGIT (regexp "[0-9]")
    :DQUOTE (string "\u0022")
-   :HEXDIG (regexp "[0-9A-Fa-f]")
+   :HEXDIG (regexp "[0-9a-fA-F]")
    :HTAB (string "\u0009")
    :LF (string "\u000A")
    :LWSP (alt (alt (string "\u0020") (string "\u0009")) ;WSP
@@ -73,7 +73,7 @@ hex-val = <'x'> hex-char
 hex-char = HEXDIG+;
 NUM = DIGIT+;
 <DIGIT> = #'[0-9]';
-<HEXDIG> = #'[0-9A-Fa-f]';
+<HEXDIG> = #'[0-9a-fA-F]';
 opt-whitespace = #'\\s*(?:;.*?(?:\\u000D?\\u000A\\s*|$))*(?x) # optional whitespace or comments';
 whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments';
 regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"

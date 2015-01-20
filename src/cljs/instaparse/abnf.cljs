@@ -7,7 +7,8 @@
             [instaparse.reduction :as red]
             [instaparse.combinators-source :refer
              [Epsilon opt plus star rep alt ord cat string-ci string
-              string-ci regexp nt look neg hide hide-tag]]))
+              string-ci regexp nt look neg hide hide-tag]]
+            [goog.string.format]))
 
 (def ^:dynamic *case-insensitive*
   "This is normally set to false, in which case the non-terminals
@@ -27,7 +28,7 @@ you'll have to keep in mind when transforming)."
    :CTL (regexp "[\\u0000-\\u001F|\\u007F]")
    :DIGIT (regexp "[0-9]")
    :DQUOTE (string "\u0022")
-   :HEXDIG (regexp "[0-9A-Fa-f]")
+   :HEXDIG (regexp "[0-9a-fA-F]")
    :HTAB (string "\u0009")
    :LF (string "\u000A")
    :LWSP (alt (alt (string "\u0020") (string "\u0009")) ;WSP
@@ -75,28 +76,52 @@ hex-val = <'x'> hex-char
 hex-char = HEXDIG+;
 NUM = DIGIT+;
 <DIGIT> = #'[0-9]';
-<HEXDIG> = #'[0-9A-Fa-f]';
+<HEXDIG> = #'[0-9a-fA-F]';
 opt-whitespace = #'\\s*(?:;.*?(?:\\u000D?\\u000A\\s*|$))*';
 whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*';
 regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
        | #\"#\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"\"
 ")
 
+(defn format
+  "Formats a string using goog.string.format."
+  [fmt & args]
+  (apply goog.string/format fmt args))
+
+(defn number->hex
+  "Convert an number to a hex string."
+  [v]
+  (clojure.string/replace (format "%2s" (.toString v 16))  
+                          " " 
+                          "0"))
+
 (defn char-range
   "Takes two chars and returns a combinator representing a range of characters."
-  [char1 char2]
-  (regexp (str "[" char1 "-" char2 "]")))
+  [codepoint1 codepoint2]
+  (regexp (str "[\\x" (number->hex (int codepoint1)) "-\\x" (number->hex (int codepoint2)) "]")))
+
+(defn char-codes [c]
+  (let [c1 (.charCodeAt c 0)
+        c2 (.charCodeAt c 1)]
+    (map char 
+         (if (js/isNaN c2)
+           [c1]
+           [c1 c2]))))
+
+(defn coerce-char [c]
+  (if (integer? c)
+    (char c)
+    c))
 
 (defn get-char-combinator
   ([num1]
-    (string (str (char num1))))
+   (string (apply str (char-codes num1))))
   ([num1 num2 & nums]
-    (let [v (vec (concat [num1 num2] nums))]
+    (let [v (vec (map coerce-char (concat [num1 num2] nums)))]
       (if (= (v 1) "-")
-        (char-range (char (v 0))
-                    (char (v 2)))
-        (apply alt (for [n v]
-                     (string (str (char n)))))))))
+        (char-range (v 0) (v 2))
+        (apply cat (for [n v]
+                     (string (apply str (char-codes n)))))))))
 
 (defn project
   "Restricts map to certain keys"
