@@ -4,7 +4,10 @@ machine:
 
 dependencies:
         override:
-                - echo Y | lein upgrade 2.4.3 :
+                - echo Y | lein upgrade 2.5.1 :
                         timeout: 900
         post:
                 - lein cljx
+                - lein cljsbuild test
+                - lein test
+
