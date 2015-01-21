@@ -14,7 +14,8 @@
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0-alpha4"]]}}
-  :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7" "test"]}
+  :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7" "test"]
+            "cleantest" ["do" "clean," "cljx" "once," "test," "cljsbuild" "test"]}
   :test-paths ["target/generated/src/clj" "target/generated/test/clj"]
   :source-paths ["src/cljs" "src/clj"]
   :clj {:source-paths  ["src/clj",  "target/generated/src/clj"]
@@ -35,7 +36,7 @@
             [com.keminglabs/cljx "0.5.0" :exclusions [org.clojure/clojure]]
             [com.cemerick/clojurescript.test "0.3.1"]]
   :prep-tasks [["cljx" "once"]]
-  :hooks [leiningen.cljsbuild]
+  ;:hooks [leiningen.cljsbuild]
   :target-path "target"
   :scm {:name "git"
         :url "https://github.com/lbradstreet/instaparse-cljs"}

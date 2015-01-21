@@ -8,6 +8,8 @@ dependencies:
                         timeout: 900
         post:
                 - lein cljx
-                - lein cljsbuild test
-                - lein test
 
+test:
+        override:
+                - lein cleantest
+                - lein test-all
