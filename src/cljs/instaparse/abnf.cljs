@@ -98,7 +98,7 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
 (defn char-range
   "Takes two chars and returns a combinator representing a range of characters."
   [codepoint1 codepoint2]
-  (regexp (str "[\\x" (number->hex (int codepoint1)) "-\\x" (number->hex (int codepoint2)) "]")))
+  (regexp (str "[\\x" (number->hex codepoint1) "-\\x" (number->hex codepoint2) "]")))
 
 (defn char-codes [c]
   (let [c1 (.charCodeAt c 0)
