@@ -11,5 +11,5 @@ dependencies:
 
 test:
         override:
-                - lein cleantest
+                - lein cleantestcljs
                 - lein test-all

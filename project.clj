@@ -15,7 +15,7 @@
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0-alpha4"]]}}
   :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7" "test"]
-            "cleantest" ["do" "clean," "cljx" "once," "test," "cljsbuild" "test"]}
+            "cleantestcljs" ["do" "clean," "cljx" "once", "cljsbuild" "test"]}
   :test-paths ["target/generated/src/clj" "target/generated/test/clj"]
   :source-paths ["src/cljs" "src/clj"]
   :clj {:source-paths  ["src/clj",  "target/generated/src/clj"]
