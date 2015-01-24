@@ -1,5 +1,7 @@
 # Instaparse-cljs 1.3.5
 
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/lbradstreet/instaparse-cljs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 *What if context-free grammars were as easy to use as regular expressions?*
 
 ## Clojurescript Port
@@ -1085,7 +1087,7 @@ My interest in this project began while watching a video of Matt Might's [*Parsi
 
 Matt Might has published a [paper](http://matt.might.net/papers/might2011derivatives.pdf) about a specific approach to achieving that goal, but I had difficulty getting his *Parsing with Derivatives* technique to work in a performant way.
 
-I probably would have given up, but then Danny Yoo released the [Ragg parser generator](http://hashcollision.org/ragg/index.html) for the Racket language.  The Ragg library was a huge inspiration -- a model for what I wanted instaparse to become.  I asked Danny what technique he used, and he gave me more information about the algorithm he used.  However, he told me that if he were to do it again from scratch, he'd probably choose to use a [GLL algorithm](http://ldta.info/2009/ldta2009proceedings.pdf) by Adrian Johnstone and Elizabeth Scott, and he pointed me to a fantastic article about it by Vegard Øye, [posted on Github with source code in Racket](https://github.com/epsil/gll).
+I probably would have given up, but then Danny Yoo released the [Ragg parser generator](http://hashcollision.org/ragg/index.html) for the Racket language.  The Ragg library was a huge inspiration -- a model for what I wanted instaparse to become.  I asked Danny what technique he used, and he gave me more information about the algorithm he used.  However, he told me that if he were to do it again from scratch, he'd probably choose to use a [GLL algorithm](http://ldta.info/2009/ldta2009proceedings.pdf) by Adrian Johnstone and Elizabeth Scott, and he pointed me to a fantastic article about it by Vegard ï¿½ye, [posted on Github with source code in Racket](https://github.com/epsil/gll).
 
 That article had a link to a [paper](http://www.cs.uwm.edu/%7Edspiewak/papers/generalized-parser-combinators.pdf) and [Scala code](https://github.com/djspiewak/gll-combinators) by Daniel Spiewak, which was also extremely helpful.
 
