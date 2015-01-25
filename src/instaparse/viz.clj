@@ -27,7 +27,7 @@
                                                      (apply str (first n)
                                                             (when (span n)
                                                               ["\\n" (span n)]))
-                                                     (with-out-str (pr n)))})
+                                                     (str n))})
                  :options options))
       
 (defn- enlive-tree-viz
@@ -39,7 +39,7 @@
                                            (apply str (:tag n)
                                                   (when (span n)
                                                     ["\\n" (span n)]))
-                                           (with-out-str (pr n)))})
+                                           (str n))})
              :options options))
 
 (defn tree-type
