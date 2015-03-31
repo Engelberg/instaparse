@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.3.6
+
+### Enhancements
+
+* Modified for compatibility with Clojure 1.7.0-alpha6 
+
 ## 1.3.5
 
 ### Bugfixes
@@ -16,7 +22,7 @@
 
 ### Enhancements
 
-Modified for compatibility with Clojure 1.7.0-alpha2.
+* Modified for compatibility with Clojure 1.7.0-alpha2.
 
 ## 1.3.3
 
