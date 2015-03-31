@@ -339,6 +339,11 @@
      [:AB [:A "a" "a" "a" "a" "a"] [:B "b" "b" "b"]]
      [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]
     
+    (as-and-bs (StringBuilder. "aaaaabbbaaaabb"))
+    [:S
+     [:AB [:A "a" "a" "a" "a" "a"] [:B "b" "b" "b"]]
+     [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]
+    
     (as-and-bs "aaaaabbbaaaabb")
     (as-and-bs "aaaaabbbaaaabb" :optimize :memory)
     

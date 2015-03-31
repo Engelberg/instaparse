@@ -51,7 +51,7 @@
    :total true      (if parse fails, embed failure node in tree)
    :unhide <:tags or :content or :all> (for this parse, disable hiding)
    :optimize :memory   (when possible, employ strategy to use less memory)"
-  [parser text &{:as options}]
+  [parser ^CharSequence text &{:as options}]
   {:pre [(contains? #{:tags :content :all nil} (get options :unhide))
          (contains? #{:memory nil} (get options :optimize))]}
   (let [start-production 
@@ -92,7 +92,7 @@
    :partial true    (parses that don't consume the whole string are okay)
    :total true      (if parse fails, embed failure node in tree)
    :unhide <:tags or :content or :all> (for this parse, disable hiding)"
-  [parser text &{:as options}]
+  [parser ^CharSequence text &{:as options}]
   {:pre [(contains? #{:tags :content :all nil} (get options :unhide))]}
   (let [start-production 
         (get options :start (:start-production parser)),

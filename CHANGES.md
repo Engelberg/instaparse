@@ -4,7 +4,9 @@
 
 ### Enhancements
 
-* Modified for compatibility with Clojure 1.7.0-alpha6 
+* Modified for compatibility with Clojure 1.7.0-alpha6
+* Instaparse now can parse anything supporting the CharSequence interface, not just strings.
+  Specifically, this allows instaparse to operate on StringBuilder objects. 
 
 ## 1.3.5
 
