@@ -58,14 +58,14 @@
         :neg (str "!" (paren-for-compound hidden? parser))))))
   
 (defn rule->str
-  "Takes a terminal symbol and a parser built from combinators,
+  "Takes a non-terminal symbol and a parser built from combinators,
    and returns a string for the rule."
-  [terminal parser]
+  [non-terminal parser]
   (if (= (-> parser :red :reduction-type) :raw)
-    (str \< (name terminal) \> 
+    (str \< (name non-terminal) \> 
          " = " 
          (combinators->str parser))
-    (str (name terminal)
+    (str (name non-terminal)
          " = " 
          (combinators->str parser))))
 
@@ -78,6 +78,6 @@
               ; Put starting production first
               (rule->str start (grammar start))
               ; Then the others
-              (for [[terminal parser] grammar
-                    :when (not= terminal start)]
-                (rule->str terminal parser)))))
+              (for [[non-terminal parser] grammar
+                    :when (not= non-terminal start)]
+                (rule->str non-terminal parser)))))
