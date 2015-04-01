@@ -165,7 +165,7 @@
     
 (defn try-repeating-parse-strategy-with-header
   [grammar text start-production start-rule output-format]
-  (gll/debug (gll/clear!))
+  (gll/profile (gll/clear!))
   (let [parsers (:parsers start-rule)
         repeating-parser (last parsers)]
     (if
@@ -184,7 +184,7 @@
   (let [grammar (:grammar parser)
         output-format (:output-format parser)
         start-rule (get grammar start-production)]
-    (gll/debug (gll/clear!))
+    (gll/profile (gll/clear!))
     (cond
       (= (:hide start-rule) true) failure-signal
       (= (:red start-rule) red/raw-non-terminal-reduction)

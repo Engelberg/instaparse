@@ -52,16 +52,18 @@
 (defmacro dpprint [& body]  
   (when PRINT `(clojure.pprint/pprint ~@body)))
 
-(def DEBUG *assert*)
-(defmacro debug [& body]
-  (when DEBUG
+(def PROFILE false)
+(defmacro profile [& body]
+  (when PROFILE
     `(do ~@body)))
+
+(def TRACE *assert*)
 (def ^:dynamic *diagnostics* false)
 (defmacro log [& body]
-  (when DEBUG
+  (when TRACE
     `(when *diagnostics* (println ~@body))))
 (defmacro attach-diagnostic-meta [f metadata]
-  (if DEBUG
+  (if TRACE
     `(with-meta ~f ~metadata)
     f))
 
@@ -76,9 +78,9 @@
       (str (sub-sequence text index))
       (str (sub-sequence text index end) "..."))))
   
-(debug (def stats (atom {})))
-(debug (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
-(debug (defn clear! [] (reset! stats {})))
+(profile (def stats (atom {})))
+(profile (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
+(profile (defn clear! [] (reset! stats {})))
 
 ;; Now we can get down to parsing
 
@@ -169,7 +171,7 @@
   ([grammar text segment fail-index node-builder]
     (Tramp. grammar text segment
             fail-index node-builder
-            (atom []) (atom []) (atom 0) (atom []) 
+            (atom []) (atom []) (atom 0) (atom (sorted-map-by >)) 
             (atom {}) (atom {}) (atom nil) (atom (Failure. 0 [])))))
   
 ; A Success record contains the result and the index to continue from
@@ -195,7 +197,7 @@
 (defn push-stack
   "Pushes an item onto the trampoline's stack"
   [tramp item]
-  (debug (add! :push-stack))
+  (profile (add! :push-stack))
   (swap! (:stack tramp) conj item))
 
 (defn push-message
@@ -206,7 +208,7 @@
         k [listener i]
         c (get @cache k 0)
         f #(listener result)]
-    (debug (add! :push-message))    
+    (profile (add! :push-message))    
     #_(dprintln "push-message" i c @(:generation tramp) (count @(:stack tramp))
              (count @(:next-stack tramp)))
     #_(dprintln "push-message: listener result" listener result)
@@ -252,7 +254,7 @@
     (if-let [node (@nodes node-key)]
       node 
       (let [node (make-node)]
-        (debug (add! :create-node))
+        (profile (add! :create-node))
         (swap! nodes assoc node-key node)
         node))))
 
@@ -291,7 +293,7 @@
         total? (total-success? tramp result)
         results (if total? (:full-results node) (:results node))]
     (when (not (@results result))  ; when result is not already in @results
-      (debug (add! :push-result))
+      (profile (add! :push-result))
       (swap! results conj result)
       (doseq [listener @(:listeners node)]
         (push-message tramp listener result))
@@ -308,7 +310,7 @@
   (let [listener-already-exists? (listener-exists? tramp node-key)
         node (node-get tramp node-key)
         listeners (:listeners node)]
-    (debug (add! :push-listener))
+    (profile (add! :push-listener))
     (swap! listeners conj listener)
     (doseq [result @(:results node)]
       (push-message tramp listener result))
@@ -324,19 +326,22 @@
   (let [full-listener-already-exists? (full-listener-exists? tramp node-key)
         node (node-get tramp node-key)
         listeners (:full-listeners node)]
-    (debug (add! :push-full-listener))
+    (profile (add! :push-full-listener))
     (swap! listeners conj listener)
     (doseq [result @(:full-results node)]
       (push-message tramp listener result))
     (when (not full-listener-already-exists?)
       (push-stack tramp #(-full-parse (node-key 1) (node-key 0) tramp)))))
 
+(def merge-negative-listeners (partial merge-with into))
+
 (defn push-negative-listener
   "Pushes a thunk onto the trampoline's negative-listener stack."
   [tramp creator negative-listener]
   #_(dprintln "push-negative-listener" (type negative-listener))
-  (swap! (:negative-listeners tramp) conj 
-         (attach-diagnostic-meta negative-listener {:creator creator})))  
+  ; creator is a node-key, i.e., a [index parser] pair
+  (swap! (:negative-listeners tramp) merge-negative-listeners 
+         {(creator 0) [(attach-diagnostic-meta negative-listener {:creator creator})]}))  
 
 ;(defn success [tramp node-key result end]
 ;  (push-result tramp node-key (make-success result end)))
@@ -389,15 +394,17 @@
           (step stack) (recur tramp found-result?))
 
         (pos? (count @(:negative-listeners tramp)))
-        (let [listener (peek @(:negative-listeners tramp))]
-          ;(dprintln "Calling negative listener" (type listener))
+        (let [[index listeners] (first @(:negative-listeners tramp))
+              listener (peek listeners)]
           (log (format "Exhausted results for %s at index %d (%s)"
                        (print/combinators->str (((meta listener) :creator) 1))
                        (((meta listener) :creator) 0)
                        (string-context (:text tramp) 
                                        (((meta listener) :creator) 0)))) 
           (listener)
-          (swap! (:negative-listeners tramp) pop)
+          (if (= (count listeners) 1)
+            (swap! (:negative-listeners tramp) dissoc index)
+            (swap! (:negative-listeners tramp) update-in [index] pop))
           (recur tramp found-result?))        
         
         found-result?
@@ -795,7 +802,7 @@
     (push-full-listener tramp [0 parser] (TopListener tramp))))
 
 (defn parses [grammar start text partial?]
-  (debug (clear!))
+  (profile (clear!))
   (let [tramp (make-tramp grammar text)
         parser (nt start)]
     (start-parser tramp parser partial?)
@@ -805,7 +812,7 @@
         (fail/augment-failure @(:failure tramp) text)))))
   
 (defn parse [grammar start text partial?]
-  (debug (clear!))
+  (profile (clear!))
   (let [tramp (make-tramp grammar text)
         parser (nt start)]
     (start-parser tramp parser partial?)
@@ -846,7 +853,7 @@ rather than overwriting the metamap entirely."
       
 (defn parses-total 
   [grammar start text partial? node-builder]
-  (debug (clear!))
+  (profile (clear!))
   (let [all-parses (parses grammar start text partial?)]
     (if (seq all-parses)
       all-parses
@@ -868,7 +875,7 @@ rather than overwriting the metamap entirely."
 
 (defn parse-total 
   [grammar start text partial? node-builder]
-  (debug (clear!))
+  (profile (clear!))
   (let [result (parse grammar start text partial?)]
     (if-not (instance? Failure result)
       result
