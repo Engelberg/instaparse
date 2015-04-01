@@ -15,7 +15,7 @@
 (defn get-line
   "Returns nth line of text, 1-based"
   [n text]
-  (try (nth (line-seq (BufferedReader. (StringReader. text))) (dec n))
+  (try (nth (line-seq (BufferedReader. (StringReader. (str text)))) (dec n))
     (catch Exception e "")))
 
 (defn marker
