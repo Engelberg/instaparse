@@ -46,18 +46,18 @@
 
 ;;;;; SETUP DIAGNOSTIC MACROS AND VARS
 
-(def PRINT false)
+(defonce PRINT false)
 (defmacro dprintln [& body]  
   (when PRINT `(println ~@body)))
 (defmacro dpprint [& body]  
   (when PRINT `(clojure.pprint/pprint ~@body)))
 
-(def PROFILE false)
+(defonce PROFILE false)
 (defmacro profile [& body]
   (when PROFILE
     `(do ~@body)))
 
-(def TRACE *assert*)
+(defonce TRACE false)
 (def ^:dynamic *diagnostics* false)
 (defmacro log [& body]
   (when TRACE

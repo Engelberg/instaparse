@@ -238,6 +238,13 @@
     :else
     nil))
 
+(defn enable-tracing!
+  "Recompiles instaparse with tracing enabled"
+  []
+  (alter-var-root #'instaparse.gll/TRACE (constantly true))
+  (require 'instaparse.gll :reload))
+  
+
 (defclone span viz/span)
    
 (defclone transform t/transform)
