@@ -58,10 +58,9 @@
     `(do ~@body)))
 
 (defonce TRACE false)
-(def ^:dynamic *diagnostics* false)
-(defmacro log [& body]
+(defmacro log [tramp & body]
   (when TRACE
-    `(when *diagnostics* (println ~@body))))
+    `(when (:trace? ~tramp) (println ~@body))))
 (defmacro attach-diagnostic-meta [f metadata]
   (if TRACE
     `(with-meta ~f ~metadata)
@@ -92,9 +91,9 @@
          rep-parse negative-lookahead-parse ordered-alt-parse
          string-case-insensitive-parse)
 (defn -parse [parser index tramp]
-  (log (format "Initiating parse: %s at index %d (%s)"
-               (print/combinators->str parser) index
-               (string-context (:text tramp) index)))
+  (log tramp (format "Initiating parse: %s at index %d (%s)"
+                     (print/combinators->str parser) index
+                     (string-context (:text tramp) index)))
   (case (:tag parser)
     :nt (non-terminal-parse parser index tramp)
     :alt (alt-parse parser index tramp)
@@ -116,7 +115,7 @@
          rep-full-parse regexp-full-parse lookahead-full-parse ordered-alt-full-parse
          string-case-insensitive-full-parse)
 (defn -full-parse [parser index tramp]
-  (log (format "Initiating full parse: %s at index %d (%s)"
+  (log tramp (format "Initiating full parse: %s at index %d (%s)"
                (print/combinators->str parser) index
                (string-context (:text tramp) index)))
   (case (:tag parser)
@@ -166,6 +165,7 @@
                   msg-cache nodes success failure trace?])
 (defn make-tramp 
   ([grammar text trace?] (make-tramp grammar text (text->segment text) -1 nil trace?))
+  ([grammar text segment trace?] (make-tramp grammar text segment -1 nil trace?))
   ([grammar text fail-index node-builder trace?] (make-tramp grammar text (text->segment text) fail-index node-builder trace?))
   ([grammar text segment fail-index node-builder trace?]
     (Tramp. grammar text segment
@@ -268,14 +268,14 @@
    Schedules notification to all existing listeners of result
    (Full listeners only get notified about full results)"
   [tramp node-key result]
-  (log (if (= (:tag (node-key 1)) :neg)
-         (format "Negation satisfied: %s at index %d (%s)"
-                 (print/combinators->str (node-key 1)) (node-key 0)
-                 (string-context (:text tramp) (node-key 0)))
-         (format "Result for %s at index %d (%s) => %s"
-                 (print/combinators->str (node-key 1)) (node-key 0)
-                 (string-context (:text tramp) (node-key 0))
-                 (with-out-str (pr (:result result))))))
+  (log tramp (if (= (:tag (node-key 1)) :neg)
+               (format "Negation satisfied: %s at index %d (%s)"
+                       (print/combinators->str (node-key 1)) (node-key 0)
+                       (string-context (:text tramp) (node-key 0)))
+               (format "Result for %s at index %d (%s) => %s"
+                       (print/combinators->str (node-key 1)) (node-key 0)
+                       (string-context (:text tramp) (node-key 0))
+                       (with-out-str (pr (:result result))))))
   (let [node (node-get tramp node-key)
         parser (node-key 1)
         ;; reduce result with reduction function if it exists
@@ -349,7 +349,10 @@
   `(push-result ~tramp ~node-key (make-success ~result ~end)))
 
 (declare build-node-with-meta)
-(defn fail [tramp node-key index reason]  
+(defn fail [tramp node-key index reason]
+  (log tramp (format "No result for %s at index %d (%s)"
+                     (print/combinators->str (node-key 1)) (node-key 0)
+                     (string-context (:text tramp) (node-key 0))))
   (swap! (:failure tramp) 
          (fn [failure] 
            (let [current-index (:index failure)]
@@ -384,9 +387,11 @@
           ;_ (dprintln "run" found-result? (count @(:stack tramp)) (count @(:next-stack tramp)))]
       (cond
         @(:success tramp)
-        (lazy-seq (cons (:result @(:success tramp))
-                        (do (reset! (:success tramp) nil)
-                          (run tramp true))))
+        (do (log tramp "Successful parse.\nProfile: " @stats)
+          (cons (:result @(:success tramp))
+                (lazy-seq
+                  (do (reset! (:success tramp) nil)
+                    (run tramp true)))))
         
         (pos? (count @stack))
         (do ;(dprintln "stacks" (count @stack) (count @(:next-stack tramp)))
@@ -395,11 +400,11 @@
         (pos? (count @(:negative-listeners tramp)))
         (let [[index listeners] (first @(:negative-listeners tramp))
               listener (peek listeners)]
-          (log (format "Exhausted results for %s at index %d (%s)"
-                       (print/combinators->str (((meta listener) :creator) 1))
-                       (((meta listener) :creator) 0)
-                       (string-context (:text tramp) 
-                                       (((meta listener) :creator) 0)))) 
+          (log tramp (format "Exhausted results for %s at index %d (%s)"
+                             (print/combinators->str (((meta listener) :creator) 1))
+                             (((meta listener) :creator) 0)
+                             (string-context (:text tramp) 
+                                             (((meta listener) :creator) 0)))) 
           (listener)
           (if (= (count listeners) 1)
             (swap! (:negative-listeners tramp) dissoc index)
@@ -808,8 +813,8 @@
     (if-let [all-parses (run tramp)]
       all-parses 
       (with-meta () 
-        (fail/augment-failure @(:failure tramp) text)))))
-  
+        (fail/augment-failure @(:failure tramp) text))))) 
+
 (defn parse [grammar start text partial? trace?]
   (profile (clear!))
   (let [tramp (make-tramp grammar text trace?)
