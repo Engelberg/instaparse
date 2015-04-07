@@ -163,16 +163,15 @@
 
 (defrecord Tramp [grammar text segment fail-index node-builder
                   stack next-stack generation negative-listeners 
-                  msg-cache nodes success failure])
+                  msg-cache nodes success failure trace?])
 (defn make-tramp 
-  ([grammar text] (make-tramp grammar text (text->segment text) -1 nil))
-  ([grammar text segment] (make-tramp grammar text segment -1 nil))
-  ([grammar text fail-index node-builder] (make-tramp grammar text (text->segment text) fail-index node-builder))
-  ([grammar text segment fail-index node-builder]
+  ([grammar text trace?] (make-tramp grammar text (text->segment text) -1 nil trace?))
+  ([grammar text fail-index node-builder trace?] (make-tramp grammar text (text->segment text) fail-index node-builder trace?))
+  ([grammar text segment fail-index node-builder trace?]
     (Tramp. grammar text segment
             fail-index node-builder
             (atom []) (atom []) (atom 0) (atom (sorted-map-by >)) 
-            (atom {}) (atom {}) (atom nil) (atom (Failure. 0 [])))))
+            (atom {}) (atom {}) (atom nil) (atom (Failure. 0 [])) trace?)))
   
 ; A Success record contains the result and the index to continue from
 (defn make-success [result index] {:result result :index index})
@@ -801,9 +800,9 @@
     (push-listener tramp [0 parser] (TopListener tramp))
     (push-full-listener tramp [0 parser] (TopListener tramp))))
 
-(defn parses [grammar start text partial?]
+(defn parses [grammar start text partial? trace?]
   (profile (clear!))
-  (let [tramp (make-tramp grammar text)
+  (let [tramp (make-tramp grammar text trace?)
         parser (nt start)]
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
@@ -811,9 +810,9 @@
       (with-meta () 
         (fail/augment-failure @(:failure tramp) text)))))
   
-(defn parse [grammar start text partial?]
+(defn parse [grammar start text partial? trace?]
   (profile (clear!))
-  (let [tramp (make-tramp grammar text)
+  (let [tramp (make-tramp grammar text trace?)
         parser (nt start)]
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
@@ -836,10 +835,11 @@
     build-start-node))
 
 (defn parses-total-after-fail 
-  [grammar start text fail-index partial? node-builder]
+  [grammar start text fail-index partial? node-builder trace?]
   ;(dprintln "Parses-total-after-fail")  
-  (let [tramp (make-tramp grammar text fail-index node-builder)
+  (let [tramp (make-tramp grammar text fail-index node-builder trace?)
         parser (nt start)]
+    (log tramp "Parse failure. Restarting for total parse.")
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       all-parses
@@ -852,37 +852,38 @@ rather than overwriting the metamap entirely."
   (with-meta obj (merge metamap (meta obj))))
       
 (defn parses-total 
-  [grammar start text partial? node-builder]
+  [grammar start text partial? node-builder trace?]
   (profile (clear!))
-  (let [all-parses (parses grammar start text partial?)]
+  (let [all-parses (parses grammar start text partial? trace?)]
     (if (seq all-parses)
       all-parses
       (merge-meta
         (parses-total-after-fail grammar start text 
                                  (:index (meta all-parses)) 
-                                 partial? node-builder)
+                                 partial? node-builder trace?)
         (meta all-parses)))))
 
 (defn parse-total-after-fail 
-  [grammar start text fail-index partial? node-builder]
+  [grammar start text fail-index partial? node-builder trace?]
   ;(dprintln "Parse-total-after-fail")  
-  (let [tramp (make-tramp grammar text fail-index node-builder)
+  (let [tramp (make-tramp grammar text fail-index node-builder trace?)
         parser (nt start)]
+    (log tramp "Parse failure. Restarting for total parse.")
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       (first all-parses)
       (build-total-failure-node node-builder start text))))
 
 (defn parse-total 
-  [grammar start text partial? node-builder]
+  [grammar start text partial? node-builder trace?]
   (profile (clear!))
-  (let [result (parse grammar start text partial?)]
+  (let [result (parse grammar start text partial? trace?)]
     (if-not (instance? Failure result)
       result
       (merge-meta        
         (parse-total-after-fail grammar start text 
                                 (:index result) 
-                                partial? node-builder)
+                                partial? node-builder trace?)
         result))))
 
 ;; Variation, but not for end-user

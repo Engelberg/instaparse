@@ -66,21 +66,24 @@
         unhide
         (get options :unhide)
         
+        trace?
+        (get options :trace false)
+        
         parser (unhide-parser parser unhide)]
     
     (cond
       (:total options)
       (gll/parse-total (:grammar parser) start-production text 
-                       partial? (red/node-builders (:output-format parser)))
+                       partial? (red/node-builders (:output-format parser)) trace?)
 
       (and optimize? (not partial?))
       (let [result (repeat/try-repeating-parse-strategy parser text start-production)]
         (if (failure? result)
-          (gll/parse (:grammar parser) start-production text partial?)
+          (gll/parse (:grammar parser) start-production text partial? trace?)
           result))
       
       :else
-      (gll/parse (:grammar parser) start-production text partial?))))
+      (gll/parse (:grammar parser) start-production text partial? trace?))))
   
 (defn parses 
   "Use parser to parse the text.  Returns lazy seq of all parse trees
@@ -103,15 +106,18 @@
         unhide
         (get options :unhide)
         
+        trace?
+        (get options :trace false)
+        
         parser (unhide-parser parser unhide)]
     
     (cond
       (:total options)
       (gll/parses-total (:grammar parser) start-production text 
-                        partial? (red/node-builders (:output-format parser)))
+                        partial? (red/node-builders (:output-format parser)) trace?)
       
       :else
-      (gll/parses (:grammar parser) start-production text partial?))))
+      (gll/parses (:grammar parser) start-production text partial? trace?))))
   
 (defrecord Parser [grammar start-production output-format]
   clojure.lang.IFn

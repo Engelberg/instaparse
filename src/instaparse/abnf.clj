@@ -196,20 +196,20 @@ If you give it a series of rules, it will give you back a grammar map.
 Useful for combining with other combinators."
   [spec]
   (if (re-find #"=" spec)
-    (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
+    (let [rule-tree (gll/parse abnf-parser :rulelist spec false false)]
       (if (instance? instaparse.gll.Failure rule-tree)
         (throw (RuntimeException. (str "Error parsing grammar specification:\n"
                                        (with-out-str (println rule-tree)))))
         (rules->grammar-map (t/transform abnf-transformer rule-tree))))      
     
-    (let [rhs-tree (gll/parse abnf-parser :alternation spec false)]
+    (let [rhs-tree (gll/parse abnf-parser :alternation spec false false)]
       (if (instance? instaparse.gll.Failure rhs-tree)
         (throw (RuntimeException. (str "Error parsing grammar specification:\n"
                                        (with-out-str (println rhs-tree)))))        
         (t/transform abnf-transformer rhs-tree)))))
 
 (defn build-parser [spec output-format]
-  (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
+  (let [rule-tree (gll/parse abnf-parser :rulelist spec false false)]
     (if (instance? instaparse.gll.Failure rule-tree)
       (throw (RuntimeException. (str "Error parsing grammar specification:\n"
                                      (with-out-str (println rule-tree)))))

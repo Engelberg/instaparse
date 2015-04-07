@@ -6,16 +6,16 @@
   (:require [instaparse.gll :as gll]))
 
 (defn- parse [grammar start text]
-  (gll/parse (apply-standard-reductions grammar) start text false))
+  (gll/parse (apply-standard-reductions grammar) start text false false))
 
 (defn- parses [grammar start text]
-  (gll/parses (apply-standard-reductions grammar) start text false))
+  (gll/parses (apply-standard-reductions grammar) start text false false))
 
 (defn- eparse [grammar start text]
-  (gll/parse (apply-standard-reductions :enlive grammar) start text false))
+  (gll/parse (apply-standard-reductions :enlive grammar) start text false false))
 
 (defn- eparses [grammar start text]
-  (gll/parses (apply-standard-reductions :enlive grammar) start text false))
+  (gll/parses (apply-standard-reductions :enlive grammar) start text false false))
 
 
 ;; Grammars built with combinators
