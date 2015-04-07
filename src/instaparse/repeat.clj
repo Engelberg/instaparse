@@ -22,7 +22,7 @@
       (if end (long end) (+ index (count parse))))))
 
 (defn parse-from-index [grammar initial-parser text segment index]
-  (let [tramp (gll/make-tramp grammar text segment)]
+  (let [tramp (gll/make-tramp grammar text segment false)]
     (gll/push-listener tramp [index initial-parser] (gll/TopListener tramp))
     (gll/run tramp)))
 

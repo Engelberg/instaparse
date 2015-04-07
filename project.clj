@@ -1,4 +1,4 @@
-(defproject instaparse "1.3.6"
+(defproject instaparse "1.4.0-SNAPSHOT"
   :description "Instaparse: No grammar left behind"
   :url "https://github.com/Engelberg/instaparse"
   :license {:name "Eclipse Public License"
@@ -7,7 +7,7 @@
   :profiles {:dev {:dependencies 
                    [[org.clojure/tools.trace "0.7.5"]
                     [criterium "0.3.1"]
-                    [rhizome "0.1.8"]]}
+                    [rhizome "0.2.4"]]}
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0-alpha6"]]}}

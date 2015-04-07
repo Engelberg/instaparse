@@ -50,7 +50,8 @@
    :partial true    (parses that don't consume the whole string are okay)
    :total true      (if parse fails, embed failure node in tree)
    :unhide <:tags or :content or :all> (for this parse, disable hiding)
-   :optimize :memory   (when possible, employ strategy to use less memory)"
+   :optimize :memory   (when possible, employ strategy to use less memory)
+   :trace true      (must call (enable-tracing!) first)"
   [parser ^CharSequence text &{:as options}]
   {:pre [(contains? #{:tags :content :all nil} (get options :unhide))
          (contains? #{:memory nil} (get options :optimize))]}
@@ -94,7 +95,8 @@
    :start :keyword  (where :keyword is name of starting production rule)
    :partial true    (parses that don't consume the whole string are okay)
    :total true      (if parse fails, embed failure node in tree)
-   :unhide <:tags or :content or :all> (for this parse, disable hiding)"
+   :unhide <:tags or :content or :all> (for this parse, disable hiding)
+   :trace true      (must call (enable-tracing!) first)"
   [parser ^CharSequence text &{:as options}]
   {:pre [(contains? #{:tags :content :all nil} (get options :unhide))]}
   (let [start-production 
@@ -248,8 +250,15 @@
   "Recompiles instaparse with tracing enabled"
   []
   (alter-var-root #'instaparse.gll/TRACE (constantly true))
+  (alter-var-root #'instaparse.gll/PROFILE (constantly true))
   (require 'instaparse.gll :reload))
-  
+
+(defn disable-tracing!
+  "Recompiles instaparse with tracing enabled"
+  []
+  (alter-var-root #'instaparse.gll/TRACE (constantly false))
+  (alter-var-root #'instaparse.gll/PROFILE (constantly false))
+  (require 'instaparse.gll :reload))  
 
 (defclone span viz/span)
    

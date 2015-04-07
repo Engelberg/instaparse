@@ -1,5 +1,22 @@
 # Instaparse Change Log
 
+## 1.4.0-SNAPSHOT
+
+### Bugfixes
+
+* In 1.3.6, parsing of any CharSequence was introduced, however, the error messages 
+  for failed parses weren't printing properly.  This has been fixed.    
+
+* 1.4.0 uses a more robust algorithm for handling nested negative lookaheads, in
+  response to a bug report where the existing mechanism produced incorrect parses
+  (in addition to the correct parse) for a very unusual case.
+
+### Enhancements
+
+* New support for tracing the steps the parser goes through.  Two steps are required.
+  First, call `(insta/enable-tracing!)` then invoke your parser with the `:trace true`
+  keyword argument.
+
 ## 1.3.6
 
 ### Enhancements
