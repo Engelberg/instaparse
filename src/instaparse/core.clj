@@ -251,14 +251,18 @@
     nil))
 
 (defn enable-tracing!
-  "Recompiles instaparse with tracing enabled"
+  "Recompiles instaparse with tracing enabled.
+This is called implicitly the first time you invoke a parser with
+`:trace true` so usually you will not need to call this directly."
   []
   (alter-var-root #'gll/TRACE (constantly true))
   (alter-var-root #'gll/PROFILE (constantly true))
   (require 'instaparse.gll :reload))
 
 (defn disable-tracing!
-  "Recompiles instaparse with tracing enabled"
+  "Recompiles instaparse with tracing disabled.
+Call this to restore regular performance characteristics, eliminating
+the small performance hit imposed by tracing."
   []
   (alter-var-root #'gll/TRACE (constantly false))
   (alter-var-root #'gll/PROFILE (constantly false))
