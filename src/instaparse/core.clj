@@ -26,7 +26,7 @@
   {:pre [(#{:abnf :ebnf} type)]}
   (alter-var-root #'*default-input-format* (constantly type)))
 
-(declare failure? standard-whitespace-parsers)
+(declare failure? standard-whitespace-parsers enable-tracing!)
 
 (defn- unhide-parser [parser unhide]
   (case unhide
@@ -51,7 +51,7 @@
    :total true      (if parse fails, embed failure node in tree)
    :unhide <:tags or :content or :all> (for this parse, disable hiding)
    :optimize :memory   (when possible, employ strategy to use less memory)
-   :trace true      (must call (enable-tracing!) first)"
+   :trace true      (print diagnostic trace while parsing)"
   [parser ^CharSequence text &{:as options}]
   {:pre [(contains? #{:tags :content :all nil} (get options :unhide))
          (contains? #{:memory nil} (get options :optimize))]}
@@ -69,6 +69,8 @@
         
         trace?
         (get options :trace false)
+        
+        _ (when (and trace? (not gll/TRACE)) (enable-tracing!))
         
         parser (unhide-parser parser unhide)]
     
@@ -96,7 +98,7 @@
    :partial true    (parses that don't consume the whole string are okay)
    :total true      (if parse fails, embed failure node in tree)
    :unhide <:tags or :content or :all> (for this parse, disable hiding)
-   :trace true      (must call (enable-tracing!) first)"
+   :trace true      (print diagnostic trace while parsing)"
   [parser ^CharSequence text &{:as options}]
   {:pre [(contains? #{:tags :content :all nil} (get options :unhide))]}
   (let [start-production 
@@ -110,6 +112,8 @@
         
         trace?
         (get options :trace false)
+        
+        _ (when (and trace? (not gll/TRACE)) (enable-tracing!))
         
         parser (unhide-parser parser unhide)]
     
@@ -232,16 +236,16 @@
   "Tests whether a parse result is a failure."
   [result]
   (or
-    (instance? instaparse.gll.Failure result)
-    (instance? instaparse.gll.Failure (meta result))))
+    (instance? gll/failure-type result)
+    (instance? gll/failure-type (meta result))))
 
 (defn get-failure
   "Extracts failure object from failed parse result."
   [result]
   (cond
-    (instance? instaparse.gll.Failure result)
+    (instance? gll/failure-type result)
     result
-    (instance? instaparse.gll.Failure (meta result))
+    (instance? gll/failure-type (meta result))
     (meta result)
     :else
     nil))
@@ -249,15 +253,15 @@
 (defn enable-tracing!
   "Recompiles instaparse with tracing enabled"
   []
-  (alter-var-root #'instaparse.gll/TRACE (constantly true))
-  (alter-var-root #'instaparse.gll/PROFILE (constantly true))
+  (alter-var-root #'gll/TRACE (constantly true))
+  (alter-var-root #'gll/PROFILE (constantly true))
   (require 'instaparse.gll :reload))
 
 (defn disable-tracing!
   "Recompiles instaparse with tracing enabled"
   []
-  (alter-var-root #'instaparse.gll/TRACE (constantly false))
-  (alter-var-root #'instaparse.gll/PROFILE (constantly false))
+  (alter-var-root #'gll/TRACE (constantly false))
+  (alter-var-root #'gll/PROFILE (constantly false))
   (require 'instaparse.gll :reload))  
 
 (defclone span viz/span)

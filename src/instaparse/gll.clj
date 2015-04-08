@@ -139,6 +139,12 @@
   (binding [*out* writer]
     (fail/pprint-failure x)))
 
+; This is a trick to make sure we can recognize the type of
+; a Failure record after this namespace is recompiled,
+; but the core namespace is not recompiled
+; which is what happens when tracing is enabled.
+(def failure-type (type (Failure. nil nil)))
+
 (defn text->segment
   "Converts text to a Segment, which has fast subsequencing"
   [^CharSequence text]
