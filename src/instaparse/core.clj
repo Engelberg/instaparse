@@ -73,20 +73,21 @@
         _ (when (and trace? (not gll/TRACE)) (enable-tracing!))
         
         parser (unhide-parser parser unhide)]
-    
-    (cond
-      (:total options)
-      (gll/parse-total (:grammar parser) start-production text 
-                       partial? (red/node-builders (:output-format parser)) trace?)
-
-      (and optimize? (not partial?))
-      (let [result (repeat/try-repeating-parse-strategy parser text start-production)]
-        (if (failure? result)
-          (gll/parse (:grammar parser) start-production text partial? trace?)
-          result))
-      
-      :else
-      (gll/parse (:grammar parser) start-production text partial? trace?))))
+    (gll/bind-trace 
+      trace?
+      (cond
+        (:total options)
+        (gll/parse-total (:grammar parser) start-production text 
+                         partial? (red/node-builders (:output-format parser)))
+        
+        (and optimize? (not partial?))
+        (let [result (repeat/try-repeating-parse-strategy parser text start-production)]
+          (if (failure? result)
+            (gll/parse (:grammar parser) start-production text partial?)
+            result))
+        
+        :else
+        (gll/parse (:grammar parser) start-production text partial?)))))
   
 (defn parses 
   "Use parser to parse the text.  Returns lazy seq of all parse trees
@@ -116,14 +117,15 @@
         _ (when (and trace? (not gll/TRACE)) (enable-tracing!))
         
         parser (unhide-parser parser unhide)]
-    
-    (cond
-      (:total options)
-      (gll/parses-total (:grammar parser) start-production text 
-                        partial? (red/node-builders (:output-format parser)) trace?)
-      
-      :else
-      (gll/parses (:grammar parser) start-production text partial? trace?))))
+    (gll/bind-trace 
+      trace?
+      (cond
+        (:total options)
+        (gll/parses-total (:grammar parser) start-production text 
+                          partial? (red/node-builders (:output-format parser)))
+        
+        :else
+        (gll/parses (:grammar parser) start-production text partial?)))))
   
 (defrecord Parser [grammar start-production output-format]
   clojure.lang.IFn
