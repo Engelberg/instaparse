@@ -9,13 +9,14 @@
 
 * 1.4.0 uses a more robust algorithm for handling nested negative lookaheads, in
   response to a bug report where the existing mechanism produced incorrect parses
-  (in addition to the correct parse) for a very unusual case.
+  (in addition to the correct parse) for a very unusual case.   
 
 ### Enhancements
 
-* New support for tracing the steps the parser goes through.  Two steps are required.
-  First, call `(insta/enable-tracing!)` then invoke your parser with the `:trace true`
-  keyword argument.
+* New support for tracing the steps the parser goes through.  Call your parser with
+  the optional flag `:trace true`.  The first time you use this flag, it triggers a
+  recompilation of the code with additional tracing and profiling steps.  
+  To restore the code to its non-instrumented form, call `(insta/disable-tracing!)`.
 
 ## 1.3.6
 
