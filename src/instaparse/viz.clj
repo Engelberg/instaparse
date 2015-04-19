@@ -19,6 +19,13 @@
     (when (and s e)
       [s e])))
 
+(def rhizome-newline
+  ; Prior to Rhizome 0.2.5., \ was not an escape character so \n needed extra escaping.
+  (if (= @#'rhizome.dot/escapable-characters "|{}\"")
+    "\\n"
+    "\n"))
+
+
 (defn- hiccup-tree-viz
     "visualize instaparse hiccup output as a rhizome graph. Requires rhizome: https://github.com/ztellman/rhizome"
     [mytree options]         
@@ -26,7 +33,7 @@
                  :node->descriptor (fn [n] {:label (if (sequential? n) 
                                                      (apply str (first n)
                                                             (when (span n)
-                                                              ["\\n" (span n)]))
+                                                              [rhizome-newline (span n)]))
                                                      (with-out-str (pr n)))})
                  :options options))
       
@@ -38,7 +45,7 @@
                                  {:label (if (and (map? n) (:tag n))
                                            (apply str (:tag n)
                                                   (when (span n)
-                                                    ["\\n" (span n)]))
+                                                    [rhizome-newline (span n)]))
                                            (with-out-str (pr n)))})
              :options options))
 
