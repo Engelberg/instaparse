@@ -20,10 +20,12 @@
       [s e])))
 
 (def rhizome-newline
-  ; Prior to Rhizome 0.2.5., \ was not an escape character so \n needed extra escaping.
-  (if (= @#'rhizome.dot/escapable-characters "|{}\"")
-    "\\n"
-    "\n"))
+  ;; Prior to Rhizome 0.2.5., \ was not an escape character so \n needed extra escaping.
+  (when-let [escape-chars (try (ns-resolve (find-ns 'rhizome.dot) 'escapable-characters)
+                               (catch Exception e nil))]
+    (if (= escape-chars "|{}\"")
+      "\\n"
+      "\n")))
 
 
 (defn- hiccup-tree-viz
