@@ -20,11 +20,12 @@
       [s e])))
 
 (def rhizome-newline
-  ; Prior to Rhizome 0.2.5., \ was not an escape character so \n needed extra escaping.
-  (delay (if (= @(ns-resolve (find-ns 'rhizome.dot) 'escapable-characters)
-                "|{}\"")
-           "\\n"
-           "\n")))
+  ;; Prior to Rhizome 0.2.5., \ was not an escape character so \n needed extra escaping.
+  (when-let [escape-chars (try (ns-resolve (find-ns 'rhizome.dot) 'escapable-characters)
+                               (catch Exception e nil))]
+    (if (= escape-chars "|{}\"")
+      "\\n"
+      "\n")))
 
 
 (defn- hiccup-tree-viz
@@ -34,7 +35,7 @@
                  :node->descriptor (fn [n] {:label (if (sequential? n) 
                                                      (apply str (first n)
                                                             (when (span n)
-                                                              [@rhizome-newline (span n)]))
+                                                              [rhizome-newline (span n)]))
                                                      (with-out-str (pr n)))})
                  :options options))
       
@@ -46,7 +47,7 @@
                                  {:label (if (and (map? n) (:tag n))
                                            (apply str (:tag n)
                                                   (when (span n)
-                                                    [@rhizome-newline (span n)]))
+                                                    [rhizome-newline (span n)]))
                                            (with-out-str (pr n)))})
              :options options))
 
