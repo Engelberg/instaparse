@@ -135,3 +135,5 @@ Occasionally, I receive a question about whether there's a *best* way to write i
 	I consider the `:optimize :memory` flag to be an *alpha* feature, subject to change.  If you try it and find it useful, or try it on something where you'd expect it to help and it doesn't, please send me your feedback.
 	
 11. As of version 1.2, the enlive output format is slightly faster than hiccup.  This may change in the future, so I don't recommend that you base your choice of output format on this slight differential.  However, if you're trying to eke out the best possible performance, you might find it useful to experiment with both output formats to see whether one performs better for you than the other.
+
+12. As of version 1.4, instaparse has a way to print a trace of the parser's execution process, as well as some profiling information which can be useful to detmerine whether your parser behaves linearly with respect to the size of the input.  [Read about the new tracing feature here.](https://github.com/Engelberg/instaparse/blob/master/docs/ABNF.md)
