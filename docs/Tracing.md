@@ -77,7 +77,7 @@ Initiating full parse: S at index 0 (aaabb)
 
 A "full parse" means that it only succeeds if it consumes the entire string.  Usually, we're looking to completely parse an entire string, and that's what "full parse" reflects.
 
-It is important to understand that the word "intiating" does not necessarily mean that it is starting to work on that parse sub-problem right away.  It just means that we're putting it on a stack of sub-problems to try to solve.
+It is important to understand that the word "initiating" does not necessarily mean that it is starting to work on that parse sub-problem right away.  It just means that we're putting it on a stack of sub-problems to try to solve.
 
 Notice the `(aaabb)` in parens.  This is giving us the next several characters from this point in the string, which makes it a little easier to see at a glance where we are in the string (although, of course the index number can always be used to figure it out precisely).
 
