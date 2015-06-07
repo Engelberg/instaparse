@@ -235,7 +235,7 @@
   (let [valid-nts (set (keys grammar-map))]
     (doseq [nt (distinct (mapcat seq-nt (vals grammar-map)))]
       (when-not (valid-nts nt)
-        (throw (str (subs (str nt) 1) "occurs on the right-hand side of your grammar, but not on the left")))))
+        (throw (str (subs (str nt) 1) " occurs on the right-hand side of your grammar, but not on the left")))))
   grammar-map)
           
 (defn build-parser [spec output-format]
