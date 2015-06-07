@@ -49,7 +49,7 @@
     (:NOT r)
     (do (print "NOT ")    
       (println (:NOT r))),
-    (instance? java.util.regex.Pattern r)
+    (instance? js/RegExp r)
     (println (print/regexp->str r))
     :else
     (prn r)))
