@@ -25,7 +25,8 @@
 (defn get-line
   "Returns nth line of text, 1-based"
   [n text]
-  (nth (line-seq text) (dec n)))
+  (try (nth (line-seq text) (dec n))
+       (catch js/Error e "")))
 
 (defn marker
   "Creates string with caret at nth position, 1-based"
