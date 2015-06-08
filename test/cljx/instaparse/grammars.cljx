@@ -1,7 +1,7 @@
 (ns instaparse.grammars
   #+clj (:refer-clojure :exclude [cat])
   (:require #+clj [clojure.test :refer [deftest are]]
-            #+cljs [cemerick.cljs.test :as t]
+            #+cljs [cljs.test :as t]
             [instaparse.reduction :refer [apply-standard-reductions]]
             [instaparse.combinators :refer [Epsilon opt plus 
                                             star rep alt ord 
@@ -11,8 +11,8 @@
                                             ebnf abnf]]
             [instaparse.gll :as gll]
             [instaparse.core :as insta])
-  #+cljs (:require-macros [cemerick.cljs.test :refer [is are deftest with-test 
-                                               run-tests testing]]))
+  #+cljs (:require-macros [cljs.test :refer [is are deftest run-tests testing]]))
+
 (defn- parse [grammar start text]
   (gll/parse (apply-standard-reductions grammar) start text false))
 
@@ -24,7 +24,6 @@
 
 (defn- eparses [grammar start text]
   (gll/parses (apply-standard-reductions :enlive grammar) start text false))
-
 
 ;; Grammars built with combinators
 

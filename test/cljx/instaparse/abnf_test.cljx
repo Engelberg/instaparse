@@ -1,9 +1,9 @@
 (ns instaparse.abnf-test
-  (:require #+cljs [cemerick.cljs.test :as t]
+  (:require #+cljs [cljs.test :as t]
             #+clj [clojure.test :refer [deftest are]]
             [instaparse.core :refer [parser]])
   #+cljs (:require-macros [instaparse.abnf-test :refer [abnf-uri-data phone-uri-data]]
-                          [cemerick.cljs.test :refer [are deftest]]))
+                          [cljs.test :refer [are deftest]]))
 
 (defmacro abnf-uri-data []
   (slurp "test/data/abnf_uri.txt"))

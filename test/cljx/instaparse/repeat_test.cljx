@@ -3,7 +3,7 @@
             [instaparse.core :as insta]
             [instaparse.repeat :as repeat])
   #+cljs (:require-macros [instaparse.repeat-test :refer [text-slurp]]
-                          [cemerick.cljs.test :refer [are deftest]]))
+                          [cljs.test :refer [are deftest]]))
 
 (defmacro text-slurp [] 
   (slurp "https://gist.github.com/lewang/5900166/raw/3d23bd12bcb01036473c6e425e3798517b17820a/input_small.txt"))

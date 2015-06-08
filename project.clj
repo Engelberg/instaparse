@@ -1,16 +1,15 @@
-(defproject com.lucasbradstreet/instaparse-cljs "1.3.5"
+(defproject com.lucasbradstreet/instaparse-cljs "1.3.5.1-SNAPSHOT"
   :description "Instaparse: No grammar left behind"
   :url "https://github.com/lbradstreet/instaparse-cljs"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.6.0"]
-                 [org.clojure/clojurescript "0.0-2371"]
-                 [com.cemerick/clojurescript.test "0.3.1"]]
+                 [org.clojure/clojurescript "0.0-3165"]]
   :profiles {:dev {:dependencies 
                    [[org.clojure/tools.trace "0.7.5"]
                     [criterium "0.3.1"]
                     [rhizome "0.1.8"]]
-                   :plugins [[com.cemerick/austin "0.1.4"]]}
+                   :plugins [[lein-figwheel "0.3.3"]]}
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0-alpha4"]]}}
@@ -32,20 +31,23 @@
                   {:source-paths  ["test/cljx"]
                    :output-path  "target/generated/test/cljs"
                    :rules :cljs}]}   
-  :plugins [[lein-cljsbuild "1.0.4"]
-            [com.keminglabs/cljx "0.5.0" :exclusions [org.clojure/clojure]]
-            [com.cemerick/clojurescript.test "0.3.1"]]
+  :plugins [[lein-cljsbuild "1.0.6"]
+            [com.keminglabs/cljx "0.6.0" :exclusions [org.clojure/clojure]]]
   :prep-tasks [["cljx" "once"]]
   ;:hooks [leiningen.cljsbuild]
   :target-path "target"
   :scm {:name "git"
         :url "https://github.com/lbradstreet/instaparse-cljs"}
-  :cljsbuild {:builds [{:source-paths ["src/cljs" 
+  :cljsbuild {:builds [{:source-paths ["src/cljs"]
+                        :compiler {:output-to "target/js/advanced-test.js"
+                                   :optimizations :none
+                                   :pretty-print true}}
+                       {:source-paths ["src/cljs" 
+                                       "runner/cljs"
                                        "target/generated/test/clj"
                                        "target/generated/test/cljs"]
-                        :compiler {:output-to "target/test.js"
+                        :compiler {:output-to "target/js/advanced-test.js"
                                    :optimizations :advanced
-                                   :pretty-print true}}]
-              :test-commands {"unit-tests" ["node"
-                                            :node-runner
-                                            "target/test.js"]}})
+                                   :target :nodejs
+                                   :pretty-print false}
+                        :notify-command ["node" "target/js/advanced-test.js"]}]})

@@ -9,7 +9,7 @@
                                                    alt ord cat string-ci string
                                                    string-ci regexp nt look neg 
                                                    hide hide-tag]])
-  #+cljs (:require-macros [cemerick.cljs.test :refer [are deftest]]))
+  #+cljs (:require-macros [cljs.test :refer [are deftest run-tests]]))
 
 (def as-and-bs
   (insta/parser
@@ -704,3 +704,7 @@
        words-and-numbers-auto-whitespace
        eat-a
        int-or-double))
+
+
+#+cljs (defn ^:export run []
+         (run-tests))
