@@ -38,11 +38,13 @@
   :target-path "target"
   :scm {:name "git"
         :url "https://github.com/lbradstreet/instaparse-cljs"}
-  :cljsbuild {:builds [{:source-paths ["src/cljs"]
-                        :compiler {:output-to "target/js/advanced-test.js"
+  :cljsbuild {:builds [{:id "none"
+                        :source-paths ["src/cljs"]
+                        :compiler {:output-to "target/js/none.js"
                                    :optimizations :none
                                    :pretty-print true}}
-                       {:source-paths ["src/cljs" 
+                       {:id "test"
+                        :source-paths ["src/cljs" 
                                        "runner/cljs"
                                        "target/generated/test/clj"
                                        "target/generated/test/cljs"]
