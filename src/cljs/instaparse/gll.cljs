@@ -93,7 +93,14 @@
     :neg (negative-lookahead-parse parser index tramp)
     :ord (ordered-alt-full-parse parser index tramp)))
 
-(defrecord Failure [index reason])  
+(defrecord Failure [index reason])
+
+(extend-protocol IPrintWithWriter
+  instaparse.gll/Failure
+  (-pr-writer [fail writer _]
+    (-write writer (with-out-str
+                     (fail/pprint-failure fail)))))
+
 (defn string->segment
   "Converts a string to a Segment, which has fast subsequencing"
   [s]
