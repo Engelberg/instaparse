@@ -11,15 +11,21 @@
       (= \newline (get text counter)) (recur (inc line) 1 (inc counter))
       :else (recur line (inc col) (inc counter)))))
 
-(def newline-chars #{\newline \return})
+(defn newline-chars? [c] 
+  (boolean (#{\newline \return} c)))
+
 (defn line-seq
   "Like the line-seq that comes with clojure, but operates directly on
    a string instead of a BufferedReader. Probably slow."
   [s]
   (if (empty? s)
     nil
-    (->> (partition-by newline-chars s)
-         (filter #(not (newline-chars (first %))))
+    (->> (clojure.string/replace s "\r\n" "\n")
+         (partition-by newline-chars?)
+         (mapcat (fn [coll]
+                (if (newline-chars? (first coll))
+                  (map (constantly []) coll)
+                  (list coll))))
          (map (partial apply str)))))
 
 (defn get-line
