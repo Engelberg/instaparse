@@ -330,6 +330,11 @@
      [:AB [:A "a" "a" "a" "a" "a"] [:B "b" "b" "b"]]
      [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]
     
+    (as-and-bs (StringBuilder. "aaaaabbbaaaabb"))
+    [:S
+     [:AB [:A "a" "a" "a" "a" "a"] [:B "b" "b" "b"]]
+     [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]
+    
     (as-and-bs "aaaaabbbaaaabb")
     (as-and-bs "aaaaabbbaaaabb" :optimize :memory)
     
@@ -442,6 +447,16 @@
     
     (insta/failure? (negative-lookahead-example "abaaaab"))
     true
+    
+    (insta/parses 
+      (insta/parser 
+         "Regex = (CharNonRange | Range) +
+          Range = Char <'-'> Char
+          CharNonRange = Char ! ('-' Char)
+          Char = #'[-x]' | 'c' (! 'd') 'x'")
+      "x-cx")
+    '([:Regex [:Range [:Char "x"] [:Char "c" "x"]]])
+    
     
     (negative-lookahead-example "abaaaab")
     (negative-lookahead-example "abaaaab" :optimize :memory)

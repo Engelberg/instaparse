@@ -156,7 +156,14 @@
 ;  (binding [*read-eval* false]
 ;    (read-string s)))
 
-(let [string-reader (clojure.lang.LispReader$StringReader.)]
+(defn wrap-reader [reader]
+  (try
+    (eval 'clojure.lang.LispReader$ConditionalReader)
+    (fn [r s] (reader r s {} (java.util.LinkedList.)))
+    (catch Exception e reader)))
+
+(let [string-reader (wrap-reader
+                      (clojure.lang.LispReader$StringReader.))]
   (defn safe-read-string
     "Expects a double-quote at the end of the string"
     [s]

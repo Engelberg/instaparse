@@ -26,7 +26,7 @@
   {:pre [(#{:abnf :ebnf} type)]}
   (alter-var-root #'*default-input-format* (constantly type)))
 
-(declare failure? standard-whitespace-parsers)
+(declare failure? standard-whitespace-parsers enable-tracing!)
 
 (defn- unhide-parser [parser unhide]
   (case unhide
@@ -50,8 +50,9 @@
    :partial true    (parses that don't consume the whole string are okay)
    :total true      (if parse fails, embed failure node in tree)
    :unhide <:tags or :content or :all> (for this parse, disable hiding)
-   :optimize :memory   (when possible, employ strategy to use less memory)"
-  [parser text &{:as options}]
+   :optimize :memory   (when possible, employ strategy to use less memory)
+   :trace true      (print diagnostic trace while parsing)"
+  [parser ^CharSequence text &{:as options}]
   {:pre [(contains? #{:tags :content :all nil} (get options :unhide))
          (contains? #{:memory nil} (get options :optimize))]}
   (let [start-production 
@@ -66,21 +67,27 @@
         unhide
         (get options :unhide)
         
+        trace?
+        (get options :trace false)
+        
+        _ (when (and trace? (not gll/TRACE)) (enable-tracing!))
+        
         parser (unhide-parser parser unhide)]
-    
-    (cond
-      (:total options)
-      (gll/parse-total (:grammar parser) start-production text 
-                       partial? (red/node-builders (:output-format parser)))
-
-      (and optimize? (not partial?))
-      (let [result (repeat/try-repeating-parse-strategy parser text start-production)]
-        (if (failure? result)
-          (gll/parse (:grammar parser) start-production text partial?)
-          result))
-      
-      :else
-      (gll/parse (:grammar parser) start-production text partial?))))
+    (gll/bind-trace 
+      trace?
+      (cond
+        (:total options)
+        (gll/parse-total (:grammar parser) start-production text 
+                         partial? (red/node-builders (:output-format parser)))
+        
+        (and optimize? (not partial?))
+        (let [result (repeat/try-repeating-parse-strategy parser text start-production)]
+          (if (failure? result)
+            (gll/parse (:grammar parser) start-production text partial?)
+            result))
+        
+        :else
+        (gll/parse (:grammar parser) start-production text partial?)))))
   
 (defn parses 
   "Use parser to parse the text.  Returns lazy seq of all parse trees
@@ -91,8 +98,9 @@
    :start :keyword  (where :keyword is name of starting production rule)
    :partial true    (parses that don't consume the whole string are okay)
    :total true      (if parse fails, embed failure node in tree)
-   :unhide <:tags or :content or :all> (for this parse, disable hiding)"
-  [parser text &{:as options}]
+   :unhide <:tags or :content or :all> (for this parse, disable hiding)
+   :trace true      (print diagnostic trace while parsing)"
+  [parser ^CharSequence text &{:as options}]
   {:pre [(contains? #{:tags :content :all nil} (get options :unhide))]}
   (let [start-production 
         (get options :start (:start-production parser)),
@@ -103,15 +111,21 @@
         unhide
         (get options :unhide)
         
+        trace?
+        (get options :trace false)
+        
+        _ (when (and trace? (not gll/TRACE)) (enable-tracing!))
+        
         parser (unhide-parser parser unhide)]
-    
-    (cond
-      (:total options)
-      (gll/parses-total (:grammar parser) start-production text 
-                        partial? (red/node-builders (:output-format parser)))
-      
-      :else
-      (gll/parses (:grammar parser) start-production text partial?))))
+    (gll/bind-trace 
+      trace?
+      (cond
+        (:total options)
+        (gll/parses-total (:grammar parser) start-production text 
+                          partial? (red/node-builders (:output-format parser)))
+        
+        :else
+        (gll/parses (:grammar parser) start-production text partial?)))))
   
 (defrecord Parser [grammar start-production output-format]
   clojure.lang.IFn
@@ -224,19 +238,37 @@
   "Tests whether a parse result is a failure."
   [result]
   (or
-    (instance? instaparse.gll.Failure result)
-    (instance? instaparse.gll.Failure (meta result))))
+    (instance? gll/failure-type result)
+    (instance? gll/failure-type (meta result))))
 
 (defn get-failure
   "Extracts failure object from failed parse result."
   [result]
   (cond
-    (instance? instaparse.gll.Failure result)
+    (instance? gll/failure-type result)
     result
-    (instance? instaparse.gll.Failure (meta result))
+    (instance? gll/failure-type (meta result))
     (meta result)
     :else
     nil))
+
+(defn enable-tracing!
+  "Recompiles instaparse with tracing enabled.
+This is called implicitly the first time you invoke a parser with
+`:trace true` so usually you will not need to call this directly."
+  []
+  (alter-var-root #'gll/TRACE (constantly true))
+  (alter-var-root #'gll/PROFILE (constantly true))
+  (require 'instaparse.gll :reload))
+
+(defn disable-tracing!
+  "Recompiles instaparse with tracing disabled.
+Call this to restore regular performance characteristics, eliminating
+the small performance hit imposed by tracing."
+  []
+  (alter-var-root #'gll/TRACE (constantly false))
+  (alter-var-root #'gll/PROFILE (constantly false))
+  (require 'instaparse.gll :reload))  
 
 (defclone span viz/span)
    

@@ -1,4 +1,4 @@
-(defproject com.lucasbradstreet/instaparse-cljs "1.3.5.2-SNAPSHOT"
+(defproject com.lucasbradstreet/instaparse-cljs "1.4.0.0-SNAPSHOT"
   :description "Instaparse: No grammar left behind"
   :url "https://github.com/lbradstreet/instaparse-cljs"
   :license {:name "Eclipse Public License"
@@ -12,7 +12,7 @@
                    :plugins [[lein-figwheel "0.3.3"]]}
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
-             :1.7 {:dependencies [[org.clojure/clojure "1.7.0-alpha4"]]}}
+             :1.7 {:dependencies [[org.clojure/clojure "1.7.0-alpha6"]]}}
   :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7" "test"]
             "cleantestcljs" ["do" "clean," "cljx" "once," "cljsbuild" "test"]}
   :test-paths ["target/generated/src/clj" "target/generated/test/clj"]
