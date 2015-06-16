@@ -44,7 +44,7 @@ Instaparse requires Clojure v1.5.1 or later.  (It may work with earlier versions
 
 Add the following line to your leiningen dependencies:
 
-	[com.lucasbradstreet/instaparse-cljs "1.4.0.0"]
+	[com.lucasbradstreet/instaparse-cljs "1.4.0.0-SNAPSHOT"]
 
 Require instaparse in your namespace header:
 
