@@ -10,6 +10,13 @@
 
 (nodejs/enable-util-print!)
 
+(defmethod cljs.test/report [:cljs.test/default :end-run-tests] [m]
+  (if (test/successful? m)
+    (println "Tests succeeded!")
+    (do
+      (println "Tests failed.")
+      ((aget js/process "exit") 1))))
+
 (defn -main []
   (run-tests 'instaparse.abnf-test
              'instaparse.auto-flatten-seq-test
