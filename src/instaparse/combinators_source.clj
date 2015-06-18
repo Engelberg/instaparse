@@ -36,7 +36,7 @@
     :else {:tag :alt :parsers parsers}))
 
 (defn- ord2 [parser1 parser2]
-    {:tag :ord :parser1 parser1 :parser2 parser2})
+  {:tag :ord :parser1 parser1 :parser2 parser2})
 
 (defn ord "Ordered choice, i.e., parser1 / parser2"
   ([] Epsilon)
@@ -171,7 +171,3 @@
                                          ws-parser)
                                     :red (:red (modified-grammar start))))]
     (merge final-grammar grammar-ws)))
-  
-    
-
-    

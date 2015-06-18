@@ -615,25 +615,47 @@
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
 
+(defn char-range-expecting
+  [lo hi]
+  (format "%%x%04x-%04x" lo hi))
+
 (defn char-range-parse
   [this index tramp]
   (let [lo (:lo this)
-        hi (:hi this)]
+        hi (:hi this)
+        ^String text (:text tramp)]
     (if (<= hi 0xFFFF)
-      (let [^String text (:text tramp)
-            character (.charAt text index)]
+      (let [character (.charAt text index)]
         (if (<= lo (int character) hi)
           (success tramp [index this] (str character) (inc index))
           (fail tramp [index this] index
-                {:tag :char :lo lo :hi hi})))
-      (let [^String text (:text tramp)
-            code-point (Character/codePointAt text index)
-            char-string (Character/toChars code-point)]
+                {:tag :char :expecting (char-range-expecting lo hi)})))
+      (let [code-point (Character/codePointAt text index)
+            char-string (String. (Character/toChars code-point))]
         (if (<= lo code-point hi)
-          (success tramp [index this] (apply str (Character/toChars code-point))
+          (success tramp [index this] char-string
                    (+ index (count char-string)))
           (fail tramp [index this] index
-                {:tag :char :lo lo :hi hi}))))))
+                {:tag :char :expecting (char-range-expecting lo hi)}))))))
+
+(defn char-range-full-parse
+  [this index tramp]
+  (let [lo (:lo this)
+        hi (:hi this)
+        ^String text (:text tramp)
+        end (count text)]
+    (if (<= hi 0xFFFF)
+      (let [character (.charAt text index)]
+        (if (and (= (inc index) end) (<= lo (int character) hi))
+          (success tramp [index this] (str character) end)
+          (fail tramp [index this] index
+                {:tag :char :expecting (char-range-expecting lo hi) :full true})))
+      (let [code-point (Character/codePointAt text index)
+            char-string (String. (Character/toChars code-point))]
+        (if (and (= (+ index (count char-string)) end) (<= lo code-point hi))
+          (success tramp [index this] end)
+          (fail tramp [index this] index
+                {:tag :char :expecting (char-range-expecting lo hi) :full true}))))))
 
 (defn re-match-at-front [regexp text]
   (let [^java.util.regex.Matcher matcher (re-matcher regexp text)

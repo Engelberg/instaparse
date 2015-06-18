@@ -80,11 +80,6 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
        | #\"#\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"(?x) #Double-quoted regexp\"
 ")
 
-(defn char-range
-  "Takes two codepoints and returns a combinator representing a range of characters."
-  [codepoint1 codepoint2]
-  (regexp (format "[\\x{%x}-\\x{%x}]" codepoint1 codepoint2))) 
-
 (defn get-char-combinator
   ([num1]
     (string (String. (Character/toChars num1))))

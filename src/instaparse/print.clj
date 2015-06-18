@@ -52,6 +52,7 @@
         :cat (str/join " " (map (partial paren-for-tags #{:alt :ord} hidden?) parsers))
         :string (with-out-str (pr (:string p)))
         :string-ci (with-out-str (pr (:string p)))
+        :char (format "%%x%04x-%04x" (:lo p) (:hi p))
         :regexp (regexp->str (:regexp p))
         :nt (subs (str (:keyword p)) 1)
         :look (str "&" (paren-for-compound hidden? parser))
