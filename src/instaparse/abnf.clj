@@ -81,14 +81,12 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
 ")
 
 (defn get-char-combinator
-  ([num1]
-    (string (String. (Character/toChars num1))))
-  ([num1 num2 & nums]
-    (let [v (vec (concat [num1 num2] nums))]
-      (if (= (v 1) "-")
-        (char-range (v 0) (v 2))
-        (apply cat (for [n v]
-                     (string (String. (Character/toChars n)))))))))
+  [& nums]
+  (cond
+    (= "-" (second nums)) (let [[lo _ hi] nums]
+                            (unicode-char lo hi))
+    :else (apply cat (for [n nums]
+                       (unicode-char n)))))
 
 (defn project
   "Restricts map to certain keys"
