@@ -1,5 +1,6 @@
 (ns instaparse.repeat-test
-  (:require #+clj [clojure.test :refer [deftest are]]
+  (:require #+cljs [cljs.test :as t]
+            #+clj [clojure.test :refer [deftest are]]
             [instaparse.core :as insta]
             [instaparse.repeat :as repeat])
   #+cljs (:require-macros [instaparse.repeat-test :refer [text-slurp]]

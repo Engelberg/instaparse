@@ -2,6 +2,7 @@
   #+clj (:refer-clojure :exclude [cat read-string])
   (:require #+clj [clojure.test :refer [deftest are]]
             #+clj [clojure.edn :refer [read-string]]
+            #+cljs [cljs.test :as t]
             #+cljs [cljs.reader :refer [read-string]]
             [instaparse.core :as insta]
             [instaparse.cfg :refer [ebnf]]
