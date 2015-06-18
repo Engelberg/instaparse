@@ -19,6 +19,7 @@
 (defclone cat c/cat)
 (defclone string c/string)
 (defclone string-ci c/string-ci)
+(defclone char-range c/char-range)
 (defclone regexp c/regexp)
 (defclone nt c/nt)
 (defclone look c/look)

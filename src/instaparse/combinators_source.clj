@@ -65,6 +65,11 @@
   (if (= s "") Epsilon
     {:tag :string-ci :string s}))
 
+(defn char-range "Create a character-range terminal between two code points (inclusive)"
+  [lo hi]
+  (assert (<= lo hi) "Character range minimum must be less than or equal the maximum")
+  {:tag :char :lo lo :hi hi})
+
 (defn regexp "Create a regexp terminal out of regular expression r"
   [r]
   (if (= r "") Epsilon
