@@ -132,3 +132,38 @@ to test the lookahead"
     (if (<= 42 i 91)
       (is (not (instance? instaparse.gll.Failure (regex-chars (str c)))))
       (is (instance? instaparse.gll.Failure (regex-chars (str c)))))))
+
+(deftest unicode-test
+  (let [poop "\uD83D\uDCA9"]  ; U+1F4A9 PILE OF POO
+    (let [parser1 (parser "S = %x1F4A9"
+                          :input-format :abnf)]
+      (are [x y] (= x y)
+           (parses parser1 poop) [[:S poop]])
+      (are [x] (instance? instaparse.gll.Failure x)
+           (parser1 (str poop poop))
+           (parser1 (str (first poop)))
+           ;; shouldn't work on the surrogate characters individually
+           (parser1 (str (second poop)))))
+    (let [parser2 (parser "S = %x1F4A8-1F4A9"
+                          :input-format :abnf)]
+      (are [x y] (= x y)
+           (parses parser2 poop) [[:S poop]])
+      (are [x] (instance? instaparse.gll.Failure x)
+           (parser2 (str poop poop))
+           (parser2 (str (first poop)))
+           (parser2 (str (second poop)))))
+    (let [parser3 (parser "S = %x1F4A9.1F4A9.1F4A9"
+                          :input-format :abnf)]
+      (are [x y] (= x y)
+           (parses parser3 (str poop poop poop)) [[:S poop poop poop]])
+      (are [x] (instance? instaparse.gll.Failure x)
+           (parser3 (str poop))))
+    ;; it would be cool if EBNF supported unicode in a parser spec
+    ;; (ABNF doesn't allow that though)
+    (let [parser4 (parser (str "S = '" poop "'*"))]
+      (are [x y] (= x y)
+           (parses parser4 (str poop poop poop)) [[:S poop poop poop]])
+      (are [x] (instance? instaparse.gll.Failure x)
+           (parser4 (str (first poop)))
+           (parser4 (str (second poop)))
+           (parser4 (str poop poop (first poop)))))))
