@@ -6,6 +6,8 @@
 
 ## Clojurescript Port
 
+*Note, v1.3.6-v1.4.0 changes have not yet been ported to cljs for this version of instaparse-cljs*
+
 This is a an alpha quality Clojurescript port of Mark Engelberg's fantastic Instaparse library (https://github.com/Engelberg/instaparse). 
 The Clojure code is still retained in this project, so it is still Clojure compatible. Once battle tested, the aim is to merge this upstream. 
 Version numbers will track upstream, with the 4th versioning identifier signaling the port version. 
