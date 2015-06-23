@@ -786,8 +786,9 @@ Sometimes, when the input string contains newline characters, it is useful to ha
             
 The additional information is in the metadata, so the tree itself is not visibly changed:
 
-=> parsed-multiline-text-with-line-and-column-metadata
-[:sentence [:word "This"] [:word "is"] [:word "line"] [:number "1"] [:word "This"] [:word "is"] [:word "line"] [:number "2"]]
+    => parsed-multiline-text-with-line-and-column-metadata
+    [:sentence [:word "This"] [:word "is"] [:word "line"] [:number "1"] 
+	           [:word "This"] [:word "is"] [:word "line"] [:number "2"]]
 
 But now let's inspect the metadata for the overall parse tree.
 
