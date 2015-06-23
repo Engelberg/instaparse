@@ -525,9 +525,9 @@
     (cond
       (>= index (count text)) (fail tramp [index this] index
                                     {:tag :char :expecting {:char-range true :lo lo :hi hi}})
-      (<= hi 0xFFFF) (let [character (.charAt text index)]
-                       (if (<= lo (int character) hi)
-                         (success tramp [index this] (str character) (inc index))
+      (<= hi 0xFFFF) (let [code (.charCodeAt text index)]
+                       (if (<= lo code hi)
+                         (success tramp [index this] (char code) (inc index))
                          (fail tramp [index this] index
                                {:tag :char :expecting {:char-range true :lo lo :hi hi}})))
       :else (let [code-point (u/getCodePointAround text (int index))
@@ -547,9 +547,9 @@
     (cond
       (>= index (count text)) (fail tramp [index this] index
                                     {:tag :char :expecting {:char-range true :lo lo :hi hi}})
-      (<= hi 0xFFFF) (let [character (.charAt text index)]
-                       (if (and (= (inc index) end) (<= lo (int character) hi))
-                         (success tramp [index this] (str character) end)
+      (<= hi 0xFFFF) (let [code (.charCodeAt text index)]
+                       (if (and (= (inc index) end) (<= lo code hi))
+                         (success tramp [index this] (char code) end)
                          (fail tramp [index this] index
                                {:tag :char :expecting {:char-range true :lo lo :hi hi} :full true})))
       :else (let [code-point (u/getCodePointAround text (int index))
