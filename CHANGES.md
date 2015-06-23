@@ -1,10 +1,18 @@
 # Instaparse Change Log
 
+## 1.4.1
+
+### Features
+
+* New function `add-line-and-column-info-to-metadata` in the instaparse.core namespace.
+
+### Bugfixes
+
 ## 1.4.0
 
 ### Bugfixes
 
-* In 1.3.6, parsing of any CharSequence was introduced, however, the error messages 
+* In 1.3.6, parsing of any CharSequence was introduced, however, the error messages
   for failed parses weren't printing properly.  This has been fixed.    
 
 * 1.4.0 uses a more robust algorithm for handling nested negative lookaheads, in
@@ -15,7 +23,7 @@
 
 * New support for tracing the steps the parser goes through.  Call your parser with
   the optional flag `:trace true`.  The first time you use this flag, it triggers a
-  recompilation of the code with additional tracing and profiling steps.  
+  recompilation of the code with additional tracing and profiling steps.
   To restore the code to its non-instrumented form, call `(insta/disable-tracing!)`.
 
 ## 1.3.6
