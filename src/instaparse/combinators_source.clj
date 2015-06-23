@@ -36,7 +36,7 @@
     :else {:tag :alt :parsers parsers}))
 
 (defn- ord2 [parser1 parser2]
-    {:tag :ord :parser1 parser1 :parser2 parser2})
+  {:tag :ord :parser1 parser1 :parser2 parser2})
 
 (defn ord "Ordered choice, i.e., parser1 / parser2"
   ([] Epsilon)
@@ -64,6 +64,14 @@
   [s] 
   (if (= s "") Epsilon
     {:tag :string-ci :string s}))
+
+(defn unicode-char
+  "Matches a Unicode code point or a range of code points"
+  ([code-point]
+   (unicode-char code-point code-point)) ; represented the same internally
+  ([lo hi]
+   (assert (<= lo hi) "Character range minimum must be less than or equal the maximum")
+   {:tag :char :lo lo :hi hi}))
 
 (defn regexp "Create a regexp terminal out of regular expression r"
   [r]
@@ -166,7 +174,3 @@
                                          ws-parser)
                                     :red (:red (modified-grammar start))))]
     (merge final-grammar grammar-ws)))
-  
-    
-
-    
