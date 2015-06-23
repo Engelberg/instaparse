@@ -6,9 +6,16 @@
 
 * New function `add-line-and-column-info-to-metadata` in the instaparse.core namespace.
 
+### Enhancements
+
+* Added new combinators for unicode character ranges, for better portability to Clojurescript.
+
 ### Bugfixes
 
-* Improved compatibility with boot, which allows having multiple versions of Clojure on the classpath.
+* Improved compatibility with boot, which allows having multiple versions of Clojure on the classpath, by making change to string-reader which needs to
+be aware of what version of Clojure it is running due to a breaking change in Clojure 1.7.
+
+* Fixed bug with the way failure messages were printed in certain cases.
 
 ## 1.4.0
 
