@@ -92,6 +92,8 @@
          (= cnt (count other))
          (or (= cnt 0)
              (= (seq self) other))))
+  ICollection
+  (-conj [coll o] (cons o coll))
   IEmptyableCollection
   (-empty [self] (with-meta EMPTY (meta self))) 
   INext
