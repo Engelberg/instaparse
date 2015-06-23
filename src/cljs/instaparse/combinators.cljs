@@ -18,6 +18,7 @@
 (def cat c/cat)
 (def string c/string)
 (def string-ci c/string-ci)
+(def unicode-char c/unicode-char)
 (def regexp c/regexp)
 (def nt c/nt)
 (def look c/look)

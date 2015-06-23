@@ -29,6 +29,16 @@
     (str "#\"" (subs (.-source r) 1) "\"")
     #"[\s]" regexp-replace))
 
+(defn number->hex-padded [n]
+  (if (<= n 0xFFF)
+    (.substr (str "0000" (.toString n 16)) -4)
+    (.toString n 16)))
+
+(defn char-range->str [{:keys [lo hi]}]
+  (if (= lo hi)
+    (str "%x" (number->hex-padded lo))
+    (str "%x" (number->hex-padded lo) "-" (number->hex-padded hi))))
+
 (defn combinators->str
   "Stringifies a parser built from combinators"
   ([p] (combinators->str p false))
@@ -52,6 +62,7 @@
         :cat (str/join " " (map (partial paren-for-tags #{:alt :ord} hidden?) parsers))
         :string (with-out-str (pr (:string p)))
         :string-ci (with-out-str (pr (:string p)))
+        :char (char-range->str p)
         :regexp (regexp->str (:regexp p))
         :nt (subs (str (:keyword p)) 1)
         :look (str "&" (paren-for-compound hidden? parser))

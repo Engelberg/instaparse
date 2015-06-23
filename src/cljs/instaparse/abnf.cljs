@@ -7,7 +7,7 @@
             [instaparse.reduction :as red]
             [instaparse.combinators-source :refer
              [Epsilon opt plus star rep alt ord cat string-ci string
-              string-ci regexp nt look neg hide hide-tag]]
+              string-ci regexp nt look neg hide hide-tag unicode-char]]
             [goog.string.format]))
 
 (def ^:dynamic *case-insensitive*
@@ -88,40 +88,13 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
   [fmt & args]
   (apply goog.string/format fmt args))
 
-(defn number->hex
-  "Convert an number to a hex string."
-  [v]
-  (clojure.string/replace (format "%2s" (.toString v 16))  
-                          " " 
-                          "0"))
-
-(defn char-range
-  "Takes two chars and returns a combinator representing a range of characters."
-  [codepoint1 codepoint2]
-  (regexp (str "[\\x" (number->hex codepoint1) "-\\x" (number->hex codepoint2) "]")))
-
-(defn char-codes [c]
-  (let [c1 (.charCodeAt c 0)
-        c2 (.charCodeAt c 1)]
-    (map char 
-         (if (js/isNaN c2)
-           [c1]
-           [c1 c2]))))
-
-(defn coerce-char [c]
-  (if (integer? c)
-    (char c)
-    c))
-
 (defn get-char-combinator
-  ([num1]
-   (string (apply str (char-codes num1))))
-  ([num1 num2 & nums]
-    (let [v (vec (map coerce-char (concat [num1 num2] nums)))]
-      (if (= (v 1) "-")
-        (char-range (v 0) (v 2))
-        (apply cat (for [n v]
-                     (string (apply str (char-codes n)))))))))
+  [& nums]
+  (cond
+    (= "-" (second nums)) (let [[lo _ hi] nums]
+                            (unicode-char lo hi))
+    :else (apply cat (for [n nums]
+                       (unicode-char n)))))
 
 (defn project
   "Restricts map to certain keys"
