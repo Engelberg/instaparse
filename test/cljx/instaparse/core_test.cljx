@@ -6,6 +6,7 @@
             #+cljs [cljs.reader :refer [read-string]]
             [instaparse.core :as insta]
             [instaparse.cfg :refer [ebnf]]
+            [instaparse.line-col :as lc]
             [instaparse.combinators-source :refer [Epsilon opt plus star rep 
                                                    alt ord cat string-ci string
                                                    string-ci regexp nt look neg 
@@ -721,6 +722,28 @@
        eat-a
        int-or-double))
 
+(defn hiccup-line-col-spans [t]
+  (if (sequential? t)
+    (cons (meta t) (map hiccup-line-col-spans (next t)))
+    t))
+
+(defn enlive-line-col-spans [t]
+  (if (map? t)
+    (cons (meta t) (map enlive-line-col-spans (:content t)))
+    t))
+
+(deftest line-col-test
+  (let [text1 "abc\ndef\ng\nh\ni",
+        h (words-and-numbers text1)
+        e (words-and-numbers-enlive text1)
+        hlc (lc/add-line-col-spans text1 h)
+        elc (lc/add-line-col-spans text1 e)]
+    (is (= (enlive-line-col-spans elc)
+           '({:instaparse.gll/end-column 2, :instaparse.gll/end-line 5, :instaparse.gll/start-column 1, :instaparse.gll/start-line 1, :instaparse.gll/start-index 0, :instaparse.gll/end-index 13} ({:instaparse.gll/end-column 4, :instaparse.gll/end-line 1, :instaparse.gll/start-column 1, :instaparse.gll/start-line 1, :instaparse.gll/start-index 0, :instaparse.gll/end-index 3} "a" "b" "c") ({:instaparse.gll/end-column 4, :instaparse.gll/end-line 2, :instaparse.gll/start-column 1, :instaparse.gll/start-line 2, :instaparse.gll/start-index 4, :instaparse.gll/end-index 7} "d" "e" "f") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 3, :instaparse.gll/start-column 1, :instaparse.gll/start-line 3, :instaparse.gll/start-index 8, :instaparse.gll/end-index 9} "g") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 4, :instaparse.gll/start-column 1, :instaparse.gll/start-line 4, :instaparse.gll/start-index 10, :instaparse.gll/end-index 11} "h") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 5, :instaparse.gll/start-column 1, :instaparse.gll/start-line 5, :instaparse.gll/start-index 12, :instaparse.gll/end-index 13} "i"))))           
+    (is (= (hiccup-line-col-spans hlc)
+           '({:instaparse.gll/end-column 2, :instaparse.gll/end-line 5, :instaparse.gll/start-column 1, :instaparse.gll/start-line 1, :instaparse.gll/start-index 0, :instaparse.gll/end-index 13} ({:instaparse.gll/end-column 4, :instaparse.gll/end-line 1, :instaparse.gll/start-column 1, :instaparse.gll/start-line 1, :instaparse.gll/start-index 0, :instaparse.gll/end-index 3} "abc") ({:instaparse.gll/end-column 4, :instaparse.gll/end-line 2, :instaparse.gll/start-column 1, :instaparse.gll/start-line 2, :instaparse.gll/start-index 4, :instaparse.gll/end-index 7} "def") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 3, :instaparse.gll/start-column 1, :instaparse.gll/start-line 3, :instaparse.gll/start-index 8, :instaparse.gll/end-index 9} "g") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 4, :instaparse.gll/start-column 1, :instaparse.gll/start-line 4, :instaparse.gll/start-index 10, :instaparse.gll/end-index 11} "h") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 5, :instaparse.gll/start-column 1, :instaparse.gll/start-line 5, :instaparse.gll/start-index 12, :instaparse.gll/end-index 13} "i"))))))
+
+        
 
 #+cljs (defn ^:export run []
          (run-tests))

@@ -9,7 +9,8 @@
             [instaparse.abnf :as abnf]
             [instaparse.viz :as viz]
             [instaparse.repeat :as repeat]
-            [instaparse.combinators-source :as c]))
+            [instaparse.combinators-source :as c]
+            [instaparse.line-col :as lc]))
   ;(:use clojure.tools.trace)
 
 (def ^:dynamic *default-output-format* :hiccup)
@@ -275,6 +276,8 @@ the small performance hit imposed by tracing."
 (defclone transform t/transform)
 
 (defclone visualize viz/tree-viz)
+
+(defclone add-line-and-column-info-to-metadata lc/add-line-col-spans)
 
 (def ^:private standard-whitespace-parsers
   {:standard (parser "whitespace = #'\\s+'")

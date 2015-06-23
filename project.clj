@@ -12,7 +12,7 @@
                    :plugins [[lein-figwheel "0.3.3"]]}
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
-             :1.7 {:dependencies [[org.clojure/clojure "1.7.0-alpha6"]]}}
+             :1.7 {:dependencies [[org.clojure/clojure "1.7.0-RC2"]]}}
   :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7" "test"]
             "cleantestcljs" ["do" "clean," "cljx" "once," "cljsbuild" "test" "unit-tests"]}
   :test-paths ["target/generated/src/clj" "target/generated/test/clj"]
