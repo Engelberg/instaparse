@@ -156,11 +156,11 @@
 ;  (binding [*read-eval* false]
 ;    (read-string s)))
 
-(defn wrap-reader [reader]
-  (try
-    (eval 'clojure.lang.LispReader$ConditionalReader)
-    (fn [r s] (reader r s {} (java.util.LinkedList.)))
-    (catch Exception e reader)))
+(defn wrap-reader [reader] 
+  (let [{major :major minor :minor} *clojure-version*]
+    (if (and (<= major 1) (<= minor 6))
+      reader
+      (fn [r s] (reader r s {} (java.util.LinkedList.))))))
 
 (let [string-reader (wrap-reader
                       (clojure.lang.LispReader$StringReader.))]

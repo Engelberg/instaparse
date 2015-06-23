@@ -8,6 +8,8 @@
 
 ### Bugfixes
 
+* Improved compatibility with boot, which allows having multiple versions of Clojure on the classpath.
+
 ## 1.4.0
 
 ### Bugfixes
