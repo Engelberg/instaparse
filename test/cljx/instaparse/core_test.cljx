@@ -1,6 +1,6 @@
 (ns instaparse.core-test
   #+clj (:refer-clojure :exclude [cat read-string])
-  (:require #+clj [clojure.test :refer [deftest are]]
+  (:require #+clj [clojure.test :refer [deftest are is]]
             #+clj [clojure.edn :refer [read-string]]
             #+cljs [cljs.test :as t]
             #+cljs [cljs.reader :refer [read-string]]
@@ -11,7 +11,7 @@
                                                    alt ord cat string-ci string
                                                    string-ci regexp nt look neg 
                                                    hide hide-tag]])
-  #+cljs (:require-macros [cljs.test :refer [are deftest run-tests]]))
+  #+cljs (:require-macros [cljs.test :refer [is are deftest run-tests]]))
 
 (def as-and-bs
   (insta/parser
