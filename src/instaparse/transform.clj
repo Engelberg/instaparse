@@ -2,7 +2,7 @@
   "Functions to transform parse trees"
   (:require instaparse.gll))
 
-(defn- map-preserving-meta [f l]
+(defn map-preserving-meta [f l]
   (with-meta (map f l) (meta l)))
 
 (defn merge-meta
