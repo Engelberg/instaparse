@@ -7,7 +7,8 @@
             [instaparse.transform :as t]
             [instaparse.abnf :as abnf]
             [instaparse.repeat :as repeat]
-            [instaparse.combinators-source :as c]))
+            [instaparse.combinators-source :as c]
+            [instaparse.line-col :as lc]))
 
 (def ^:dynamic *default-output-format* :hiccup)
 (defn set-default-output-format!
@@ -220,6 +221,8 @@
     nil))
 
 (def transform t/transform)
+
+(def add-line-and-column-info-to-metadata lc/add-line-col-spans)
 
 (def ^:private standard-whitespace-parsers
   {:standard (parser "whitespace = #'\\s+'")
