@@ -129,6 +129,19 @@ to test the lookahead"
        (reps "bccddee")
        (reps "aaaabbbbcccddee")))
 
+(def regex-chars
+  "Testing %d42-91. The boundary chars are \"*\" and \"[\", which normally aren't allowed in a regex."
+  (parser
+    "S = %d42-91"
+    :input-format :abnf))
+
+(deftest regex-char-test
+  (doseq [i (range 1 (inc 100))
+          :let [c (char i)]]
+    (if (<= 42 i 91)
+      (is (not (instance? instaparse.gll.Failure (regex-chars (str c)))))
+      (is (instance? instaparse.gll.Failure (regex-chars (str c)))))))
+
 (deftest unicode-test
   (let [poop "\uD83D\uDCA9"]  ; U+1F4A9 PILE OF POO
     (let [parser1 (parser "S = %x1F4A9"
