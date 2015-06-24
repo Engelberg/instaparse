@@ -78,7 +78,7 @@
 (declare alt-full-parse cat-full-parse string-full-parse epsilon-full-parse 
          non-terminal-full-parse opt-full-parse plus-full-parse star-full-parse
          rep-full-parse regexp-full-parse lookahead-full-parse ordered-alt-full-parse
-         string-case-insensitive-full-parse char-range-parse)
+         string-case-insensitive-full-parse char-range-full-parse)
 (defn -full-parse [parser index tramp]
   (dprintln "-full-parse" index (:tag parser))
   (case (:tag parser)
@@ -87,7 +87,7 @@
     :cat (cat-full-parse parser index tramp)
     :string (string-full-parse parser index tramp)
     :string-ci (string-case-insensitive-full-parse parser index tramp)
-    :char (char-range-parse parser index tramp)
+    :char (char-range-full-parse parser index tramp)
     :epsilon (epsilon-full-parse parser index tramp)
     :opt (opt-full-parse parser index tramp)
     :plus (plus-full-parse parser index tramp)
