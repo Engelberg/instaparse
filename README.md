@@ -1,12 +1,10 @@
-# Instaparse-cljs 1.4.0.0
+# Instaparse-cljs 1.4.1.0
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/lbradstreet/instaparse-cljs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 *What if context-free grammars were as easy to use as regular expressions?*
 
 ## Clojurescript Port
-
-*Note, v1.3.6-v1.4.0 changes have not yet been ported to cljs for this version of instaparse-cljs*
 
 This is a an alpha quality Clojurescript port of Mark Engelberg's fantastic Instaparse library (https://github.com/Engelberg/instaparse). 
 The Clojure code is still retained in this project, so it is still Clojure compatible. Once battle tested, the aim is to merge this upstream. 
