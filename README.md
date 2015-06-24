@@ -17,6 +17,7 @@ A few points of difference between the Clojure and Clojurescript versions of thi
 + Visualisation is not supported as it depends on Rhizome on the JVM.
 + Slurping grammars is not supported, as slurp cannot be used from
   clojurescript. 
++ Tracing (introduced in Instaparse 1.4.0) is not supported.
 + The Clojurescript version is slower by approximately a magnitude (tested with
   V8, :advanced compile). Performance with optimizations :none will be slower
   by around another factor of 3. Please let me know if you are using a grammar
