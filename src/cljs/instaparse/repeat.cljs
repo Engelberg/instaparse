@@ -5,7 +5,7 @@
             [instaparse.viz :as viz]
             [instaparse.reduction :as red]
             [instaparse.failure :as fail])
-  (:require-macros [instaparse.gll-macros :refer [debug]]))
+  (:require-macros [instaparse.gll-macros :refer [profile]]))
 
 (defn empty-result? [result]
   (or (and (vector? result) (= (count result) 1))
@@ -166,7 +166,7 @@
     
 (defn try-repeating-parse-strategy-with-header
   [grammar text start-production start-rule output-format]
-  (debug (gll/clear!))
+  (profile (gll/clear!))
   (let [parsers (:parsers start-rule)
         repeating-parser (last parsers)]
     (if
@@ -185,7 +185,7 @@
   (let [grammar (:grammar parser)
         output-format (:output-format parser)
         start-rule (get grammar start-production)]
-    (debug (gll/clear!))
+    (profile (gll/clear!))
     (cond
       (= (:hide start-rule) true) failure-signal
       (= (:red start-rule) red/raw-non-terminal-reduction)

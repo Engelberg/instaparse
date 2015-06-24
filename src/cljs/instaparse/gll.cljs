@@ -26,7 +26,7 @@
    ;; unicode utilities for char-range
    [goog.i18n.uChar :as u])
 
-  (:use-macros [instaparse.gll-macros :only [debug dprintln dpprint success swap-field!]]))
+  (:use-macros [instaparse.gll-macros :only [profile dprintln dpprint success swap-field!]]))
 
 (defprotocol ISegment
   (subsegment [this start-index end-index-minus-one])
@@ -44,9 +44,9 @@
   (-count [_] count))
 
 
-(debug (def stats (atom {})))
-(debug (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
-(debug (defn clear! [] (reset! stats {})))
+(profile (def stats (atom {})))
+(profile (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
+(profile (defn clear! [] (reset! stats {})))
 
 
 (defn get-parser [grammar p]
@@ -153,7 +153,7 @@
 (defn push-stack
   "Pushes an item onto the trampoline's stack"
   [tramp item]
-  (debug (add! :push-stack))
+  (profile (add! :push-stack))
   (swap-field! (.-stack tramp) conj item))
 
 (defn push-message
@@ -164,7 +164,7 @@
         k [listener i]
         c (get cache k 0)
         f #(listener result)]
-    (debug (add! :push-message))    
+    (profile (add! :push-message))    
     (dprintln "push-message" i c (.-generation tramp) (count (.-stack tramp))
              (count (.-next-stack tramp)))
     (dprintln "push-message: listener result" listener result)
@@ -210,7 +210,7 @@
     (if-let [node (nodes node-key)]
       node 
       (let [node (make-node)]
-        (debug (add! .-create-node))
+        (profile (add! .-create-node))
         (swap-field! (.-nodes tramp) assoc node-key node)
         node))))
 
@@ -242,7 +242,7 @@
         total? (total-success? tramp result)
         results (if total? (.-full-results node) (.-results node))]
     (when (not (results result))  ; when result is not already in results
-      (debug (add! :push-result))
+      (profile (add! :push-result))
       (if total?
         (swap-field! (.-full-results node) conj result)
         (swap-field! (.-results node) conj result))
@@ -260,7 +260,7 @@
   (dprintln "push-listener" [(node-key 1) (node-key 0)] (type listener))
   (let [listener-already-exists? (listener-exists? tramp node-key)
         node (node-get tramp node-key)]
-    (debug (add! :push-listener))
+    (profile (add! :push-listener))
     (swap-field! (.-listeners node) conj listener)
     (doseq [result (.-results node)]
       (push-message tramp listener result))
@@ -275,7 +275,7 @@
   [tramp node-key listener]
   (let [full-listener-already-exists? (full-listener-exists? tramp node-key)
         node (node-get tramp node-key)]
-    (debug (add! :push-full-listener))
+    (profile (add! :push-full-listener))
     (swap-field! (.-full-listeners node) conj listener)
     (doseq [result (.-full-results node)]
       (push-message tramp listener result))
@@ -778,7 +778,7 @@
     (push-full-listener tramp [0 parser] (TopListener tramp))))
 
 (defn parses [grammar start text partial?]
-  (debug (clear!))
+  (profile (clear!))
   (let [tramp (make-tramp grammar text)
         parser (nt start)]
     (start-parser tramp parser partial?)
@@ -788,7 +788,7 @@
         (fail/augment-failure (.-failure tramp) text)))))
   
 (defn parse [grammar start text partial?]
-  (debug (clear!))
+  (profile (clear!))
   (let [tramp (make-tramp grammar text)
         parser (nt start)]
     (start-parser tramp parser partial?)
@@ -829,7 +829,7 @@ rather than overwriting the metamap entirely."
       
 (defn parses-total 
   [grammar start text partial? node-builder]
-  (debug (clear!))
+  (profile (clear!))
   (let [all-parses (parses grammar start text partial?)]
     (if (seq all-parses)
       all-parses
@@ -851,7 +851,7 @@ rather than overwriting the metamap entirely."
 
 (defn parse-total 
   [grammar start text partial? node-builder]
-  (debug (clear!))
+  (profile (clear!))
   (let [result (parse grammar start text partial?)]
     (if-not (instance? Failure result)
       result
