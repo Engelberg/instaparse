@@ -553,7 +553,7 @@
         end (count text)]
     (cond
       (>= index (count text)) (fail tramp [index this] index
-                                    {:tag :char :expecting {:char-range true :lo lo :hi hi}})
+                                    {:tag :char :expecting {:char-range true :lo lo :hi hi} :full true})
       (<= hi 0xFFFF) (let [code (.charCodeAt text index)]
                        (if (and (= (inc index) end) (<= lo code hi))
                          (success tramp [index this] (char code) end)
