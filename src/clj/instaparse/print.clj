@@ -29,6 +29,11 @@
     (str "#\"" (str r) "\"")
     #"[\s]" regexp-replace))
 
+(defn char-range->str [{:keys [lo hi]}]
+  (if (= lo hi)
+    (format "%%x%04x" lo)
+    (format "%%x%04x-%04x" lo hi)))
+
 (defn combinators->str
   "Stringifies a parser built from combinators"
   ([p] (combinators->str p false))
@@ -52,6 +57,7 @@
         :cat (str/join " " (map (partial paren-for-tags #{:alt :ord} hidden?) parsers))
         :string (with-out-str (pr (:string p)))
         :string-ci (with-out-str (pr (:string p)))
+        :char (char-range->str p)
         :regexp (regexp->str (:regexp p))
         :nt (subs (str (:keyword p)) 1)
         :look (str "&" (paren-for-compound hidden? parser))

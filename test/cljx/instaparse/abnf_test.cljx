@@ -1,9 +1,9 @@
 (ns instaparse.abnf-test
   (:require #+cljs [cljs.test :as t]
-            #+clj [clojure.test :refer [deftest are]]
+            #+clj [clojure.test :refer [deftest are is]]
             [instaparse.core :refer [parser parses]])
   #+cljs (:require-macros [instaparse.abnf-test :refer [abnf-uri-data phone-uri-data]]
-                          [cljs.test :refer [are deftest]]))
+                          [cljs.test :refer [is are deftest]]))
 
 (defmacro abnf-uri-data []
   (slurp "test/data/abnf_uri.txt"))
@@ -128,6 +128,19 @@ to test the lookahead"
        (reps "")
        (reps "bccddee")
        (reps "aaaabbbbcccddee")))
+
+(def regex-chars
+  "Testing %d42-91. The boundary chars are \"*\" and \"[\", which normally aren't allowed in a regex."
+  (parser
+    "S = %d42-91"
+    :input-format :abnf))
+
+(deftest regex-char-test
+  (doseq [i (range 1 (inc 100))
+          :let [c (char i)]]
+    (if (<= 42 i 91)
+      (is (not (instance? instaparse.gll.Failure (regex-chars (str c)))))
+      (is (instance? instaparse.gll.Failure (regex-chars (str c)))))))
 
 (deftest unicode-test
   (let [poop "\uD83D\uDCA9"]  ; U+1F4A9 PILE OF POO

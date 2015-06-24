@@ -156,11 +156,11 @@
 ;  (binding [*read-eval* false]
 ;    (read-string s)))
 
-(defn wrap-reader [reader]
-  (try
-    (eval 'clojure.lang.LispReader$ConditionalReader)
-    (fn [r s] (reader r s {} (java.util.LinkedList.)))
-    (catch Exception e reader)))
+(defn wrap-reader [reader] 
+  (let [{major :major minor :minor} *clojure-version*]
+    (if (and (<= major 1) (<= minor 6))
+      reader
+      (fn [r s] (reader r s {} (java.util.LinkedList.))))))
 
 (let [string-reader (wrap-reader
                       (clojure.lang.LispReader$StringReader.))]
@@ -235,7 +235,7 @@
   [parser]
   (case (:tag parser)
     :nt [(:keyword parser)]
-    (:string :string-ci :regexp :epsilon) []
+    (:string :string-ci :char :regexp :epsilon) []
     (:opt :plus :star :look :neg :rep) (recur (:parser parser))
     (:alt :cat) (mapcat seq-nt (:parsers parser))
     :ord (mapcat seq-nt 

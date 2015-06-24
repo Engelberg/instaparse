@@ -1,10 +1,11 @@
 (ns instaparse.gll-macros)
 
-(def DEBUG false)
-(def PRINT false)
-(defmacro debug [& body]
-  (when DEBUG
+(def PROFILE false)
+(defmacro profile [& body]
+  (when PROFILE
     `(do ~@body)))
+
+(def PRINT false)
 (defmacro dprintln [& body]  
   (when PRINT `(println ~@body)))
 (defmacro dpprint [& body]  

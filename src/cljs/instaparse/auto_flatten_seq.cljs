@@ -93,7 +93,7 @@
          (or (= cnt 0)
              (= (seq self) other))))
   ICollection
-  (-conj [coll o] (cons o coll))
+  (-conj [self o] (cons o self))
   IEmptyableCollection
   (-empty [self] (with-meta EMPTY (meta self))) 
   INext
@@ -197,7 +197,7 @@
            (= cnt (count other))
            (= (get-vec self) other))))
   IEmptyableCollection
-  (-empty [self] (with-meta EMPTY (meta self))) 
+  (-empty [self] (with-meta [] (meta self))) 
   ICounted
   (-count [self] cnt)
   IVector

@@ -163,9 +163,11 @@ LWSP is particularly quirky, defined to be either a space or tab character, or a
 The `instaparse.combinators` contains a few combinators that are not documented in the main tutorial, but are listed here because they are only relevant to ABNF grammars.
 
 <table>
-<tr><th>String syntax</th><th>Combinator</th><th>Mnemonic</th></tr>
-<tr><td>"abc" (as used in ABNF)</td><td>string-ci</td><td>string, case-insensitive</td></tr>
-<tr><td>3*5 (as used in ABNF)</td><td>rep</td><td>repetition</td></tr>
+<tr><th>String syntax</th><th>Combinator</th><th>Functionality</th></tr>
+<tr><td>"abc" (as used in ABNF)</td><td>(string-ci "abc")</td><td>string, case-insensitive</td></tr>
+<tr><td>3*5 (as used in ABNF)</td><td>(rep 3 5 parser)</td><td>repetition</td></tr>
+<tr><td>%d97 (as used in ABNF)</td><td>(unicode-char 97)</td><td>unicode code point</td></tr>
+<tr><td>%d97-122 (as used in ABNF)</td><td>(unicode-char 97 122)</td><td>unicode range</td></tr>
 </table>
 
 Finally, just as there exists an `ebnf` function in the combinators namespace that turns EBNF fragments into combinator-built data structures, there exists an `abnf` function which does the same for ABNF fragments.

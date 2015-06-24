@@ -38,12 +38,14 @@
   [r]
   (cond
     (:NOT r)
-    (do (print "NOT ")    
-      (println (:NOT r))),
+    (do (print "NOT ")
+        (print (:NOT r))),
+    (:char-range r)
+    (print (print/char-range->str r))
     (instance? java.util.regex.Pattern r)
-    (println (print/regexp->str r))
+    (print (print/regexp->str r))
     :else
-    (prn r)))
+    (pr r)))
 
 (defn pprint-failure
   "Takes an augmented failure object and prints the error message"
@@ -61,8 +63,9 @@
           (= 1 total) (println "Expected:")
           :else (println "Expected one of:"))
     (doseq [r full-reasons]
-      (pr r)
+      (print-reason r)
       (println " (followed by end-of-string)"))
     (doseq [r partial-reasons]
-      (print-reason r))))
+      (print-reason r)
+      (println))))
   

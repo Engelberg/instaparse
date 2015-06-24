@@ -21,9 +21,12 @@
    [instaparse.combinators-source :refer [Epsilon nt]]
 
    ;; Need a way to convert parsers into strings for printing and error messages.
-   [instaparse.print :as print])
+   [instaparse.print :as print]
 
-  (:use-macros [instaparse.gll-macros :only [debug dprintln dpprint success swap-field!]]))
+   ;; unicode utilities for char-range
+   [goog.i18n.uChar :as u])
+
+  (:use-macros [instaparse.gll-macros :only [profile dprintln dpprint success swap-field!]]))
 
 (defprotocol ISegment
   (subsegment [this start-index end-index-minus-one])
@@ -41,9 +44,9 @@
   (-count [_] count))
 
 
-(debug (def stats (atom {})))
-(debug (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
-(debug (defn clear! [] (reset! stats {})))
+(profile (def stats (atom {})))
+(profile (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
+(profile (defn clear! [] (reset! stats {})))
 
 
 (defn get-parser [grammar p]
@@ -52,7 +55,7 @@
 (declare alt-parse cat-parse string-parse epsilon-parse non-terminal-parse
          opt-parse plus-parse star-parse regexp-parse lookahead-parse
          rep-parse negative-lookahead-parse ordered-alt-parse
-         string-case-insensitive-parse)
+         string-case-insensitive-parse char-range-parse)
 (defn -parse [parser index tramp]
   (dprintln "-parse" index (:tag parser))
   (case (:tag parser)
@@ -61,6 +64,7 @@
     :cat (cat-parse parser index tramp)
     :string (string-parse parser index tramp)
     :string-ci (string-case-insensitive-parse parser index tramp)
+    :char (char-range-parse parser index tramp)
     :epsilon (epsilon-parse parser index tramp)
     :opt (opt-parse parser index tramp)
     :plus (plus-parse parser index tramp)
@@ -74,7 +78,7 @@
 (declare alt-full-parse cat-full-parse string-full-parse epsilon-full-parse 
          non-terminal-full-parse opt-full-parse plus-full-parse star-full-parse
          rep-full-parse regexp-full-parse lookahead-full-parse ordered-alt-full-parse
-         string-case-insensitive-full-parse)
+         string-case-insensitive-full-parse char-range-full-parse)
 (defn -full-parse [parser index tramp]
   (dprintln "-full-parse" index (:tag parser))
   (case (:tag parser)
@@ -83,6 +87,7 @@
     :cat (cat-full-parse parser index tramp)
     :string (string-full-parse parser index tramp)
     :string-ci (string-case-insensitive-full-parse parser index tramp)
+    :char (char-range-full-parse parser index tramp)
     :epsilon (epsilon-full-parse parser index tramp)
     :opt (opt-full-parse parser index tramp)
     :plus (plus-full-parse parser index tramp)
@@ -101,7 +106,7 @@
     (-write writer (with-out-str
                      (fail/pprint-failure fail)))))
 
-(defn string->segment
+(defn text->segment
   "Converts a string to a Segment, which has fast subsequencing"
   [s]
   (Segment. s 0 (count s)))
@@ -120,13 +125,14 @@
                   ^mutable negative-listeners ^mutable msg-cache 
                   ^mutable nodes ^mutable success ^mutable failure])
 (defn make-tramp 
-  ([grammar text] (make-tramp grammar text (string->segment text) -1 nil))
+  ([grammar text] (make-tramp grammar text (text->segment text) -1 nil))
   ([grammar text segment] (make-tramp grammar text segment -1 nil))
-  ([grammar text fail-index node-builder] (make-tramp grammar text (string->segment text) fail-index node-builder))
+  ([grammar text fail-index node-builder] (make-tramp grammar text (text->segment text) fail-index node-builder))
   ([grammar text segment fail-index node-builder]
     (Tramp. grammar text segment
             fail-index node-builder
-            [] [] 0 [] {} {} nil (Failure. 0 []))))
+            [] [] 0 (sorted-map-by >)
+            {} {} nil (Failure. 0 []))))
   
 ; A Success record contains the result and the index to continue from
 (defn make-success [result index] {:result result :index index})
@@ -148,7 +154,7 @@
 (defn push-stack
   "Pushes an item onto the trampoline's stack"
   [tramp item]
-  (debug (add! :push-stack))
+  (profile (add! :push-stack))
   (swap-field! (.-stack tramp) conj item))
 
 (defn push-message
@@ -159,7 +165,7 @@
         k [listener i]
         c (get cache k 0)
         f #(listener result)]
-    (debug (add! :push-message))    
+    (profile (add! :push-message))    
     (dprintln "push-message" i c (.-generation tramp) (count (.-stack tramp))
              (count (.-next-stack tramp)))
     (dprintln "push-message: listener result" listener result)
@@ -205,7 +211,7 @@
     (if-let [node (nodes node-key)]
       node 
       (let [node (make-node)]
-        (debug (add! .-create-node))
+        (profile (add! .-create-node))
         (swap-field! (.-nodes tramp) assoc node-key node)
         node))))
 
@@ -237,7 +243,7 @@
         total? (total-success? tramp result)
         results (if total? (.-full-results node) (.-results node))]
     (when (not (results result))  ; when result is not already in results
-      (debug (add! :push-result))
+      (profile (add! :push-result))
       (if total?
         (swap-field! (.-full-results node) conj result)
         (swap-field! (.-results node) conj result))
@@ -255,7 +261,7 @@
   (dprintln "push-listener" [(node-key 1) (node-key 0)] (type listener))
   (let [listener-already-exists? (listener-exists? tramp node-key)
         node (node-get tramp node-key)]
-    (debug (add! :push-listener))
+    (profile (add! :push-listener))
     (swap-field! (.-listeners node) conj listener)
     (doseq [result (.-results node)]
       (push-message tramp listener result))
@@ -270,17 +276,20 @@
   [tramp node-key listener]
   (let [full-listener-already-exists? (full-listener-exists? tramp node-key)
         node (node-get tramp node-key)]
-    (debug (add! :push-full-listener))
+    (profile (add! :push-full-listener))
     (swap-field! (.-full-listeners node) conj listener)
     (doseq [result (.-full-results node)]
       (push-message tramp listener result))
     (when (not full-listener-already-exists?)
       (push-stack tramp #(-full-parse (node-key 1) (node-key 0) tramp)))))
 
+(def merge-negative-listeners (partial merge-with into))
+
 (defn push-negative-listener
   "Pushes a thunk onto the trampoline's negative-listener stack."
-  [tramp negative-listener]
-  (swap-field! (.-negative-listeners tramp) conj negative-listener))  
+  [tramp creator negative-listener]
+  (swap-field! (.-negative-listeners tramp) merge-negative-listeners
+               {(creator 0) [negative-listener]}))  
 
 ;(defn success [tramp node-key result end]
 ;  (push-result tramp node-key (make-success result end)))
@@ -320,18 +329,21 @@
       ;_ (dprintln found-result? (count (.-stack tramp)) (count (.-next-stack tramp)))
       (cond
         (.-success tramp)
-        (lazy-seq (cons (:result (.-success tramp))
-                        (do (set! (.-success tramp) nil)
-                          (run tramp true))))
+        (cons (:result (.-success tramp))
+              (lazy-seq (do (set! (.-success tramp) nil)
+                            (run tramp true))))
         
         (pos? (count stack))
         (do ;(dprintln "stacks" (count stack) (count (.-next-stack tramp)))
           (step tramp) (recur tramp found-result?))
         
         (pos? (count (.-negative-listeners tramp)))
-        (let [listener (peek (.-negative-listeners tramp))]
+        (let [[index listeners] (first (.-negative-listeners tramp))
+              listener (peek listeners)]
           (listener)
-          (swap-field! (.-negative-listeners tramp) pop)
+          (if (= (count listeners) 1)
+            (swap-field! (.-negative-listeners tramp) dissoc index)
+            (swap-field! (.-negative-listeners tramp) update index pop))
           (recur tramp found-result?))
         
         found-result?
@@ -512,6 +524,48 @@
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
 
+(defn char-range-parse
+  [this index tramp]
+  (let [lo (:lo this)
+        hi (:hi this)
+        text (:text tramp)]
+    (cond
+      (>= index (count text)) (fail tramp [index this] index
+                                    {:tag :char :expecting {:char-range true :lo lo :hi hi}})
+      (<= hi 0xFFFF) (let [code (.charCodeAt text index)]
+                       (if (<= lo code hi)
+                         (success tramp [index this] (char code) (inc index))
+                         (fail tramp [index this] index
+                               {:tag :char :expecting {:char-range true :lo lo :hi hi}})))
+      :else (let [code-point (u/getCodePointAround text (int index))
+                  char-string (u/fromCharCode code-point)]
+              (if (<= lo code-point hi)
+                (success tramp [index this] char-string
+                         (+ index (count char-string)))
+                (fail tramp [index this] index
+                      {:tag :char :expecting {:char-range true :lo lo :hi hi}}))))))
+
+(defn char-range-full-parse
+  [this index tramp]
+  (let [lo (:lo this)
+        hi (:hi this)
+        text (:text tramp)
+        end (count text)]
+    (cond
+      (>= index (count text)) (fail tramp [index this] index
+                                    {:tag :char :expecting {:char-range true :lo lo :hi hi} :full true})
+      (<= hi 0xFFFF) (let [code (.charCodeAt text index)]
+                       (if (and (= (inc index) end) (<= lo code hi))
+                         (success tramp [index this] (char code) end)
+                         (fail tramp [index this] index
+                               {:tag :char :expecting {:char-range true :lo lo :hi hi} :full true})))
+      :else (let [code-point (u/getCodePointAround text (int index))
+                  char-string (u/fromCharCode code-point)]
+              (if (and (= (+ index (count char-string)) end) (<= lo code-point hi))
+                (success tramp [index this] char-string end)
+                (fail tramp [index this] index
+                      {:tag :char :expecting {:char-range true :lo lo :hi hi} :full true}))))))
+
 (defn re-match-at-front [regexp text]
   (let [re (js/RegExp. (.-source regexp) "g")
         m (.exec re text)]
@@ -637,7 +691,8 @@
         listener (NodeListener [index this] tramp)]
     (push-listener tramp node-key-parser1 listener)
     (push-negative-listener 
-      tramp       
+      tramp
+      node-key-parser1
       #(push-listener tramp node-key-parser2 listener))))
           
 (defn ordered-alt-full-parse
@@ -649,7 +704,8 @@
         listener (NodeListener [index this] tramp)]
     (push-full-listener tramp node-key-parser1 listener)
     (push-negative-listener 
-      tramp       
+      tramp
+      node-key-parser1
       #(push-full-listener tramp node-key-parser2 listener))))
   
 (defn opt-parse
@@ -711,6 +767,7 @@
                          (fn [result] (force fail-send))))     
         (push-negative-listener 
           tramp
+          node-key
           #(when (not (result-exists? tramp node-key))
              (success tramp [index this] nil index)))))))      
 
@@ -731,7 +788,7 @@
     (push-full-listener tramp [0 parser] (TopListener tramp))))
 
 (defn parses [grammar start text partial?]
-  (debug (clear!))
+  (profile (clear!))
   (let [tramp (make-tramp grammar text)
         parser (nt start)]
     (start-parser tramp parser partial?)
@@ -741,7 +798,7 @@
         (fail/augment-failure (.-failure tramp) text)))))
   
 (defn parse [grammar start text partial?]
-  (debug (clear!))
+  (profile (clear!))
   (let [tramp (make-tramp grammar text)
         parser (nt start)]
     (start-parser tramp parser partial?)
@@ -782,7 +839,7 @@ rather than overwriting the metamap entirely."
       
 (defn parses-total 
   [grammar start text partial? node-builder]
-  (debug (clear!))
+  (profile (clear!))
   (let [all-parses (parses grammar start text partial?)]
     (if (seq all-parses)
       all-parses
@@ -804,7 +861,7 @@ rather than overwriting the metamap entirely."
 
 (defn parse-total 
   [grammar start text partial? node-builder]
-  (debug (clear!))
+  (profile (clear!))
   (let [result (parse grammar start text partial?)]
     (if-not (instance? Failure result)
       result
