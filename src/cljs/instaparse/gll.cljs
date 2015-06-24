@@ -106,7 +106,7 @@
     (-write writer (with-out-str
                      (fail/pprint-failure fail)))))
 
-(defn string->segment
+(defn text->segment
   "Converts a string to a Segment, which has fast subsequencing"
   [s]
   (Segment. s 0 (count s)))
@@ -125,9 +125,9 @@
                   ^mutable negative-listeners ^mutable msg-cache 
                   ^mutable nodes ^mutable success ^mutable failure])
 (defn make-tramp 
-  ([grammar text] (make-tramp grammar text (string->segment text) -1 nil))
+  ([grammar text] (make-tramp grammar text (text->segment text) -1 nil))
   ([grammar text segment] (make-tramp grammar text segment -1 nil))
-  ([grammar text fail-index node-builder] (make-tramp grammar text (string->segment text) fail-index node-builder))
+  ([grammar text fail-index node-builder] (make-tramp grammar text (text->segment text) fail-index node-builder))
   ([grammar text segment fail-index node-builder]
     (Tramp. grammar text segment
             fail-index node-builder
