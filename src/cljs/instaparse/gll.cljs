@@ -131,7 +131,8 @@
   ([grammar text segment fail-index node-builder]
     (Tramp. grammar text segment
             fail-index node-builder
-            [] [] 0 [] {} {} nil (Failure. 0 []))))
+            [] [] 0 (sorted-map-by >)
+            {} {} nil (Failure. 0 []))))
   
 ; A Success record contains the result and the index to continue from
 (defn make-success [result index] {:result result :index index})
@@ -282,10 +283,13 @@
     (when (not full-listener-already-exists?)
       (push-stack tramp #(-full-parse (node-key 1) (node-key 0) tramp)))))
 
+(def merge-negative-listeners (partial merge-with into))
+
 (defn push-negative-listener
   "Pushes a thunk onto the trampoline's negative-listener stack."
-  [tramp negative-listener]
-  (swap-field! (.-negative-listeners tramp) conj negative-listener))  
+  [tramp creator negative-listener]
+  (swap-field! (.-negative-listeners tramp) merge-negative-listeners
+               {(creator 0) [negative-listener]}))  
 
 ;(defn success [tramp node-key result end]
 ;  (push-result tramp node-key (make-success result end)))
@@ -325,18 +329,21 @@
       ;_ (dprintln found-result? (count (.-stack tramp)) (count (.-next-stack tramp)))
       (cond
         (.-success tramp)
-        (lazy-seq (cons (:result (.-success tramp))
-                        (do (set! (.-success tramp) nil)
-                          (run tramp true))))
+        (cons (:result (.-success tramp))
+              (lazy-seq (do (set! (.-success tramp) nil)
+                            (run tramp true))))
         
         (pos? (count stack))
         (do ;(dprintln "stacks" (count stack) (count (.-next-stack tramp)))
           (step tramp) (recur tramp found-result?))
         
         (pos? (count (.-negative-listeners tramp)))
-        (let [listener (peek (.-negative-listeners tramp))]
+        (let [[index listeners] (first (.-negative-listeners tramp))
+              listener (peek listeners)]
           (listener)
-          (swap-field! (.-negative-listeners tramp) pop)
+          (if (= (count listeners) 1)
+            (swap-field! (.-negative-listeners tramp) dissoc index)
+            (swap-field! (.-negative-listeners tramp) update index pop))
           (recur tramp found-result?))
         
         found-result?
@@ -684,7 +691,8 @@
         listener (NodeListener [index this] tramp)]
     (push-listener tramp node-key-parser1 listener)
     (push-negative-listener 
-      tramp       
+      tramp
+      node-key-parser1
       #(push-listener tramp node-key-parser2 listener))))
           
 (defn ordered-alt-full-parse
@@ -696,7 +704,8 @@
         listener (NodeListener [index this] tramp)]
     (push-full-listener tramp node-key-parser1 listener)
     (push-negative-listener 
-      tramp       
+      tramp
+      node-key-parser1
       #(push-full-listener tramp node-key-parser2 listener))))
   
 (defn opt-parse
@@ -758,6 +767,7 @@
                          (fn [result] (force fail-send))))     
         (push-negative-listener 
           tramp
+          node-key
           #(when (not (result-exists? tramp node-key))
              (success tramp [index this] nil index)))))))      
 
