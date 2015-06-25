@@ -1,4 +1,4 @@
-(defproject com.lucasbradstreet/instaparse-cljs "1.4.1.0-SNAPSHOT"
+(defproject com.lucasbradstreet/instaparse-cljs "1.4.1.0"
   :description "Instaparse: No grammar left behind"
   :url "https://github.com/lbradstreet/instaparse-cljs"
   :license {:name "Eclipse Public License"
