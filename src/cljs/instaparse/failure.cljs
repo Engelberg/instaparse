@@ -14,25 +14,15 @@
 (defn newline-chars? [c] 
   (boolean (#{\newline \return} c)))
 
-(defn line-seq
-  "Like the line-seq that comes with clojure, but operates directly on
-   a string instead of a BufferedReader. Probably slow."
-  [s]
-  (if (empty? s)
-    nil
-    (->> (clojure.string/replace s "\r\n" "\n")
-         (partition-by newline-chars?)
-         (mapcat (fn [coll]
-                (if (newline-chars? (first coll))
-                  (map (constantly []) coll)
-                  (list coll))))
-         (map (partial apply str)))))
-
 (defn get-line
-  "Returns nth line of text, 1-based"
   [n text]
-  (try (nth (line-seq text) (dec n))
-       (catch js/Error e "")))
+  (loop [chars (seq (clojure.string/replace text "\r\n" "\n"))
+         n n]
+    (cond
+      (empty? chars) ""
+      (= n 1) (apply str (take-while (complement newline-chars?) chars))
+      (newline-chars? (first chars)) (recur (next chars) (dec n))
+      :else (recur (next chars) n))))
 
 (defn marker
   "Creates string with caret at nth position, 1-based"
