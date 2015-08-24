@@ -337,13 +337,13 @@
   #_(dprintln "push-listener" [(node-key 1) (node-key 0)] (type listener))
   (let [listener-already-exists? (listener-exists? tramp node-key)
         node (node-get tramp node-key)
-        listeners (:listeners node)]
+        listeners (:listeners node)
+        push-results! #(doseq [result %]
+                         (push-message tramp listener result))]
     (profile (add! :push-listener))
     (swap! listeners conj listener)
-    (doseq [result @(:results node)]
-      (push-message tramp listener result))
-    (doseq [result @(:full-results node)]
-      (push-message tramp listener result))
+    (push-results! @(:results node))
+    (push-results! @(:full-results node))
     (when (not listener-already-exists?)
       (push-stack tramp #(-parse (node-key 1) (node-key 0) tramp))))) 
 
