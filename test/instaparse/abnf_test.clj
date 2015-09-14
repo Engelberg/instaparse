@@ -1,6 +1,7 @@
 (ns instaparse.abnf-test
   (:use clojure.test)
-  (:use instaparse.core))
+  (:use instaparse.core)
+  (:require [instaparse.combinators :refer [abnf]]))
 
 (deftest abnf-uri
   (let [uri-parser (binding [instaparse.abnf/*case-insensitive* true]
@@ -167,3 +168,15 @@ to test the lookahead"
            (parser4 (str (first poop)))
            (parser4 (str (second poop)))
            (parser4 (str poop poop (first poop)))))))
+
+(deftest abnf-combinator-test
+  (let [p (parser (merge
+                   {:S (abnf "A / B")}
+                   (abnf "<A> = 1*'a'")
+                   {:B (abnf "'='")})
+                  :start :S)]
+    (are [x y] (= y x)
+      (p "aAaa")
+      [:S "a" "a" "a" "a"]
+      (p "=")
+      [:S [:B "="]])))

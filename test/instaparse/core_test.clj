@@ -244,6 +244,15 @@
       {:B (ebnf "'b'+")})
     :start :S))
 
+(def tricky-ebnf-build
+  "https://github.com/Engelberg/instaparse/issues/107"
+  (insta/parser
+    (merge
+      {:S (alt (nt :A) (nt :B))}
+      (ebnf "<A> = '='*")
+      {:B (ebnf "'b' '='")})
+    :start :S))
+
 (defn spans [t]
   (if (sequential? t)
     (cons (insta/span t) (map spans (next t)))
@@ -552,7 +561,13 @@
     [:S [:B "b" "b" "b" "b" "b"]]
     
     (combo-build-example "bbbbb")
-    (combo-build-example "bbbbb" :optimize :memory)    
+    (combo-build-example "bbbbb" :optimize :memory)
+
+    (tricky-ebnf-build "===")
+    [:S "=" "=" "="]
+
+    (tricky-ebnf-build "b=")
+    [:S [:B "b" "="]]
     
     ((insta/parser "S = ('a'?)+") "")
     [:S]
