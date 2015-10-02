@@ -127,7 +127,9 @@
                                  (nt :plus)
                                  (nt :paren)
                                  (nt :hide)
-                                 (nt :epsilon)))}))
+                                 (nt :epsilon)))
+     ;; extra entrypoint to be used by the ebnf combinator
+     :rules-or-parser (hide-tag (alt (nt :rules) (nt :alt-or-ord)))}))
 
 ; Internally, we're converting the grammar into a hiccup parse tree
 ; Here's how you extract the relevant information
@@ -276,14 +278,12 @@ If you give it the right-hand side of a rule, it will return the combinator equi
 If you give it a series of rules, it will give you back a grammar map.   
 Useful for combining with other combinators."
   [spec]
-  (if (re-find #"[:=]" spec)    
-    (let [rules (parse cfg :rules spec false)]
-      (if (instance? instaparse.gll.Failure rules)
-        (throw (RuntimeException. (str "Error parsing grammar specification:\n"
-                                       (with-out-str (println rules)))))    
-        (into {} (map build-rule rules))))
-    (let [rhs (parse cfg :alt-or-ord spec false)]
-      (if (instance? instaparse.gll.Failure rhs)
-        (throw (RuntimeException. (str "Error parsing grammar specification:\n"
-                                       (with-out-str (println rhs)))))          
-        (build-rule (first rhs))))))      
+  (let [rules (parse cfg :rules-or-parser spec false)]
+    (cond
+      (instance? instaparse.gll.Failure rules)
+      (throw (RuntimeException. (str "Error parsing grammar specification:\n"
+                                     (with-out-str (println rules)))))
+      (= :rule (ffirst rules))
+      (into {} (map build-rule rules))
+
+      :else (build-rule (first rules)))))
