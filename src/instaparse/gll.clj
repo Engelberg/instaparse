@@ -872,6 +872,11 @@
 ;; Parsing functions
 
 (defn start-parser [tramp parser partial?]
+  (let [starting-prod (:keyword parser)
+        known-productions (into #{} (map first (:grammar tramp)))]
+    (when (not (known-productions starting-prod))
+      (throw (IllegalArgumentException.
+               (str "Nonexistent starting production: " starting-prod)))))
   (if partial?
     (push-listener tramp [0 parser] (TopListener tramp))
     (push-full-listener tramp [0 parser] (TopListener tramp))))
