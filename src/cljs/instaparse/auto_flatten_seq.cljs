@@ -214,6 +214,7 @@
   IMeta
   (-meta [self]
     (if @flat (meta @flat) (meta @v)))
+  ISequential
   ISeqable
   (-seq [self]
     (seq (get-vec self)))
