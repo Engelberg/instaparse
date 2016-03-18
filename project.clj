@@ -1,9 +1,9 @@
-(defproject com.lucasbradstreet/instaparse-cljs "1.4.1.1-SNAPSHOT"
+(defproject com.lucasbradstreet/instaparse-cljs "1.4.1.1"
   :description "Instaparse: No grammar left behind"
   :url "https://github.com/lbradstreet/instaparse-cljs"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.7.0-RC2"]
+  :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/clojurescript "0.0-3308"]]
   :profiles {:dev {:dependencies 
                    [[org.clojure/tools.trace "0.7.5"]
