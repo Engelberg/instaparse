@@ -743,7 +743,29 @@
     (is (= (hiccup-line-col-spans hlc)
            '({:instaparse.gll/end-column 2, :instaparse.gll/end-line 5, :instaparse.gll/start-column 1, :instaparse.gll/start-line 1, :instaparse.gll/start-index 0, :instaparse.gll/end-index 13} ({:instaparse.gll/end-column 4, :instaparse.gll/end-line 1, :instaparse.gll/start-column 1, :instaparse.gll/start-line 1, :instaparse.gll/start-index 0, :instaparse.gll/end-index 3} "abc") ({:instaparse.gll/end-column 4, :instaparse.gll/end-line 2, :instaparse.gll/start-column 1, :instaparse.gll/start-line 2, :instaparse.gll/start-index 4, :instaparse.gll/end-index 7} "def") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 3, :instaparse.gll/start-column 1, :instaparse.gll/start-line 3, :instaparse.gll/start-index 8, :instaparse.gll/end-index 9} "g") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 4, :instaparse.gll/start-column 1, :instaparse.gll/start-line 4, :instaparse.gll/start-index 10, :instaparse.gll/end-index 11} "h") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 5, :instaparse.gll/start-column 1, :instaparse.gll/start-line 5, :instaparse.gll/start-index 12, :instaparse.gll/end-index 13} "i"))))))
 
-        
+(deftest print-test
+  ;; In scenarios when AutoFlattenSeq or FlattenOnDemandVector is
+  ;; returned to the user, does the parse output print properly?
+  (let [parser-str "<paren-wrapped> = <'('> seq-of-A-or-B <')'>
+                    seq-of-A-or-B = ('a' | 'b')*"
+        input "(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)"]
+    ;; input is 33 "a"s to trigger FlattenOnDemandVector in hiccup
+    ;; output format
+    (doseq [[output-mode expected-output]
+            [[:hiccup (list (into [:seq-of-A-or-B]
+                                  (repeat 33 "a")))]
+             [:enlive (list {:tag :seq-of-A-or-B
+                             :content (repeat 33 "a")})]]
+
+            :let [p (insta/parser parser-str :output-format output-mode)
+                  actual-output (p input)]]
+      (is (= expected-output actual-output))
+      (is (= (with-out-str (prn expected-output))
+             (with-out-str (prn actual-output))))
+      (is (= (with-out-str (println expected-output))
+             (with-out-str (println actual-output))))
+      (is (= (str expected-output)
+             (str actual-output))))))
 
 #+cljs (defn ^:export run []
          (run-tests))
