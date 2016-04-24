@@ -79,6 +79,8 @@
 
 (deftype AutoFlattenSeq [^PersistentVector v ^number premix-hashcode ^number hashcode ^number cnt ^boolean dirty
                          ^:unsynchronized-mutable ^ISeq cached-seq]
+  Object
+  (toString [self] (pr-str* (seq self)))
   IHash
   (-hash [self] hashcode)
   ISequential
@@ -139,6 +141,11 @@
       (do
         (set! cached-seq (if dirty (flat-seq v) (seq v)))
         cached-seq))))
+
+(extend-protocol IPrintWithWriter
+  instaparse.auto-flatten-seq/AutoFlattenSeq
+  (-pr-writer [afs writer opts]
+    (-pr-writer (seq afs) writer opts)))
      
 (defn auto-flatten-seq [v]
   (let [v (vec v)
@@ -255,6 +262,11 @@
   (-compare [self that]
     (-compare (get-vec self) that))
   )
+
+(extend-protocol IPrintWithWriter
+  instaparse.auto-flatten-seq/FlattenOnDemandVector
+  (-pr-writer [v writer opts]
+    (-pr-writer (get-vec v) writer opts)))
 
 (defn convert-afs-to-vec [^AutoFlattenSeq afs]
   (cond
