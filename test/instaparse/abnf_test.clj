@@ -101,25 +101,28 @@ to test the lookahead"
 (def reps
   "Testing the different kinds of repetitions"
   (parser
-    "S = A B C D E
+    "S = A B C D E FG
      A = *'a'
      B = 2*'b'
      C = *2'c'
      D = 2'd'
-     E = 2*4'e'"
+     E = 2*4'e'
+     FG = 2('f' 'g')"
     :input-format :abnf))
 
 (deftest rep-test
   (are [x] (not (instance? instaparse.gll.Failure x))
-       (reps "aabbccddee")
-       (reps "bbbbbbddeeee")
-       (reps "bbcddee")))
+       (reps "aabbccddeefgfg")
+       (reps "bbbbbbddeeeefgfg")
+       (reps "bbcddeefgfg")))
 
 (deftest rep-test-errors
   (are [x] (instance? instaparse.gll.Failure x)
        (reps "")
-       (reps "bccddee")
-       (reps "aaaabbbbcccddee")))
+       (reps "bccddeefgfg")
+       (reps "aaaabbbbcccddeefgfg")
+       (reps "aabbccddeefg")
+       (reps "aabbccddeeffgg")))
 
 (def regex-chars
   "Testing %d42-91. The boundary chars are \"*\" and \"[\", which normally aren't allowed in a regex."
