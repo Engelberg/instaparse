@@ -1,4 +1,7 @@
 (ns instaparse.core
+  (#?(:clj :require :cljs :require-macros)
+    [instaparse.macros :refer [defclone
+                               set-global-var!]])
   (:require [instaparse.gll :as gll] 
             [instaparse.cfg :as cfg]
             [instaparse.failure :as fail]
@@ -15,14 +18,14 @@
   "Changes the default output format.  Input should be :hiccup or :enlive"
   [type]
   {:pre [(#{:hiccup :enlive} type)]}
-  (set! *default-output-format* type))
+  (set-global-var! *default-output-format* type))
 
 (def ^:dynamic *default-input-format* :ebnf)
 (defn set-default-input-format!
   "Changes the default input format.  Input should be :abnf or :ebnf"
   [type]
   {:pre [(#{:abnf :ebnf} type)]}
-  (set! *default-input-format* type))
+  (set-global-var! *default-input-format* type))
 
 (declare failure? standard-whitespace-parsers)
 
@@ -48,7 +51,10 @@
    :partial true    (parses that don't consume the whole string are okay)
    :total true      (if parse fails, embed failure node in tree)
    :unhide <:tags or :content or :all> (for this parse, disable hiding)
-   :optimize :memory   (when possible, employ strategy to use less memory)"
+   :optimize :memory   (when possible, employ strategy to use less memory)
+
+   Clj only:
+   :trace true      (print diagnostic trace while parsing)"
   [parser text &{:as options}]
   {:pre [(contains? #{:tags :content :all nil} (get options :unhide))
          (contains? #{:memory nil} (get options :optimize))]}
