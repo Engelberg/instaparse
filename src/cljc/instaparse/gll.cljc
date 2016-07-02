@@ -4,50 +4,122 @@
    the different types of listeners, and the loop for executing the various
    listeners and parse commands that are on the stack."
   
-  (:require 
-   ;; Incremental vector provides a more performant hashing strategy 
-   ;; for this use-case for vectors
-   ;; We use the auto flatten version
+  ;; Incremental vector provides a more performant hashing strategy 
+  ;; for this use-case for vectors
+  ;; We use the auto flatten version
+  (:require
    [instaparse.auto-flatten-seq :as afs]
-
+   
    ;; failure contains the augment-failure function, which is called to
    ;; add enough information to the failure object for pretty printing 
    [instaparse.failure :as fail]
-
+   
    ;; reduction contains code relating to reductions and flattening.
    [instaparse.reduction :as red]
    
    ;; Two of the public combinators are needed.
    [instaparse.combinators-source :refer [Epsilon nt]]
-
+   
    ;; Need a way to convert parsers into strings for printing and error messages.
    [instaparse.print :as print]
 
-   ;; unicode utilities for char-range
-   [goog.i18n.uChar :as u])
+   #?(:cljs [goog.i18n.uChar :as u]))
+  #?(:cljs
+     (:use-macros [instaparse.gll :only [profile dprintln dpprint success trace rswap!]]))
+  )
 
-  (:use-macros [instaparse.gll-macros :only [profile dprintln dpprint success swap-field!]]))
+;; As of Java 7, strings no longer have fast substring operation,
+;; so we use Segments instead, which implement the CharSequence
+;; interface with a fast subSequence operation.  Fortunately,
+;; Java regular expressions work on anything that adheres
+;; to the CharSequence interface.  There is a built-in class
+;; javax.swing.text.Segment which does the trick, but
+;; this class is not available on Google App Engine.  So
+;; to support the use of instaparse on Google App Engine,
+;; we simply create our own Segment type.
 
-(defprotocol ISegment
-  (subsegment [this start-index end-index-minus-one])
-  (toString [this]))
-
-(deftype Segment [text offset count]
-  ISegment
-  (subsegment [this start end]
-    (Segment. text (+ offset start) (- end start)))
-
+(deftype Segment [^CharSequence s ^int offset ^int count]
+  CharSequence
+  (length [this] count)
+  (subSequence [this start end]
+    (Segment. s (+ offset start) (- end start)))
+  (charAt [this index]
+    (.charAt s (+ offset index)))
   (toString [this]
-    (subs text offset (+ offset count)))
+    (.toString (doto (StringBuilder. count)
+                 (.append s offset (+ offset count))))))
 
-  ICounted
-  (-count [_] count))
+(defmacro rswap!
+  "On Clojure, identical to swap!. On ClojureScript, changes to set!
+  fields directly for efficiency."
+  [[field-keyword record] f & args]
+  (if-not (contains? &env :locals)
+    ;; clj
+    `(swap! (~field-keyword ~record) ~f ~@args)
+    ;; cljs
+    (let [field (symbol (str ".-" (name field-keyword)))]
+      `(set! (~field ~record)
+             (~f (~field ~record) ~@args)))))
 
+;;;;; SETUP DIAGNOSTIC MACROS AND VARS
 
+(defonce PRINT false)
+(defmacro dprintln [& body]  
+  (when PRINT `(println ~@body)))
+(defmacro dpprint [& body]  
+  (when PRINT `(clojure.pprint/pprint ~@body)))
+
+(defonce PROFILE false)
+(defmacro profile [& body]
+  (when PROFILE
+    `(do ~@body)))
+
+;; By default TRACE is set to false, and all these macros are used
+;; throughout the code to ensure there is absolutely no performance
+;; penalty from the tracing code.  Everything related to tracing
+;; is compiled away.
+;;
+;; We recompile this file with TRACE set to true to activate the
+;; tracing code.
+;;
+;; bind-trace is the one exception where we can't completely compile
+;; the new code away, because it is used in instaparse.core, which won't be
+;; recompiled.  Still, binding is a relatively slow operation, so by testing
+;; whether TRACE is true inside the expansion, we can at least avoid 
+;; the performance hit of binding every time.
+
+(defonce TRACE false)
+(def ^:dynamic *trace* false)
+(defmacro log [tramp & body]
+  (when TRACE
+    `(when (:trace? ~tramp) (println ~@body))))
+(defmacro attach-diagnostic-meta [f metadata]
+  (if TRACE
+    `(with-meta ~f ~metadata)
+    f))
+(defmacro bind-trace [trace? body]
+  `(if TRACE
+     (binding [*trace* ~trace?] ~body)
+     ~body))
+(defmacro trace-or-false []
+  (if TRACE '*trace* false))
+
+; In diagnostic messages, how many characters ahead do we want to show.
+(def ^:dynamic *diagnostic-char-lookahead* 10)
+
+(declare sub-sequence)
+(defn string-context [^CharSequence text index]
+  (let [end (+ index *diagnostic-char-lookahead*),
+        length (.length text)]
+    (if (< length end)
+      (str (sub-sequence text index))
+      (str (sub-sequence text index end) "..."))))
+  
 (profile (def stats (atom {})))
 (profile (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
 (profile (defn clear! [] (reset! stats {})))
 
+;; Now we can get down to parsing
 
 (defn get-parser [grammar p]
   (get grammar p p))
@@ -57,7 +129,9 @@
          rep-parse negative-lookahead-parse ordered-alt-parse
          string-case-insensitive-parse char-range-parse)
 (defn -parse [parser index tramp]
-  (dprintln "-parse" index (:tag parser))
+  (log tramp (format "Initiating parse: %s at index %d (%s)"
+                     (print/combinators->str parser) index
+                     (string-context (:text tramp) index)))
   (case (:tag parser)
     :nt (non-terminal-parse parser index tramp)
     :alt (alt-parse parser index tramp)
@@ -80,7 +154,9 @@
          rep-full-parse regexp-full-parse lookahead-full-parse ordered-alt-full-parse
          string-case-insensitive-full-parse char-range-full-parse)
 (defn -full-parse [parser index tramp]
-  (dprintln "-full-parse" index (:tag parser))
+  (log tramp (format "Initiating full parse: %s at index %d (%s)"
+               (print/combinators->str parser) index
+               (string-context (:text tramp) index)))
   (case (:tag parser)
     :nt (non-terminal-full-parse parser index tramp)
     :alt (alt-full-parse parser index tramp)
@@ -98,32 +174,41 @@
     :neg (negative-lookahead-parse parser index tramp)
     :ord (ordered-alt-full-parse parser index tramp)))
 
-(defrecord Failure [index reason])
+(defrecord Failure [index reason])  
+(defmethod clojure.core/print-method Failure [x writer]
+  (binding [*out* writer]
+    (fail/pprint-failure x)))
 
-(extend-protocol IPrintWithWriter
-  instaparse.gll/Failure
-  (-pr-writer [fail writer _]
-    (-write writer (with-out-str
-                     (fail/pprint-failure fail)))))
+; This is a trick to make sure we can recognize the type of
+; a Failure record after this namespace is recompiled,
+; but the core namespace is not recompiled
+; which is what happens when tracing is enabled.
+(def failure-type (type (Failure. nil nil)))
 
 (defn text->segment
-  "Converts a string to a Segment, which has fast subsequencing"
-  [s]
-  (Segment. s 0 (count s)))
+  "Converts text to a Segment, which has fast subsequencing"
+  [^CharSequence text]
+  (Segment. text 0 (count text)))
+
+(defn sub-sequence
+  "Like clojure.core/subs but consumes and returns a CharSequence"
+  (^CharSequence [^CharSequence text start]
+     (.subSequence text start (.length text)))
+  (^CharSequence [^CharSequence text start end]
+     (.subSequence text start end)))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
 ; grammar is a map from non-terminals to parsers
-; text is a string
+; text is a CharSequence
 ; stack is an atom of a vector containing items implementing the Execute protocol.
 ; nodes is an atom containing a map from [index parser] pairs to Nodes
 ; success contains a successful parse
 ; failure contains the index of the furthest-along failure
 
 (defrecord Tramp [grammar text segment fail-index node-builder
-                  ^mutable stack ^mutable next-stack ^mutable generation 
-                  ^mutable negative-listeners ^mutable msg-cache 
-                  ^mutable nodes ^mutable success ^mutable failure])
+                  stack next-stack generation negative-listeners 
+                  msg-cache nodes success failure trace?])
 (defn make-tramp 
   ([grammar text] (make-tramp grammar text (text->segment text) -1 nil))
   ([grammar text segment] (make-tramp grammar text segment -1 nil))
@@ -131,13 +216,13 @@
   ([grammar text segment fail-index node-builder]
     (Tramp. grammar text segment
             fail-index node-builder
-            [] [] 0 (sorted-map-by >)
-            {} {} nil (Failure. 0 []))))
+            (atom []) (atom []) (atom 0) (atom (sorted-map-by >)) 
+            (atom {}) (atom {}) (atom nil) (atom (Failure. 0 [])) (trace-or-false))))
   
 ; A Success record contains the result and the index to continue from
 (defn make-success [result index] {:result result :index index})
 (defn total-success? [tramp s]
-  (= (count (.-text tramp)) (:index s)))
+  (= (count (:text tramp)) (:index s)))
 
 ; The trampoline's nodes field is map from [index parser] pairs to Nodes
 ; Nodes track the results of a given parser at a given index, and the listeners
@@ -145,9 +230,12 @@
 ; results are expected to be refs of sets.
 ; listeners are refs of vectors.
 
-(defrecord Node [^mutable listeners ^mutable full-listeners 
-                 ^mutable results ^mutable full-results])
-(defn make-node [] (Node. [] [] #{} #{}))
+(defrecord Node [listeners full-listeners results full-results])
+(defn make-node [] (Node. (atom []) (atom []) (atom #{}) (atom #{})))
+; Currently using records for Node.  Seems to run marginally faster.
+; Here's the way without records:
+;(defn make-node [] {:listeners (atom []) :full-listeners (atom []) 
+;                    :results (atom #{}) :full-results (atom #{})})
 
 ;; Trampoline helper functions
 
@@ -155,68 +243,68 @@
   "Pushes an item onto the trampoline's stack"
   [tramp item]
   (profile (add! :push-stack))
-  (swap-field! (.-stack tramp) conj item))
+  (swap! (:stack tramp) conj item))
 
 (defn push-message
   "Pushes onto stack a message to a given listener about a result"
   [tramp listener result]
-  (let [cache (.-msg-cache tramp)
+  (let [cache (:msg-cache tramp)
         i (:index result)
         k [listener i]
-        c (get cache k 0)
+        c (get @cache k 0)
         f #(listener result)]
     (profile (add! :push-message))    
-    (dprintln "push-message" i c (.-generation tramp) (count (.-stack tramp))
-             (count (.-next-stack tramp)))
-    (dprintln "push-message: listener result" listener result)
-    (if (> c (.-generation tramp))
-      (swap-field! (.-next-stack tramp) conj f)
-      (swap-field! (.-stack tramp) conj f))
-    (swap-field! (.-msg-cache tramp) assoc k (inc c))))
+    #_(dprintln "push-message" i c @(:generation tramp) (count @(:stack tramp))
+             (count @(:next-stack tramp)))
+    #_(dprintln "push-message: listener result" listener result)
+    (if (> c @(:generation tramp))
+      (swap! (:next-stack tramp) conj f)
+      (swap! (:stack tramp) conj f))
+    (swap! cache assoc k (inc c))))
     
 (defn listener-exists?
   "Tests whether node already has a listener"
   [tramp node-key]
-  (let [nodes (.-nodes tramp)]
-    (when-let [node (nodes node-key)]
-      (pos? (count (.-listeners node))))))
+  (let [nodes (:nodes tramp)]
+    (when-let [node (@nodes node-key)]
+      (pos? (count @(:listeners node))))))
 
 (defn full-listener-exists?
   "Tests whether node already has a listener or full-listener"
   [tramp node-key]
-  (let [nodes (.-nodes tramp)]
-    (when-let [node (nodes node-key)]
-      (or (pos? (count (.-full-listeners node)))
-          (pos? (count (.-listeners node)))))))
+  (let [nodes (:nodes tramp)]
+    (when-let [node (@nodes node-key)]
+      (or (pos? (count @(:full-listeners node)))
+          (pos? (count @(:listeners node)))))))
 
 (defn result-exists?
   "Tests whether node has a result or full-result"
   [tramp node-key]
-  (let [nodes (.-nodes tramp)]
-    (when-let [node (nodes node-key)]
-      (or (pos? (count (.-full-results node)))
-          (pos? (count (.-results node)))))))
+  (let [nodes (:nodes tramp)]
+    (when-let [node (@nodes node-key)]
+      (or (pos? (count @(:full-results node)))
+          (pos? (count @(:results node)))))))
 
 (defn full-result-exists?
   "Tests whether node has a full-result"
   [tramp node-key]
-  (let [nodes (.-nodes tramp)]
-    (when-let [node (nodes node-key)]
-      (pos? (count (.-full-results node))))))      
+  (let [nodes (:nodes tramp)]
+    (when-let [node (@nodes node-key)]
+      (pos? (count @(:full-results node))))))      
 
 (defn node-get
   "Gets node if already exists, otherwise creates one"
   [tramp node-key]
-  (let [nodes (.-nodes tramp)]
-    (if-let [node (nodes node-key)]
+  (let [nodes (:nodes tramp)]
+    (if-let [node (@nodes node-key)]
       node 
       (let [node (make-node)]
-        (profile (add! .-create-node))
-        (swap-field! (.-nodes tramp) assoc node-key node)
+        (profile (add! :create-node))
+        (swap! nodes assoc node-key node)
         node))))
 
 (defn safe-with-meta [obj metamap]
-  (if (satisfies? IWithMeta obj)
+  (if (instance? clojure.lang.IObj obj)
     (with-meta obj metamap)
     obj))
 
@@ -226,7 +314,14 @@
    Schedules notification to all existing listeners of result
    (Full listeners only get notified about full results)"
   [tramp node-key result]
-  (dprintln "Push result" (node-key 0) (:tag (node-key 1)) result)
+  (log tramp (if (= (:tag (node-key 1)) :neg)
+               (format "Negation satisfied: %s at index %d (%s)"
+                       (print/combinators->str (node-key 1)) (node-key 0)
+                       (string-context (:text tramp) (node-key 0)))
+               (format "Result for %s at index %d (%s) => %s"
+                       (print/combinators->str (node-key 1)) (node-key 0)
+                       (string-context (:text tramp) (node-key 0))
+                       (with-out-str (pr (:result result))))))
   (let [node (node-get tramp node-key)
         parser (node-key 1)
         ;; reduce result with reduction function if it exists
@@ -241,16 +336,14 @@
                    (:index result))                 
                  result)              
         total? (total-success? tramp result)
-        results (if total? (.-full-results node) (.-results node))]
-    (when (not (results result))  ; when result is not already in results
+        results (if total? (:full-results node) (:results node))]
+    (when (not (@results result))  ; when result is not already in @results
       (profile (add! :push-result))
-      (if total?
-        (swap-field! (.-full-results node) conj result)
-        (swap-field! (.-results node) conj result))
-      (doseq [listener (.-listeners node)]
+      (swap! results conj result)
+      (doseq [listener @(:listeners node)]
         (push-message tramp listener result))
       (when total?
-        (doseq [listener (.-full-listeners node)]
+        (doseq [listener @(:full-listeners node)]
           (push-message tramp listener result)))))) 
 
 (defn push-listener
@@ -258,14 +351,15 @@
    Schedules notification to listener of all existing results.
    Initiates parse if necessary"
   [tramp node-key listener]
-  (dprintln "push-listener" [(node-key 1) (node-key 0)] (type listener))
+  #_(dprintln "push-listener" [(node-key 1) (node-key 0)] (type listener))
   (let [listener-already-exists? (listener-exists? tramp node-key)
-        node (node-get tramp node-key)]
+        node (node-get tramp node-key)
+        listeners (:listeners node)]
     (profile (add! :push-listener))
-    (swap-field! (.-listeners node) conj listener)
-    (doseq [result (.-results node)]
+    (swap! listeners conj listener)
+    (doseq [result @(:results node)]
       (push-message tramp listener result))
-    (doseq [result (.-full-results node)]
+    (doseq [result @(:full-results node)]
       (push-message tramp listener result))
     (when (not listener-already-exists?)
       (push-stack tramp #(-parse (node-key 1) (node-key 0) tramp))))) 
@@ -275,10 +369,11 @@
    Schedules notification to listener of all existing full results."
   [tramp node-key listener]
   (let [full-listener-already-exists? (full-listener-exists? tramp node-key)
-        node (node-get tramp node-key)]
+        node (node-get tramp node-key)
+        listeners (:full-listeners node)]
     (profile (add! :push-full-listener))
-    (swap-field! (.-full-listeners node) conj listener)
-    (doseq [result (.-full-results node)]
+    (swap! listeners conj listener)
+    (doseq [result @(:full-results node)]
       (push-message tramp listener result))
     (when (not full-listener-already-exists?)
       (push-stack tramp #(-full-parse (node-key 1) (node-key 0) tramp)))))
@@ -288,36 +383,45 @@
 (defn push-negative-listener
   "Pushes a thunk onto the trampoline's negative-listener stack."
   [tramp creator negative-listener]
-  (swap-field! (.-negative-listeners tramp) merge-negative-listeners
-               {(creator 0) [negative-listener]}))  
+  #_(dprintln "push-negative-listener" (type negative-listener))
+  ; creator is a node-key, i.e., a [index parser] pair
+  (swap! (:negative-listeners tramp) merge-negative-listeners 
+         {(creator 0) [(attach-diagnostic-meta negative-listener {:creator creator})]}))  
 
 ;(defn success [tramp node-key result end]
 ;  (push-result tramp node-key (make-success result end)))
 
+(defmacro success [tramp node-key result end]
+  `(push-result ~tramp ~node-key (make-success ~result ~end)))
+
 (declare build-node-with-meta)
-(defn fail [tramp node-key index reason]  
-  (swap-field! (.-failure tramp) 
-               (fn [failure] 
-                 (let [current-index (:index failure)]
-                   (case (compare index current-index)
-                     1 (Failure. index [reason])
-                     0 (Failure. index (conj (:reason failure) reason))
-                     -1  failure))))
-  #_(dprintln "Fail index" (.-fail-index tramp))
-  (when (= index (.-fail-index tramp))
+(defn fail [tramp node-key index reason]
+  (log tramp (format "No result for %s at index %d (%s)"
+                     (print/combinators->str (node-key 1)) (node-key 0)
+                     (string-context (:text tramp) (node-key 0))))
+  (swap! (:failure tramp) 
+         (fn [failure] 
+           (let [current-index (:index failure)]
+             (case (compare index current-index)
+               1 (Failure. index [reason])
+               0 (Failure. index (conj (:reason failure) reason))
+               -1  failure))))
+  #_(dprintln "Fail index" (:fail-index tramp))
+  (when (= index (:fail-index tramp))
     (success tramp node-key 
              (build-node-with-meta
-               (.-node-builder tramp) :instaparse/failure (subs (.-text tramp) index)
-               index (count (.-text tramp)))
-             (count (.-text tramp)))))
+               (:node-builder tramp) :instaparse/failure
+               (sub-sequence (:text tramp) index)
+               index (count (:text tramp)))
+             (count (:text tramp)))))
 
 ;; Stack helper functions
 
 (defn step
   "Executes one thing on the stack (not threadsafe)"
-  [tramp]
-  (let [top (peek (.-stack tramp))]
-    (swap-field! (.-stack tramp) pop)
+  [stack]
+  (let [top (peek @stack)]
+    (swap! stack pop)
     #_(dprintln "Top" top (meta top))
     (top)))
 
@@ -325,38 +429,45 @@
   "Executes the stack until exhausted"
   ([tramp] (run tramp nil))
   ([tramp found-result?] 
-    (let [stack (.-stack tramp)]
-      ;_ (dprintln found-result? (count (.-stack tramp)) (count (.-next-stack tramp)))
+    (let [stack (:stack tramp)]
+          ;_ (dprintln "run" found-result? (count @(:stack tramp)) (count @(:next-stack tramp)))]
       (cond
-        (.-success tramp)
-        (cons (:result (.-success tramp))
-              (lazy-seq (do (set! (.-success tramp) nil)
-                            (run tramp true))))
+        @(:success tramp)
+        (do (log tramp "Successful parse.\nProfile: " @stats)
+          (cons (:result @(:success tramp))
+                (lazy-seq
+                  (do (reset! (:success tramp) nil)
+                    (run tramp true)))))
         
-        (pos? (count stack))
-        (do ;(dprintln "stacks" (count stack) (count (.-next-stack tramp)))
-          (step tramp) (recur tramp found-result?))
-        
-        (pos? (count (.-negative-listeners tramp)))
-        (let [[index listeners] (first (.-negative-listeners tramp))
+        (pos? (count @stack))
+        (do ;(dprintln "stacks" (count @stack) (count @(:next-stack tramp)))
+          (step stack) (recur tramp found-result?))
+
+        (pos? (count @(:negative-listeners tramp)))
+        (let [[index listeners] (first @(:negative-listeners tramp))
               listener (peek listeners)]
+          (log tramp (format "Exhausted results for %s at index %d (%s)"
+                             (print/combinators->str (((meta listener) :creator) 1))
+                             (((meta listener) :creator) 0)
+                             (string-context (:text tramp) 
+                                             (((meta listener) :creator) 0)))) 
           (listener)
           (if (= (count listeners) 1)
-            (swap-field! (.-negative-listeners tramp) dissoc index)
-            (swap-field! (.-negative-listeners tramp) update index pop))
-          (recur tramp found-result?))
+            (swap! (:negative-listeners tramp) dissoc index)
+            (swap! (:negative-listeners tramp) update-in [index] pop))
+          (recur tramp found-result?))        
         
         found-result?
-        (let [next-stack (.-next-stack tramp)]
-          (dprintln "Swapping stacks" (count (.-stack tramp)) 
-                   (count (.-next-stack tramp)))
-          (set! (.-stack tramp) next-stack) 
-          (set! (.-next-stack tramp) [])
-          (swap-field! (.-generation tramp) inc)  
-          (dprintln "Swapped stacks" (count (.-stack tramp)) 
-                   (count (.-next-stack tramp)))          
-          (recur tramp nil))        
-      
+        (let [next-stack (:next-stack tramp)]
+          #_(dprintln "Swapping stacks" (count @(:stack tramp)) 
+                   (count @(:next-stack tramp)))
+          (reset! stack @next-stack) 
+          (reset! next-stack [])
+          (swap! (:generation tramp) inc)  
+          #_(dprintln "Swapped stacks" (count @(:stack tramp)) 
+                   (count @(:next-stack tramp)))          
+          (recur tramp nil))
+        
         :else nil))))
 
 ;; Listeners
@@ -367,7 +478,7 @@
 
 (defn NodeListener [node-key tramp]  
   (fn [result]
-    (dprintln "Node Listener received" [(node-key 0) (:tag (node-key 1))] "result" result)
+    ;(dprintln "Node Listener received" [(node-key 0) (:tag (node-key 1))] "result" result)
     (push-result tramp node-key result)))
 
 ; The second kind of listener handles lookahead.
@@ -473,16 +584,16 @@
 
 (defn TopListener [tramp] 
   (fn [result] 
-    (set! (.-success tramp) result)))
+    (reset! (:success tramp) result)))
 
 ;; Parsers
 
 (defn string-parse
   [this index tramp]
   (let [string (:string this)
-        text (.-text tramp)
+        text (:text tramp)
         end (min (count text) (+ index (count string)))
-        head (subs text index end)]      
+        head (sub-sequence text index end)]      
     (if (= string head)
       (success tramp [index this] string end)
       (fail tramp [index this] index
@@ -491,24 +602,21 @@
 (defn string-full-parse
   [this index tramp]
   (let [string (:string this)
-        text (.-text tramp)
+        text (:text tramp)
         end (min (count text) (+ index (count string)))
-        head (subs text index end)]      
+        head (sub-sequence text index end)]      
     (if (and (= end (count text)) (= string head))
       (success tramp [index this] string end)
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
 
-(defn equals-ignore-case [^String s1 ^String s2]
-  (= (.toUpperCase s1) (.toUpperCase s2)))
-
 (defn string-case-insensitive-parse
   [this index tramp]
   (let [string (:string this)
-        text (.-text tramp)
+        text (:text tramp)
         end (min (count text) (+ index (count string)))
-        head (subs text index end)]      
-    (if (equals-ignore-case string head)
+        head (sub-sequence text index end)]      
+    (if (.equalsIgnoreCase ^String string head)
       (success tramp [index this] string end)
       (fail tramp [index this] index
             {:tag :string :expecting string}))))
@@ -516,10 +624,10 @@
 (defn string-case-insensitive-full-parse
   [this index tramp]
   (let [string (:string this)
-        text (.-text tramp)
+        text (:text tramp)
         end (min (count text) (+ index (count string)))
-        head (subs text index end)]      
-    (if (and (= end (count text)) (equals-ignore-case string head))
+        head (sub-sequence text index end)]      
+    (if (and (= end (count text)) (.equalsIgnoreCase ^String string head))
       (success tramp [index this] string end)
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
@@ -528,17 +636,17 @@
   [this index tramp]
   (let [lo (:lo this)
         hi (:hi this)
-        text (:text tramp)]
+        ^String text (:text tramp)]
     (cond
       (>= index (count text)) (fail tramp [index this] index
                                     {:tag :char :expecting {:char-range true :lo lo :hi hi}})
-      (<= hi 0xFFFF) (let [code (.charCodeAt text index)]
-                       (if (<= lo code hi)
-                         (success tramp [index this] (char code) (inc index))
+      (<= hi 0xFFFF) (let [character (.charAt text index)]
+                       (if (<= lo (int character) hi)
+                         (success tramp [index this] (str character) (inc index))
                          (fail tramp [index this] index
                                {:tag :char :expecting {:char-range true :lo lo :hi hi}})))
-      :else (let [code-point (u/getCodePointAround text (int index))
-                  char-string (u/fromCharCode code-point)]
+      :else (let [code-point (Character/codePointAt text (int index))
+                  char-string (String. (Character/toChars code-point))]
               (if (<= lo code-point hi)
                 (success tramp [index this] char-string
                          (+ index (count char-string)))
@@ -553,30 +661,30 @@
         end (count text)]
     (cond
       (>= index (count text)) (fail tramp [index this] index
-                                    {:tag :char :expecting {:char-range true :lo lo :hi hi} :full true})
-      (<= hi 0xFFFF) (let [code (.charCodeAt text index)]
-                       (if (and (= (inc index) end) (<= lo code hi))
-                         (success tramp [index this] (char code) end)
+                                    {:tag :char :expecting {:char-range true :lo lo :hi hi}})
+      (<= hi 0xFFFF) (let [character (.charAt ^String text index)]
+                       (if (and (= (inc index) end) (<= lo (int character) hi))
+                         (success tramp [index this] (str character) end)
                          (fail tramp [index this] index
-                               {:tag :char :expecting {:char-range true :lo lo :hi hi} :full true})))
-      :else (let [code-point (u/getCodePointAround text (int index))
-                  char-string (u/fromCharCode code-point)]
+                               {:tag :char :expecting {:char-range true :lo lo :hi hi}})))
+      :else (let [code-point (Character/codePointAt ^String text (int index))
+                  char-string (String. (Character/toChars code-point))]
               (if (and (= (+ index (count char-string)) end) (<= lo code-point hi))
                 (success tramp [index this] char-string end)
                 (fail tramp [index this] index
                       {:tag :char :expecting {:char-range true :lo lo :hi hi} :full true}))))))
 
 (defn re-match-at-front [regexp text]
-  (let [re (js/RegExp. (.-source regexp) "g")
-        m (.exec re text)]
-    (when (and m (zero? (.-index m)))
-      (first m))))
-
+  (let [^java.util.regex.Matcher matcher (re-matcher regexp text)
+        match? (.lookingAt matcher)]
+    (when match?
+      (.group matcher))))
+    
 (defn regexp-parse
   [this index tramp]
   (let [regexp (:regexp this)
-        ^Segment text (.-segment tramp)
-        substring (toString (subsegment text index (count text)))
+        ^Segment text (:segment tramp)
+        substring (sub-sequence text index)
         match (re-match-at-front regexp substring)]
     (if match
       (success tramp [index this] match (+ index (count match)))
@@ -587,14 +695,13 @@
   [this index tramp]
   (let [regexp (:regexp this)
         ^Segment text (:segment tramp)
-        substring (toString (subsegment text index (count text)))
+        substring (sub-sequence text index)
         match (re-match-at-front regexp substring)
         desired-length (- (count text) index)]
     (if (and match (= (count match) desired-length))
       (success tramp [index this] match (count text))
       (fail tramp [index this] index
             {:tag :regexp :expecting regexp :full true}))))
-
         
 (let [empty-cat-result afs/EMPTY]
 	(defn cat-parse
@@ -691,7 +798,7 @@
         listener (NodeListener [index this] tramp)]
     (push-listener tramp node-key-parser1 listener)
     (push-negative-listener 
-      tramp
+      tramp       
       node-key-parser1
       #(push-listener tramp node-key-parser2 listener))))
           
@@ -704,7 +811,7 @@
         listener (NodeListener [index this] tramp)]
     (push-full-listener tramp node-key-parser1 listener)
     (push-negative-listener 
-      tramp
+      tramp       
       node-key-parser1
       #(push-full-listener tramp node-key-parser2 listener))))
   
@@ -747,7 +854,7 @@
 ;(defn negative-lookahead-parse
 ;  [this index tramp]
 ;  (let [parser (:parser this)
-;        remaining-text (subs (:text tramp) index)]
+;        remaining-text (sub-sequence (:text tramp) index)]
 ;    (if (negative-parse? (:grammar tramp) parser remaining-text)
 ;      (success tramp [index this] nil index)
 ;      (fail tramp index :negative-lookahead))))
@@ -778,8 +885,7 @@
   (if (= index (count (:text tramp)))
     (success tramp [index this] nil index)
     (fail tramp [index this] index {:tag :Epsilon :expecting :end-of-string})))
-
-
+    
 ;; Parsing functions
 
 (defn start-parser [tramp parser partial?]
@@ -795,8 +901,8 @@
     (if-let [all-parses (run tramp)]
       all-parses 
       (with-meta () 
-        (fail/augment-failure (.-failure tramp) text)))))
-  
+        (fail/augment-failure @(:failure tramp) text))))) 
+
 (defn parse [grammar start text partial?]
   (profile (clear!))
   (let [tramp (make-tramp grammar text)
@@ -804,7 +910,7 @@
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       (first all-parses) 
-      (fail/augment-failure (.-failure tramp) text))))
+      (fail/augment-failure @(:failure tramp) text))))
 
 ;; The node builder function is what we use to build the failure nodes
 ;; but we want to include start and end metadata as well.
@@ -823,9 +929,10 @@
 
 (defn parses-total-after-fail 
   [grammar start text fail-index partial? node-builder]
-  (dprintln "Parses-total-after-fail")  
+  ;(dprintln "Parses-total-after-fail")  
   (let [tramp (make-tramp grammar text fail-index node-builder)
         parser (nt start)]
+    (log tramp "Parse failure. Restarting for total parse.")
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       all-parses
@@ -851,9 +958,10 @@ rather than overwriting the metamap entirely."
 
 (defn parse-total-after-fail 
   [grammar start text fail-index partial? node-builder]
-  (dprintln "Parse-total-after-fail")  
+  ;(dprintln "Parse-total-after-fail")  
   (let [tramp (make-tramp grammar text fail-index node-builder)
         parser (nt start)]
+    (log tramp "Parse failure. Restarting for total parse.")
     (start-parser tramp parser partial?)
     (if-let [all-parses (run tramp)]
       (first all-parses)
