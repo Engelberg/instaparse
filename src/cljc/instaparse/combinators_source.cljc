@@ -75,20 +75,10 @@
    (assert (<= lo hi) "Character range minimum must be less than or equal the maximum")
    {:tag :char :lo lo :hi hi}))
 
-(defn- regexp->str
-  "(str regexp) in clojurescript puts slashes around the result, unlike
-   in clojure. Work around that."
-  [r]
-  (if (regexp? r)
-    (let [s (str r)]
-      (subs s 1 (dec (count s))))
-    r))
-
 (defn regexp "Create a regexp terminal out of regular expression r"
   [r]
-  (let [s (str \^ (regexp->str r))]
-    (if (= s "^") Epsilon
-      {:tag :regexp :regexp (re-pattern s)})))
+  (if (= r "") Epsilon
+    {:tag :regexp :regexp (re-pattern r)}))
 
 (defn nt "Refers to a non-terminal defined by the grammar map"
   [s] 

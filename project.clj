@@ -16,7 +16,7 @@
   :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7" "test"]
             "cleantestcljs" ["do" "clean," "cljx" "once," "cljsbuild" "test" "unit-tests"]}
   :test-paths ["target/generated/src/clj" "target/generated/test/clj"]
-  :source-paths ["src/cljs" "src/clj"]
+  :source-paths ["src/cljs" "src/clj" "src/cljc"]
   :clj {:source-paths  ["src/clj",  "target/generated/src/clj"]
         :test-paths  ["test/clj",  "target/generated/test/clj"]}
   :cljx {:builds [{:source-paths  ["src/cljx"]
