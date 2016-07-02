@@ -1,9 +1,9 @@
 (ns instaparse.combinators
   "The combinator public API for instaparse"
   (:refer-clojure :exclude [cat])
-  #?(:clj (:use instaparse.clone)
+  #?(:clj (:use instaparse.macros)
      :cljs (:require-macros
-            [instaparse.clone :refer [defclone]]))
+            [instaparse.macros :refer [defclone]]))
   (:require [instaparse.combinators-source :as c]
             [instaparse.cfg :as cfg]
             [instaparse.abnf :as abnf]))

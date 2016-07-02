@@ -1,5 +1,4 @@
-(ns instaparse.macros
-  "A macro used to import vars with docstrings from one namespace to another")
+(ns instaparse.macros)
 
 (defmacro defclone [here there]
   (if (contains? &env :locals)
