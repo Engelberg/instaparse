@@ -223,7 +223,7 @@
                           (catch java.io.FileNotFoundException e 
                             (build-parser grammar-specification output-format))))
                    :cljs
-                   (build-parser grammaer-specification output-format))]
+                   (build-parser grammar-specification output-format))]
             (if start (map->Parser (assoc parser :start-production start))
               (map->Parser parser)))
 
@@ -298,9 +298,7 @@
      []
      (alter-var-root #'gll/TRACE (constantly false))
      (alter-var-root #'gll/PROFILE (constantly false))
-     (require 'instaparse.gll :reload)))  
-
-(defclone span viz/span)
+     (require 'instaparse.gll :reload)))
    
 (defclone transform t/transform)
 
