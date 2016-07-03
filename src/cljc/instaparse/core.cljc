@@ -11,7 +11,8 @@
             [instaparse.abnf :as abnf]
             [instaparse.repeat :as repeat]
             [instaparse.combinators-source :as c]
-            [instaparse.line-col :as lc]))
+            [instaparse.line-col :as lc]
+            #?(:clj [instaparse.viz :as viz])))
 
 (def ^:dynamic *default-output-format* :hiccup)
 (defn set-default-output-format!
@@ -116,19 +117,33 @@
       
       :else
       (gll/parses (:grammar parser) start-production text partial?))))
- 
-(defrecord Parser [grammar start-production output-format]
-  IFn
-  (-invoke [parser text] (parse parser text))
-  (-invoke [parser text key1 val1] (parse parser text key1 val1))
-  (-invoke [parser text key1 val1 key2 val2] (parse parser text key1 val1 key2 val2))
-  (-invoke [parser text key1 val1 key2 val2 key3 val3] (parse parser text key1 val1 key2 val2 key3 val3))
-  #_(-applyTo [parser args] (apply parse parser args))) 
 
-(extend-protocol IPrintWithWriter
-  instaparse.core/Parser
-  (-pr-writer  [parser writer _]
-    (-write writer (print/Parser->str parser))))
+(defrecord Parser [grammar start-production output-format]
+#?@(:clj
+    [clojure.lang.IFn
+     (invoke [parser text] (parse parser text))
+     (invoke [parser text key1 val1] (parse parser text key1 val1))
+     (invoke [parser text key1 val1 key2 val2] (parse parser text key1 val1 key2 val2))
+     (invoke [parser text key1 val1 key2 val2 key3 val3] (parse parser text key1 val1 key2 val2 key3 val3))
+     (applyTo [parser args] (apply parse parser args))]
+
+    :cljs
+    [IFn
+     (-invoke [parser text] (parse parser text))
+     (-invoke [parser text key1 val1] (parse parser text key1 val1))
+     (-invoke [parser text key1 val1 key2 val2] (parse parser text key1 val1 key2 val2))
+     (-invoke [parser text key1 val1 key2 val2 key3 val3] (parse parser text key1 val1 key2 val2 key3 val3))
+     #_(-applyTo [parser args] (apply parse parser args))]))
+
+#?(:clj
+   (defmethod clojure.core/print-method Parser [x writer]
+     (binding [*out* writer]
+       (println (print/Parser->str x))))
+   :cljs
+   (extend-protocol IPrintWithWriter
+     instaparse.core/Parser
+     (-pr-writer  [parser writer _]
+       (-write writer (print/Parser->str parser)))))
 
 (defn parser
   "Takes a string specification of a context-free grammar,
@@ -207,29 +222,36 @@
                                   ws-grammar ws-start))
         built-parser))))
 
+(def failure-type
+  #?(:clj gll/failure-type
+     :cljs instaparse.gll.Failure))
         
 (defn failure?
   "Tests whether a parse result is a failure."
   [result]
   (or
-    (instance? instaparse.gll.Failure result)
-    (instance? instaparse.gll.Failure (meta result))))
+    (instance? failure-type result)
+    (instance? failure-type (meta result))))
 
 (defn get-failure
   "Extracts failure object from failed parse result."
   [result]
   (cond
-    (instance? instaparse.gll.Failure result)
+    (instance? failure-type result)
     result
-    (instance? instaparse.gll.Failure (meta result))
+    (instance? failure-type (meta result))
     (meta result)
     :else
     nil))
 
-(def transform t/transform)
-
-(def add-line-and-column-info-to-metadata lc/add-line-col-spans)
-
 (def ^:private standard-whitespace-parsers
   {:standard (parser "whitespace = #'\\s+'")
    :comma (parser "whitespace = #'[,\\s]+'")})
+
+(defclone transform t/transform)
+
+(defclone add-line-and-column-info-to-metadata lc/add-line-col-spans)
+
+#?(:clj (defclone span viz/span))
+
+#?(:clj (defclone visualize viz/tree-viz))

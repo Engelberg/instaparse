@@ -75,10 +75,21 @@
    (assert (<= lo hi) "Character range minimum must be less than or equal the maximum")
    {:tag :char :lo lo :hi hi}))
 
+#?(:cljs
+   (defn- add-beginning-constraint
+     "JavaScript regexes have no .lookingAt method, so in cljs we just
+  add a '^' character to the front of the regex."
+     [r]
+     (if (regexp? r)
+       (re-pattern (str "^" (.-source r)))
+       r)))
+
 (defn regexp "Create a regexp terminal out of regular expression r"
   [r]
   (if (= r "") Epsilon
-    {:tag :regexp :regexp (re-pattern r)}))
+      {:tag :regexp
+       :regexp (-> (re-pattern r)
+                   #?(:cljs add-beginning-constraint))}))
 
 (defn nt "Refers to a non-terminal defined by the grammar map"
   [s] 

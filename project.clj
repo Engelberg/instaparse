@@ -31,7 +31,7 @@
                   {:source-paths  ["test/cljx"]
                    :output-path  "target/generated/test/cljs"
                    :rules :cljs}]}
-  :plugins [[lein-cljsbuild "1.0.6"]
+  :plugins [[lein-cljsbuild "1.1.3"]
             [com.keminglabs/cljx "0.6.0" :exclusions [org.clojure/clojure]]]
   :prep-tasks [["cljx" "once"]]
   ;:hooks [leiningen.cljsbuild]
@@ -39,12 +39,14 @@
   :scm {:name "git"
         :url "https://github.com/lbradstreet/instaparse-cljs"}
   :cljsbuild {:builds [{:id "none"
-                        :source-paths ["src/cljs"]
+                        :source-paths ["src/cljs"
+                                       "src/cljc"]
                         :compiler {:output-to "target/js/none.js"
                                    :optimizations :none
                                    :pretty-print true}}
                        {:id "test"
-                        :source-paths ["src/cljs" 
+                        :source-paths ["src/cljs"
+                                       "src/cljc"
                                        "runner/cljs"
                                        "target/generated/test/clj"
                                        "target/generated/test/cljs"]
