@@ -14,7 +14,8 @@
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]]}
              :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]]}
              :test {:plugins
-                    [[com.keminglabs/cljx "0.6.0" :exclusions [org.clojure/clojure]]]}}
+                    [[com.keminglabs/cljx "0.6.0" :exclusions [org.clojure/clojure]]]
+                    :prep-tasks [["cljx" "once"]]}}
   :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7:+1.8" "test"]
             "cleantestcljs" ["do" "clean," "cljx" "once," "cljsbuild" "test" "unit-tests"]}
   :test-paths ["target/generated/src/clj" "target/generated/test/clj"]
@@ -33,7 +34,6 @@
                      :rules :clj}]}
   :plugins [[lein-cljsbuild "1.1.3"]
             [cljsee "0.1.0"]]
-  #_#_:prep-tasks [["cljx" "once"]]
   ;:hooks [leiningen.cljsbuild]
   :target-path "target"
   :scm {:name "git"
