@@ -164,87 +164,70 @@
         (set! cached-seq (if dirty (flat-seq v) (seq v)))
         cached-seq))))
 :cljs
-(deftype FlattenOnDemandVector [v   ; atom containing PersistentVector or nil 
-                                ^number hashcode
-                                ^number cnt
-                                flat] ; atom containing PersistentVector or nil
-  GetVec
-  (get-vec [self] 
-           (when (not @flat)             
-             (swap! flat (fn [_] (with-meta (flat-vec @v) (meta @v))))
-             (swap! v (fn [_] nil))) ; clear out v so it can be garbage collected 
-           @flat)
-                    
+(deftype AutoFlattenSeq [^PersistentVector v ^number premix-hashcode ^number hashcode ^number cnt ^boolean dirty
+                         ^:unsynchronized-mutable ^ISeq cached-seq]
   Object
-  (toString [self]
-    (pr-str* (get-vec self)))
+  (toString [self] (pr-str* (seq self)))
   IHash
   (-hash [self] hashcode)
+  ISequential
+  ISeq
+  (-first [self] (first (seq self)))
+  (-rest [self] (rest (seq self)))
   IEquiv
   (-equiv [self other]
-    (or 
-      (and (= hashcode (hash other))
-           (= cnt (count other))
-           (= (get-vec self) other))))
+    (and ;(instance? AutoFlattenSeq other)
+         (= hashcode (hash other))
+         (= cnt (count other))
+         (or (= cnt 0)
+             (= (seq self) other))))
+  ICollection
+  (-conj [self o] (cons o self))
   IEmptyableCollection
-  (-empty [self] (with-meta [] (meta self))) 
+  (-empty [self] (with-meta EMPTY (meta self))) 
+  INext
+  (-next [self] (next (seq self)))
+  ConjFlat
+  (conj-flat [self obj]
+    (cond
+      (nil? obj) self
+      (afs? obj)
+      (cond
+        (zero? cnt) obj
+        (<= (count obj) threshold)
+        (let [phc (hash-cat self obj)
+              new-cnt (+ cnt (count obj))]
+          (AutoFlattenSeq. (into v obj) phc (mix-collection-hash phc new-cnt) new-cnt
+                           (or dirty (.-dirty ^AutoFlattenSeq obj)) nil))
+        :else
+        (let [phc (hash-cat self obj)
+              new-cnt (+ cnt (count obj))]
+          (AutoFlattenSeq. (conj v obj) phc (mix-collection-hash phc new-cnt) new-cnt
+                           true nil)))
+      :else
+      (let [phc (hash-conj premix-hashcode obj)
+            new-cnt (inc cnt)]
+        (AutoFlattenSeq. (conj v obj) phc (mix-collection-hash phc new-cnt) new-cnt dirty nil))))
+  (cached? [self] cached-seq)
   ICounted
   (-count [self] cnt)
-  IVector
-  (-assoc-n [self i val]
-    (-assoc-n (get-vec self) i val))
-  ICollection
-  (-conj [self obj]
-    (conj (get-vec self) obj))
-  IWithMeta
-  (-with-meta [self metamap]    
-    (if @flat
-      (FlattenOnDemandVector. (atom @v) hashcode cnt (atom (with-meta @flat metamap)))
-      (FlattenOnDemandVector. (atom (with-meta @v metamap)) hashcode cnt (atom @flat))))
-  IMeta
-  (-meta [self]
-    (if @flat (meta @flat) (meta @v)))
-  ISequential
-  ISeqable
-  (-seq [self]
-    (seq (get-vec self)))
   ILookup
   (-lookup [self key]
-    (-lookup (get-vec self) key))
+    (-lookup v key))
   (-lookup [self key not-found]
-    (-lookup (get-vec self) key not-found))
-  IIndexed
-  (-nth [self i]
-    (-nth (get-vec self) i))
-  (-nth [self i not-found]
-    (-nth (get-vec self) i not-found))
-  IFn
-  (-invoke [self arg]
-    (-invoke (get-vec self) arg))
-  (-invoke [self arg not-found]
-    (-invoke (get-vec self) arg not-found))
-  IReversible
-  (-rseq [self]
-    (if (pos? cnt)
-      (rseq (get-vec self))
-      nil))
-  IStack
-  (-peek [self] 
-    (-peek (get-vec self)))
-  (-pop [self] 
-    (-pop (get-vec self)))
-  IAssociative
-  (-assoc [self i val]
-    (assoc (get-vec self) i val))
-  (-contains-key? [self k]
-    (-contains-key? (get-vec self) k))
-  IKVReduce
-  (-kv-reduce [self f init]
-    (-kv-reduce (get-vec self) f init))
-  IComparable
-  (-compare [self that]
-    (-compare (get-vec self) that))
-  ))
+    (-lookup v key not-found))
+  IWithMeta
+  (-with-meta [self metamap]
+    (AutoFlattenSeq. (with-meta v metamap) premix-hashcode hashcode cnt dirty nil))
+  IMeta
+  (-meta [self]
+    (meta v))
+  ISeqable
+  (-seq [self]
+    (if cached-seq cached-seq
+      (do
+        (set! cached-seq (if dirty (flat-seq v) (seq v)))
+        cached-seq)))))
 
 #?(:clj
    (defn- hash-cat ^long [^AutoFlattenSeq v1 ^AutoFlattenSeq v2]
