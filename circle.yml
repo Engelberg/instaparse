@@ -4,7 +4,7 @@ machine:
 
 dependencies:
         override:
-                - echo Y | lein upgrade 2.5.1 :
+                - echo Y | lein upgrade 2.6.1 :
                         timeout: 900
 
 test:
