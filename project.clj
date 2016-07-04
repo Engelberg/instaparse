@@ -13,11 +13,16 @@
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]]}
              :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]]}
-             :test {:plugins
+             :cljx ^:test
+                   {:plugins
                     [[com.keminglabs/cljx "0.6.0" :exclusions [org.clojure/clojure]]]
                     :prep-tasks [["cljx" "once"]]}}
-  :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7:+1.8" "test"]
-            "cleantestcljs" ["do" "clean," "cljx" "once," "cljsbuild" "test" "unit-tests"]}
+  :aliases {"test-all" ["with-profiles" "cljx" "do"
+                        "cljx" "once,"
+                        "cljsee" "once,"
+                        "with-profile" "+1.5:+1.6:+1.7:+1.8" "test"]
+            "cleantestcljs" ["with-profiles" "cljx"
+                             "do" "clean," "cljx" "once," "cljsbuild" "test" "unit-tests"]}
   :test-paths ["target/generated/src/clj" "target/generated/test/clj"]
   :source-paths ["src/cljs" "src/clj" "src/cljc"
                  "target/generated/src/clj"]
