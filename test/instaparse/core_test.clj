@@ -682,6 +682,11 @@
     
     (insta/transform {:ADD +} [:ADD 10 5])
     15
+
+    (->> "a"
+         ((insta/parser "<S> = 'a'"))
+         (insta/transform {}))
+    '("a")
     ))    
 
 (defn round-trip [parser]
