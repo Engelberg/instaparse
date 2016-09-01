@@ -20,7 +20,7 @@
          [:URI [:SCHEME [:ALPHA "t"] [:ALPHA "e"] [:ALPHA "l"]] ":" [:HIER-PART [:PATH-ROOTLESS [:SEGMENT-NZ [:PCHAR [:SUB-DELIMS "+"]] [:PCHAR [:UNRESERVED [:DIGIT "1"]]] [:PCHAR [:UNRESERVED "-"]] [:PCHAR [:UNRESERVED [:DIGIT "8"]]] [:PCHAR [:UNRESERVED [:DIGIT "1"]]] [:PCHAR [:UNRESERVED [:DIGIT "6"]]] [:PCHAR [:UNRESERVED "-"]] [:PCHAR [:UNRESERVED [:DIGIT "5"]]] [:PCHAR [:UNRESERVED [:DIGIT "5"]]] [:PCHAR [:UNRESERVED [:DIGIT "5"]]] [:PCHAR [:UNRESERVED "-"]] [:PCHAR [:UNRESERVED [:DIGIT "1"]]] [:PCHAR [:UNRESERVED [:DIGIT "2"]]] [:PCHAR [:UNRESERVED [:DIGIT "1"]]] [:PCHAR [:UNRESERVED [:DIGIT "2"]]]]]]]
          
          (uri-parser "telnet://192.0.2.16:80/")
-         [:URI [:SCHEME [:ALPHA "t"] [:ALPHA "e"] [:ALPHA "l"] [:ALPHA "n"] [:ALPHA "e"] [:ALPHA "t"]] ":" [:HIER-PART "//" [:AUTHORITY [:HOST [:REG-NAME [:UNRESERVED [:DIGIT "1"]] [:UNRESERVED [:DIGIT "9"]] [:UNRESERVED [:DIGIT "2"]] [:UNRESERVED "."] [:UNRESERVED [:DIGIT "0"]] [:UNRESERVED "."] [:UNRESERVED [:DIGIT "2"]] [:UNRESERVED "."] [:UNRESERVED [:DIGIT "1"]] [:UNRESERVED [:DIGIT "6"]]]] ":" [:PORT [:DIGIT "8"] [:DIGIT "0"]]] [:PATH-ABEMPTY "/" [:SEGMENT]]]]
+         [:URI [:SCHEME [:ALPHA "t"] [:ALPHA "e"] [:ALPHA "l"] [:ALPHA "n"] [:ALPHA "e"] [:ALPHA "t"]] ":" [:HIER-PART "//" [:AUTHORITY [:HOST [:IPV4ADDRESS [:DEC-OCTET "1" [:DIGIT "9"] [:DIGIT "2"]] "." [:DEC-OCTET [:DIGIT "0"]] "." [:DEC-OCTET [:DIGIT "2"]] "." [:DEC-OCTET "1" [:DIGIT "6"]]]] ":" [:PORT [:DIGIT "8"] [:DIGIT "0"]]] [:PATH-ABEMPTY "/" [:SEGMENT]]]]
          
          (uri-parser "urn:oasis:names:specification:docbook:dtd:xml:4.1.2")
          [:URI [:SCHEME [:ALPHA "u"] [:ALPHA "r"] [:ALPHA "n"]] ":" [:HIER-PART [:PATH-ROOTLESS [:SEGMENT-NZ [:PCHAR [:UNRESERVED [:ALPHA "o"]]] [:PCHAR [:UNRESERVED [:ALPHA "a"]]] [:PCHAR [:UNRESERVED [:ALPHA "s"]]] [:PCHAR [:UNRESERVED [:ALPHA "i"]]] [:PCHAR [:UNRESERVED [:ALPHA "s"]]] [:PCHAR ":"] [:PCHAR [:UNRESERVED [:ALPHA "n"]]] [:PCHAR [:UNRESERVED [:ALPHA "a"]]] [:PCHAR [:UNRESERVED [:ALPHA "m"]]] [:PCHAR [:UNRESERVED [:ALPHA "e"]]] [:PCHAR [:UNRESERVED [:ALPHA "s"]]] [:PCHAR ":"] [:PCHAR [:UNRESERVED [:ALPHA "s"]]] [:PCHAR [:UNRESERVED [:ALPHA "p"]]] [:PCHAR [:UNRESERVED [:ALPHA "e"]]] [:PCHAR [:UNRESERVED [:ALPHA "c"]]] [:PCHAR [:UNRESERVED [:ALPHA "i"]]] [:PCHAR [:UNRESERVED [:ALPHA "f"]]] [:PCHAR [:UNRESERVED [:ALPHA "i"]]] [:PCHAR [:UNRESERVED [:ALPHA "c"]]] [:PCHAR [:UNRESERVED [:ALPHA "a"]]] [:PCHAR [:UNRESERVED [:ALPHA "t"]]] [:PCHAR [:UNRESERVED [:ALPHA "i"]]] [:PCHAR [:UNRESERVED [:ALPHA "o"]]] [:PCHAR [:UNRESERVED [:ALPHA "n"]]] [:PCHAR ":"] [:PCHAR [:UNRESERVED [:ALPHA "d"]]] [:PCHAR [:UNRESERVED [:ALPHA "o"]]] [:PCHAR [:UNRESERVED [:ALPHA "c"]]] [:PCHAR [:UNRESERVED [:ALPHA "b"]]] [:PCHAR [:UNRESERVED [:ALPHA "o"]]] [:PCHAR [:UNRESERVED [:ALPHA "o"]]] [:PCHAR [:UNRESERVED [:ALPHA "k"]]] [:PCHAR ":"] [:PCHAR [:UNRESERVED [:ALPHA "d"]]] [:PCHAR [:UNRESERVED [:ALPHA "t"]]] [:PCHAR [:UNRESERVED [:ALPHA "d"]]] [:PCHAR ":"] [:PCHAR [:UNRESERVED [:ALPHA "x"]]] [:PCHAR [:UNRESERVED [:ALPHA "m"]]] [:PCHAR [:UNRESERVED [:ALPHA "l"]]] [:PCHAR ":"] [:PCHAR [:UNRESERVED [:DIGIT "4"]]] [:PCHAR [:UNRESERVED "."]] [:PCHAR [:UNRESERVED [:DIGIT "1"]]] [:PCHAR [:UNRESERVED "."]] [:PCHAR [:UNRESERVED [:DIGIT "2"]]]]]]]
@@ -32,16 +32,15 @@
   (let [phone-uri-parser (binding [instaparse.abnf/*case-insensitive* true]
                            (parser (slurp "test/instaparse/phone_uri.txt") :input-format :abnf))]
     (are [x y] (= x y)
-         (phone-uri-parser "tel:+1-201-555-0123")
-         [:TELEPHONE-URI
-          "tel:"
+      (phone-uri-parser "tel:+1-201-555-0123")
+         [:TELEPHONE-URI "tel:"
           [:TELEPHONE-SUBSCRIBER
            [:GLOBAL-NUMBER
             [:GLOBAL-NUMBER-DIGITS
              "+"
-             [:DIGIT "1"]
+             [:PHONEDIGIT [:DIGIT "1"]]
              [:PHONEDIGIT [:VISUAL-SEPARATOR "-"]]
-             [:PHONEDIGIT [:DIGIT "2"]]
+             [:DIGIT "2"]
              [:PHONEDIGIT [:DIGIT "0"]]
              [:PHONEDIGIT [:DIGIT "1"]]
              [:PHONEDIGIT [:VISUAL-SEPARATOR "-"]]
@@ -49,7 +48,7 @@
              [:PHONEDIGIT [:DIGIT "5"]]
              [:PHONEDIGIT [:DIGIT "5"]]
              [:PHONEDIGIT [:VISUAL-SEPARATOR "-"]]
-             [:PHONEDIGIT [:DIGIT "0"]] 
+             [:PHONEDIGIT [:DIGIT "0"]]
              [:PHONEDIGIT [:DIGIT "1"]]
              [:PHONEDIGIT [:DIGIT "2"]]
              [:PHONEDIGIT [:DIGIT "3"]]]]]])))
@@ -183,3 +182,11 @@ to test the lookahead"
       [:S "a" "a" "a" "a"]
       (p "=")
       [:S [:B "="]])))
+
+(deftest abnf-order-test
+  (let [p (parser (merge
+                   {:S (abnf "A / U")}
+                   {:A (abnf "<'A'>")}
+                   {:U (abnf "<'A'>/<'B'>")})
+                  :start :S)]
+    (is (= [:S [:A]] (p "A")))))
