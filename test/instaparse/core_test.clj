@@ -689,6 +689,15 @@
     '("a")
     ))    
 
+(deftest error-nonexistent-starting-production
+  (let [parser (insta/parser "cat = 'mjau'")]
+    (is (thrown-with-msg?
+          IllegalArgumentException
+          #"Nonexistent starting production: :dog"
+          (insta/parse parser "mjau" :start :dog)))
+    (is (= [:cat "mjau"]
+           (insta/parse parser "mjau" :start :cat)))))
+
 (defn round-trip [parser]
   (insta/parser (prn-str parser)))
 
