@@ -12,30 +12,18 @@
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]]}
-             :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]]}
-             :cljx ^:test
-                   {:plugins
-                    [[com.keminglabs/cljx "0.6.0" :exclusions [org.clojure/clojure]]]
-                    :prep-tasks [["cljx" "once"]]}}
-  :aliases {"test-all" ["with-profiles" "cljx" "do"
-                        "cljx" "once,"
+             :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]]}}
+  :aliases {"test-all" ["do"
                         "cljsee" "once,"
                         "with-profile" "+1.5:+1.6:+1.7:+1.8" "test"]
-            "cleantestcljs" ["with-profiles" "cljx"
-                             "do" "clean," "cljx" "once," "cljsbuild" "test" "unit-tests"]}
-  :test-paths ["target/generated/src/clj" "target/generated/test/clj"]
-  :source-paths ["src/cljs" "src/clj" "src/cljc"
-                 "target/generated/src/clj"]
-  :clj {:source-paths  ["src/clj",  "target/generated/src/clj"]
-        :test-paths  ["test/clj",  "target/generated/test/clj"]}
-  :cljx {:builds [{:source-paths  ["test/cljx"]
-                   :output-path "target/generated/test/clj"
-                   :rules :clj}
-                  {:source-paths  ["test/cljx"]
-                   :output-path  "target/generated/test/cljs"
-                   :rules :cljs}]}
+            "test-cljs" ["cljsbuild" "test" "unit-tests"]}
+  :test-paths ["test/clj" "test/cljc" "target/generated/test/clj"]
+  :source-paths ["src/clj" "src/cljs" "src/cljc" "target/generated/src/clj"]
   :cljsee {:builds [{:source-paths ["src/cljc"]
                      :output-path "target/generated/src/clj"
+                     :rules :clj}
+                    {:source-paths ["test/cljc"]
+                     :output-path "target/generated/test/clj"
                      :rules :clj}]}
   :plugins [[lein-cljsbuild "1.1.3"]
             [cljsee "0.1.0"]]
@@ -44,17 +32,20 @@
   :scm {:name "git"
         :url "https://github.com/lbradstreet/instaparse-cljs"}
   :cljsbuild {:builds [{:id "none"
-                        :source-paths ["src/cljs"
+                        :source-paths ["src/clj"
+                                       "src/cljs"
                                        "src/cljc"]
                         :compiler {:output-to "target/js/none.js"
                                    :optimizations :none
                                    :pretty-print true}}
                        {:id "test"
-                        :source-paths ["src/cljs"
+                        :source-paths ["src/clj"
+                                       "src/cljs"
                                        "src/cljc"
-                                       "runner/cljs"
-                                       "target/generated/test/clj"
-                                       "target/generated/test/cljs"]
+                                       "test/clj"
+                                       "test/cljs"
+                                       "test/cljc"
+                                       "runner/cljs"]
                         :compiler {:output-to "target/js/advanced-test.js"
                                    :optimizations :advanced
                                    :target :nodejs
