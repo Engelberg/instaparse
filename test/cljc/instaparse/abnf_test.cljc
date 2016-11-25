@@ -1,9 +1,15 @@
 (ns instaparse.abnf-test
-  (:require #+cljs [cljs.test :as t]
-            #+clj [clojure.test :refer [deftest are is]]
-            [instaparse.core :refer [parser parses]])
-  #+cljs (:require-macros [instaparse.abnf-test :refer [abnf-uri-data phone-uri-data]]
-                          [cljs.test :refer [is are deftest]]))
+  (:require
+    [instaparse.core :refer [parser parses]])
+  #?@(:clj
+      [(:require
+         [clojure.test :refer [deftest are is]])]
+      :cljs
+      [(:require
+         [cljs.test])
+       (:require-macros
+         [instaparse.abnf-test :refer [abnf-uri-data phone-uri-data]]
+         [cljs.test :refer [is are deftest]])]))
 
 (defmacro abnf-uri-data []
   (slurp "test/data/abnf_uri.txt"))

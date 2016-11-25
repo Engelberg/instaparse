@@ -1,10 +1,10 @@
 (ns instaparse.repeat-test
-  (:require #+cljs [cljs.test :as t]
-            #+clj [clojure.test :refer [deftest are]]
+  (:require #?(:clj  [clojure.test :refer [deftest are]]
+               :cljs [cljs.test :as t])
             [instaparse.core :as insta]
             [instaparse.repeat :as repeat])
-  #+cljs (:require-macros [instaparse.repeat-test :refer [text-slurp]]
-                          [cljs.test :refer [are deftest]]))
+  #?(:cljs (:require-macros [instaparse.repeat-test :refer [text-slurp]]
+                            [cljs.test :refer [are deftest]])))
 
 (defmacro text-slurp [] 
   (slurp "https://gist.github.com/lewang/5900166/raw/3d23bd12bcb01036473c6e425e3798517b17820a/input_small.txt"))
