@@ -321,7 +321,8 @@
         node))))
 
 (defn safe-with-meta [obj metamap]
-  (if (instance? clojure.lang.IObj obj)
+  (if #?(:clj (instance? clojure.lang.IObj obj)
+         :cljs (implements? cljs.core/IWithMeta obj))
     (with-meta obj metamap)
     obj))
 
