@@ -1,6 +1,7 @@
 (ns instaparse.transform
   "Functions to transform parse trees"
-  (:require instaparse.gll))
+  (:require [instaparse.gll]
+            [instaparse.util :refer [throw-illegal-argument-exception]]))
 
 (defn map-preserving-meta [f l]
   (with-meta (map f l) (meta l)))
@@ -72,8 +73,5 @@ something that can have a metamap attached."
     parse-tree
     
     :else
-    (throw
-     #?(:clj
-        (IllegalArgumentException. "Invalid parse-tree, not recognized as either enlive or hiccup format.")
-        :cljs
-        "Invalid parse-tree, not recognized as either enlive or hiccup format."))))
+    (throw-illegal-argument-exception
+      "Invalid parse-tree, not recognized as either enlive or hiccup format.")))

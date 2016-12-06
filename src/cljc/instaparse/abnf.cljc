@@ -5,6 +5,7 @@
             [instaparse.cfg :as cfg]
             [instaparse.gll :as gll]
             [instaparse.reduction :as red]
+            [instaparse.util :refer [throw-runtime-exception]]
             [instaparse.combinators-source :refer
              [Epsilon opt plus star rep alt ord cat string-ci string
               string-ci regexp nt look neg hide hide-tag unicode-char]]
@@ -202,13 +203,6 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
   [rules]
   (merge-core (apply merge-with alt-preserving-hide-tag rules)))
 
-#?(:clj
-   (defn runtime-exception
-     [message]
-     (RuntimeException. message))
-   :cljs
-   (def runtime-exception identity))
-
 (defn abnf
   "Takes an ABNF grammar specification string and returns the combinator version.
 If you give it the right-hand side of a rule, it will return the combinator equivalent.
@@ -218,21 +212,24 @@ Useful for combining with other combinators."
   (if (re-find #"=" spec)
     (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
       (if (instance? instaparse.gll.Failure rule-tree)
-        (throw (runtime-exception (str "Error parsing grammar specification:\n"
-                                       (with-out-str (println rule-tree)))))
+        (throw-runtime-exception
+          "Error parsing grammar specification:\n"
+          (with-out-str (println rule-tree)))
         (rules->grammar-map (t/transform abnf-transformer rule-tree))))      
     
     (let [rhs-tree (gll/parse abnf-parser :alternation spec false)]
       (if (instance? instaparse.gll.Failure rhs-tree)
-        (throw (runtime-exception (str "Error parsing grammar specification:\n"
-                                       (with-out-str (println rhs-tree)))))        
+        (throw-runtime-exception
+          "Error parsing grammar specification:\n"
+          (with-out-str (println rhs-tree)))        
         (t/transform abnf-transformer rhs-tree)))))
 
 (defn build-parser [spec output-format]
   (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
     (if (instance? instaparse.gll.Failure rule-tree)
-      (throw (runtime-exception (str "Error parsing grammar specification:\n"
-                                     (with-out-str (println rule-tree)))))
+      (throw-runtime-exception
+        "Error parsing grammar specification:\n"
+        (with-out-str (println rule-tree)))
       (let [rules (t/transform abnf-transformer rule-tree)
             grammar-map (rules->grammar-map rules)
             start-production (first (first (first rules)))] 
