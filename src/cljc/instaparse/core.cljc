@@ -252,26 +252,21 @@
                (c/auto-whitespace (:grammar built-parser) (:start-production built-parser)
                                   ws-grammar ws-start))
         built-parser))))
-
-(defn- failure-type
-  []
-  #?(:clj gll/failure-type
-     :cljs instaparse.gll.Failure))
         
 (defn failure?
   "Tests whether a parse result is a failure."
   [result]
   (or
-    (instance? (failure-type) result)
-    (instance? (failure-type) (meta result))))
+    (instance? gll/failure-type result)
+    (instance? gll/failure-type (meta result))))
 
 (defn get-failure
   "Extracts failure object from failed parse result."
   [result]
   (cond
-    (instance? (failure-type) result)
+    (instance? gll/failure-type result)
     result
-    (instance? (failure-type) (meta result))
+    (instance? gll/failure-type (meta result))
     (meta result)
     :else
     nil))

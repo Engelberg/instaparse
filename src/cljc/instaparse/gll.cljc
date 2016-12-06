@@ -29,7 +29,9 @@
 
   #?(:cljs
      (:use-macros
-       [instaparse.gll :only [profile dprintln dpprint success]])))
+       [instaparse.gll :only
+        [log profile dprintln dpprint success
+         attach-diagnostic-meta trace-or-false]])))
 
 ;; As of Java 7, strings no longer have fast substring operation,
 ;; so we use Segments instead, which implement the CharSequence
@@ -54,6 +56,7 @@
                     (.append s offset (+ offset count)))))))
 
 ;;;;; SETUP DIAGNOSTIC MACROS AND VARS
+#?(:clj (do
 
 (defonce PRINT false)
 (defmacro dprintln [& body]  
@@ -92,9 +95,11 @@
 (defmacro bind-trace [trace? body]
   `(if TRACE
      (binding [*trace* ~trace?] ~body)
-     ~body))
+          ~body))
 (defmacro trace-or-false []
   (if TRACE '*trace* false))
+
+))
 
 ; In diagnostic messages, how many characters ahead do we want to show.
 (def ^:dynamic *diagnostic-char-lookahead* 10)
@@ -168,10 +173,18 @@
     :neg (negative-lookahead-parse parser index tramp)
     :ord (ordered-alt-full-parse parser index tramp)))
 
-(defrecord Failure [index reason])  
-(defmethod clojure.core/print-method Failure [x writer]
-  (binding [*out* writer]
-    (fail/pprint-failure x)))
+(defrecord Failure [index reason])
+
+#?(:clj
+   (defmethod clojure.core/print-method Failure [x writer]
+     (binding [*out* writer]
+       (fail/pprint-failure x)))
+   :cljs
+   (extend-protocol IPrintWithWriter
+     instaparse.gll/Failure
+     (-pr-writer [fail writer _]
+       (-write writer (with-out-str
+                        (fail/pprint-failure fail))))))
 
 ; This is a trick to make sure we can recognize the type of
 ; a Failure record after this namespace is recompiled,
@@ -395,8 +408,9 @@
 ;(defn success [tramp node-key result end]
 ;  (push-result tramp node-key (make-success result end)))
 
-(defmacro success [tramp node-key result end]
-  `(push-result ~tramp ~node-key (make-success ~result ~end)))
+#?(:clj
+   (defmacro success [tramp node-key result end]
+     `(push-result ~tramp ~node-key (make-success ~result ~end))))
 
 (declare build-node-with-meta)
 (defn fail [tramp node-key index reason]
