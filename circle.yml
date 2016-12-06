@@ -9,5 +9,5 @@ dependencies:
 
 test:
         override:
-                - lein cleantestcljs
+                - lein test-cljs
                 - lein test-all
