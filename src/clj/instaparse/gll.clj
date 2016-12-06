@@ -686,79 +686,79 @@
       (fail tramp [index this] index
             {:tag :regexp :expecting regexp :full true}))))
         
-(let [empty-cat-result afs/EMPTY]
-	(defn cat-parse
-	  [this index tramp]
-	  (let [parsers (:parsers this)]
-	    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
-	    ; and with a final target of notifying this parser when the whole sequence is complete
-	    (push-listener tramp [index (first parsers)] 
-                    (CatListener empty-cat-result (next parsers) [index this] tramp))))	      
-	
-	(defn cat-full-parse
-	  [this index tramp]
-	  (let [parsers (:parsers this)]
-	    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
-	    ; and with a final target of notifying this parser when the whole sequence is complete
-	    (push-listener tramp [index (first parsers)] 
-                    (CatFullListener empty-cat-result (next parsers) [index this] tramp))))	      
- 
- (defn plus-parse
-	  [this index tramp]
-	  (let [parser (:parser this)]
-	    (push-listener tramp [index parser] 
-                    (PlusListener empty-cat-result parser index [index this] tramp))))       
- 
- (defn plus-full-parse
-   [this index tramp]
-   (let [parser (:parser this)]
-     (push-listener tramp [index parser] 
-                    (PlusFullListener empty-cat-result parser index [index this] tramp))))       
 
- (defn rep-parse
-   [this index tramp]
-   (let [parser (:parser this),
-         m (:min this),
-         n (:max this)]     
-     (if (zero? m)
-       (do 
-         (success tramp [index this] nil index)
-         (when (>= n 1)
-           (push-listener tramp [index parser]
-                          (RepListener empty-cat-result parser 1 n index [index this] tramp))))
-       (push-listener tramp [index parser]
-                      (RepListener empty-cat-result parser m n index [index this] tramp)))))
- 
- (defn rep-full-parse
-   [this index tramp]
-   (let [parser (:parser this),
-         m (:min this),
-         n (:max this)]
-     (if (zero? m)
-       (do 
-         (success tramp [index this] nil index)
-         (when (>= n 1)
-           (push-listener tramp [index parser]
-                          (RepFullListener empty-cat-result parser 1 n index [index this] tramp))))
-       (push-listener tramp [index parser]
-                      (RepFullListener empty-cat-result parser m n index [index this] tramp)))))                 
- 
- (defn star-parse
-	  [this index tramp]
-	  (let [parser (:parser this)]
-	    (push-listener tramp [index parser] 
-                    (PlusListener empty-cat-result parser index [index this] tramp))              
-     (success tramp [index this] nil index)))
+(defn cat-parse
+  [this index tramp]
+  (let [parsers (:parsers this)]
+    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
+    ; and with a final target of notifying this parser when the whole sequence is complete
+    (push-listener tramp [index (first parsers)] 
+                   (CatListener afs/EMPTY (next parsers) [index this] tramp))))	      
 
- (defn star-full-parse
-   [this index tramp]
-   (let [parser (:parser this)]
-     (if (= index (count (:text tramp)))
-       (success tramp [index this] nil index)
-       (do
-         (push-listener tramp [index parser] 
-                        (PlusFullListener empty-cat-result parser index [index this] tramp))))))         
- )
+(defn cat-full-parse
+  [this index tramp]
+  (let [parsers (:parsers this)]
+    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
+    ; and with a final target of notifying this parser when the whole sequence is complete
+    (push-listener tramp [index (first parsers)] 
+                   (CatFullListener afs/EMPTY (next parsers) [index this] tramp))))	      
+
+(defn plus-parse
+  [this index tramp]
+  (let [parser (:parser this)]
+    (push-listener tramp [index parser] 
+                   (PlusListener afs/EMPTY parser index [index this] tramp))))       
+
+(defn plus-full-parse
+  [this index tramp]
+  (let [parser (:parser this)]
+    (push-listener tramp [index parser] 
+                   (PlusFullListener afs/EMPTY parser index [index this] tramp))))       
+
+(defn rep-parse
+  [this index tramp]
+  (let [parser (:parser this),
+        m (:min this),
+        n (:max this)]     
+    (if (zero? m)
+      (do 
+        (success tramp [index this] nil index)
+        (when (>= n 1)
+          (push-listener tramp [index parser]
+                         (RepListener afs/EMPTY parser 1 n index [index this] tramp))))
+      (push-listener tramp [index parser]
+                     (RepListener afs/EMPTY parser m n index [index this] tramp)))))
+
+(defn rep-full-parse
+  [this index tramp]
+  (let [parser (:parser this),
+        m (:min this),
+        n (:max this)]
+    (if (zero? m)
+      (do 
+        (success tramp [index this] nil index)
+        (when (>= n 1)
+          (push-listener tramp [index parser]
+                         (RepFullListener afs/EMPTY parser 1 n index [index this] tramp))))
+      (push-listener tramp [index parser]
+                     (RepFullListener afs/EMPTY parser m n index [index this] tramp)))))                 
+
+(defn star-parse
+  [this index tramp]
+  (let [parser (:parser this)]
+    (push-listener tramp [index parser] 
+                   (PlusListener afs/EMPTY parser index [index this] tramp))              
+    (success tramp [index this] nil index)))
+
+(defn star-full-parse
+  [this index tramp]
+  (let [parser (:parser this)]
+    (if (= index (count (:text tramp)))
+      (success tramp [index this] nil index)
+      (do
+        (push-listener tramp [index parser] 
+                       (PlusFullListener afs/EMPTY parser index [index this] tramp))))))         
+
 
 (defn alt-parse
   [this index tramp]
