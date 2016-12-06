@@ -12,7 +12,7 @@
             [instaparse.repeat :as repeat]
             [instaparse.combinators-source :as c]
             [instaparse.line-col :as lc]
-            #?(:clj [instaparse.viz :as viz])))
+            [instaparse.viz :as viz]))
 
 (def ^:dynamic *default-output-format* :hiccup)
 (defn set-default-output-format!
@@ -299,6 +299,6 @@
 
 (defclone add-line-and-column-info-to-metadata lc/add-line-col-spans)
 
-#?(:clj (defclone span viz/span))
+(defclone span viz/span)
 
 #?(:clj (defclone visualize viz/tree-viz))
