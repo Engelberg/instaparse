@@ -3,25 +3,33 @@
    the parsing dispatch function, the nodes where listeners are stored,
    the different types of listeners, and the loop for executing the various
    listeners and parse commands that are on the stack."
-  
-  ;; Incremental vector provides a more performant hashing strategy 
-  ;; for this use-case for vectors
-  ;; We use the auto flatten version
-  (:require [instaparse.auto-flatten-seq :as afs])
-  
-  ;; failure contains the augment-failure function, which is called to
-  ;; add enough information to the failure object for pretty printing 
-  (:require [instaparse.failure :as fail])
-  
-  ;; reduction contains code relating to reductions and flattening.
-  (:require [instaparse.reduction :as red])
-  
-  ;; Two of the public combinators are needed.
-  (:require [instaparse.combinators-source :refer [Epsilon nt]])
-  
-  ;; Need a way to convert parsers into strings for printing and error messages.
-  (:require [instaparse.print :as print])  
-  )
+
+  (:require
+    ;; Incremental vector provides a more performant hashing strategy 
+    ;; for this use-case for vectors
+    ;; We use the auto flatten version
+    [instaparse.auto-flatten-seq :as afs]
+
+    ;; failure contains the augment-failure function, which is called to
+    ;; add enough information to the failure object for pretty printing 
+    [instaparse.failure :as fail]
+
+    ;; reduction contains code relating to reductions and flattening.
+    [instaparse.reduction :as red]
+
+    ;; Two of the public combinators are needed.
+    [instaparse.combinators-source :refer [Epsilon nt]]
+
+    ;; Need a way to convert parsers into strings for printing and error messages.
+    [instaparse.print :as print]
+
+    ;; Unicode utilities for char-range
+    #?(:cljs
+       [goog.i18n.uChar :as u]))
+
+  #?(:cljs
+     (:use-macros
+       [instaparse.gll :only [profile dprintln dpprint success]])))
 
 ;; As of Java 7, strings no longer have fast substring operation,
 ;; so we use Segments instead, which implement the CharSequence
@@ -90,14 +98,16 @@
 ; In diagnostic messages, how many characters ahead do we want to show.
 (def ^:dynamic *diagnostic-char-lookahead* 10)
 
-(declare sub-sequence)
-(defn string-context [^CharSequence text index]
-  (let [end (+ index *diagnostic-char-lookahead*),
-        length (.length text)]
-    (if (< length end)
-      (str (sub-sequence text index))
-      (str (sub-sequence text index end) "..."))))
-  
+(declare sub-sequence string-context)
+
+#?(:clj
+   (defn string-context [^CharSequence text index]
+     (let [end (+ index *diagnostic-char-lookahead*),
+           length (.length text)]
+       (if (< length end)
+         (str (sub-sequence text index))
+         (str (sub-sequence text index end) "...")))))
+
 (profile (def stats (atom {})))
 (profile (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
 (profile (defn clear! [] (reset! stats {})))
