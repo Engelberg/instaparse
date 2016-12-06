@@ -1,6 +1,6 @@
 (ns instaparse.failure
   "Facilities for printing and manipulating error messages."
-  (:import java.io.BufferedReader java.io.StringReader)
+  #?(:clj (:import java.io.BufferedReader java.io.StringReader))
   (:require [instaparse.print :as print]))
 
 (defn index->line-column
@@ -66,8 +66,7 @@
 (defn pprint-failure
   "Takes an augmented failure object and prints the error message"
   [{:keys [line column text reason]}]
-  (printf "Parse error at line %d, column %d:\n"
-          line column)
+  (println "Parse error at line" line ", column" column ":\n")
   (println text)
   (println (marker column))
   (let [full-reasons (distinct (map :expecting
