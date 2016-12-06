@@ -27,7 +27,7 @@
 (def double-quoted-regexp (regex-doc #"#\"[^\"\\]*(?:\\.[^\"\\]*)*\"" "Double-quoted regexp"))
 (def inside-comment #?(:clj #"(?s)(?:(?!(?:\(\*|\*\))).)*(?x) #Comment text"
                        :cljs #"(?:(?!(?:\(\*|\*\)))[\s\S])*"))
-(def ws (regex-doc "[,\\s]*(?x)" "optional whitespace"))
+(def ws (regex-doc "[,\\s]*" "optional whitespace"))
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
 
