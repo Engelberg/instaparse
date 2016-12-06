@@ -9,7 +9,8 @@
   "This variation of the merge-meta in gll does nothing if obj is not
 something that can have a metamap attached."
   [obj metamap]
-  (if (instance? clojure.lang.IObj obj)
+  (if #?(:clj (instance? clojure.lang.IObj obj)
+         :cljs (satisfies? IWithMeta obj))
     (instaparse.gll/merge-meta obj metamap)
     obj))
 
@@ -71,4 +72,8 @@ something that can have a metamap attached."
     parse-tree
     
     :else
-    (throw (IllegalArgumentException. "Invalid parse-tree, not recognized as either enlive or hiccup format."))))
+    (throw
+     #?(:clj
+        (IllegalArgumentException. "Invalid parse-tree, not recognized as either enlive or hiccup format.")
+        :cljs
+        "Invalid parse-tree, not recognized as either enlive or hiccup format."))))
