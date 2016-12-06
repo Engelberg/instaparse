@@ -5,7 +5,7 @@
             [instaparse.viz :as viz]
             [instaparse.reduction :as red]
             [instaparse.failure :as fail])
-  (:require-macros [instaparse.gll-macros :refer [profile]]))
+  (:require-macros [instaparse.gll :refer [profile]]))
 
 (defn empty-result? [result]
   (or (and (vector? result) (= (count result) 1))

@@ -41,16 +41,17 @@
 ;; to support the use of instaparse on Google App Engine,
 ;; we simply create our own Segment type.
 
-(deftype Segment [^CharSequence s ^int offset ^int count]
-  CharSequence
-  (length [this] count)
-  (subSequence [this start end]
-    (Segment. s (+ offset start) (- end start)))
-  (charAt [this index]
-    (.charAt s (+ offset index)))
-  (toString [this]
-    (.toString (doto (StringBuilder. count)
-                 (.append s offset (+ offset count))))))
+#?(:clj
+   (deftype Segment [^CharSequence s ^int offset ^int count]
+     CharSequence
+     (length [this] count)
+     (subSequence [this start end]
+       (Segment. s (+ offset start) (- end start)))
+     (charAt [this index]
+       (.charAt s (+ offset index)))
+     (toString [this]
+       (.toString (doto (StringBuilder. count)
+                    (.append s offset (+ offset count)))))))
 
 ;;;;; SETUP DIAGNOSTIC MACROS AND VARS
 
@@ -178,17 +179,27 @@
 ; which is what happens when tracing is enabled.
 (def failure-type (type (Failure. nil nil)))
 
-(defn text->segment
-  "Converts text to a Segment, which has fast subsequencing"
-  [^CharSequence text]
-  (Segment. text 0 (count text)))
+#?(:clj
+   (defn text->segment
+     "Converts text to a Segment, which has fast subsequencing"
+     [^CharSequence text]
+     (Segment. text 0 (count text)))
 
-(defn sub-sequence
-  "Like clojure.core/subs but consumes and returns a CharSequence"
-  (^CharSequence [^CharSequence text start]
-     (.subSequence text start (.length text)))
-  (^CharSequence [^CharSequence text start end]
-     (.subSequence text start end)))
+   :cljs
+   (defn text->segment
+     [text]
+     text))
+
+#?(:clj
+   (defn sub-sequence
+     "Like clojure.core/subs but consumes and returns a CharSequence"
+     (^CharSequence [^CharSequence text start]
+      (.subSequence text start (.length text)))
+     (^CharSequence [^CharSequence text start end]
+      (.subSequence text start end)))
+
+   :cljs
+   (def sub-sequence subs))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
