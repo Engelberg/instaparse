@@ -1,21 +1,19 @@
 (ns instaparse.abnf-test
   (:require
-    [instaparse.core :refer [parser parses]])
-  #?@(:clj
-      [(:require
-         [clojure.test :refer [deftest are is]])]
-      :cljs
-      [(:require
-         [cljs.test])
-       (:require-macros
-         [instaparse.abnf-test :refer [abnf-uri-data phone-uri-data]]
-         [cljs.test :refer [is are deftest]])]))
+    [instaparse.core :refer [parser parses]]
+    #?(:clj [clojure.test :refer [deftest are is]]
+       :cljs [cljs.test]))
+  #?(:cljs (:require-macros
+             [instaparse.abnf-test :refer [abnf-uri-data phone-uri-data]]
+             [cljs.test :refer [is are deftest]])))
 
-(defmacro abnf-uri-data []
-  (slurp "test/data/abnf_uri.txt"))
+#?(:clj
+   (defmacro abnf-uri-data []
+     (slurp "test/data/abnf_uri.txt")))
 
-(defmacro phone-uri-data [] 
-  (slurp "test/data/phone_uri.txt"))
+#?(:clj
+   (defmacro phone-uri-data [] 
+     (slurp "test/data/phone_uri.txt")))
 
 (deftest abnf-uri
   (let [uri-parser (binding [instaparse.abnf/*case-insensitive* true]
