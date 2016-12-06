@@ -77,6 +77,10 @@ hex-char = HEXDIG+;
 NUM = DIGIT+;
 <DIGIT> = #'[0-9]';
 <HEXDIG> = #'[0-9a-fA-F]';
+
+
+(* extra entrypoint to be used by the abnf combinator *)
+<rules-or-parser> = rulelist | alternation;
   "
        #?(:clj "
 <rulename> = #'[a-zA-Z][-a-zA-Z0-9]*(?x) #identifier';
@@ -209,20 +213,16 @@ If you give it the right-hand side of a rule, it will return the combinator equi
 If you give it a series of rules, it will give you back a grammar map.   
 Useful for combining with other combinators."
   [spec]
-  (if (re-find #"=" spec)
-    (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
-      (if (instance? instaparse.gll.Failure rule-tree)
-        (throw-runtime-exception
-          "Error parsing grammar specification:\n"
-          (with-out-str (println rule-tree)))
-        (rules->grammar-map (t/transform abnf-transformer rule-tree))))      
-    
-    (let [rhs-tree (gll/parse abnf-parser :alternation spec false)]
-      (if (instance? instaparse.gll.Failure rhs-tree)
-        (throw-runtime-exception
-          "Error parsing grammar specification:\n"
-          (with-out-str (println rhs-tree)))        
-        (t/transform abnf-transformer rhs-tree)))))
+  (let [tree (gll/parse abnf-parser :rules-or-parser spec false)]
+    (cond
+      (instance? instaparse.gll.Failure tree)
+      (throw-runtime-exception
+        "Error parsing grammar specification:\n"
+        (with-out-str (println tree)))
+      (= :alternation (ffirst tree))
+      (t/transform abnf-transformer (first tree))
+
+      :else (rules->grammar-map (t/transform abnf-transformer tree)))))
 
 (defn build-parser [spec output-format]
   (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]

@@ -1,6 +1,7 @@
 (ns instaparse.abnf-test
   (:require
     [instaparse.core :refer [parser parses]]
+    [instaparse.combinators :refer [abnf]]
     #?(:clj [clojure.test :refer [deftest are is]]
        :cljs [cljs.test]))
   #?(:cljs (:require-macros
@@ -113,25 +114,28 @@ to test the lookahead"
 (def reps
   "Testing the different kinds of repetitions"
   (parser
-    "S = A B C D E
+    "S = A B C D E FG
      A = *'a'
      B = 2*'b'
      C = *2'c'
      D = 2'd'
-     E = 2*4'e'"
+     E = 2*4'e'
+     FG = 2('f' 'g')"
     :input-format :abnf))
 
 (deftest rep-test
   (are [x] (not (instance? instaparse.gll.Failure x))
-       (reps "aabbccddee")
-       (reps "bbbbbbddeeee")
-       (reps "bbcddee")))
+       (reps "aabbccddeefgfg")
+       (reps "bbbbbbddeeeefgfg")
+       (reps "bbcddeefgfg")))
 
 (deftest rep-test-errors
   (are [x] (instance? instaparse.gll.Failure x)
        (reps "")
-       (reps "bccddee")
-       (reps "aaaabbbbcccddee")))
+       (reps "bccddeefgfg")
+       (reps "aaaabbbbcccddeefgfg")
+       (reps "aabbccddeefg")
+       (reps "aabbccddeeffgg")))
 
 (def regex-chars
   "Testing %d42-91. The boundary chars are \"*\" and \"[\", which normally aren't allowed in a regex."
@@ -180,3 +184,15 @@ to test the lookahead"
            (parser4 (str (first poop)))
            (parser4 (str (second poop)))
            (parser4 (str poop poop (first poop)))))))
+
+(deftest abnf-combinator-test
+  (let [p (parser (merge
+                   {:S (abnf "A / B")}
+                   (abnf "<A> = 1*'a'")
+                   {:B (abnf "'='")})
+                  :start :S)]
+    (are [x y] (= y x)
+      (p "aAaa")
+      [:S "a" "a" "a" "a"]
+      (p "=")
+      [:S [:B "="]])))

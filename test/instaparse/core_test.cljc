@@ -253,6 +253,30 @@
       {:B (ebnf "'b'+")})
     :start :S))
 
+(def tricky-ebnf-build
+  "https://github.com/Engelberg/instaparse/issues/107"
+  (insta/parser
+    (merge
+      {:S (alt (nt :A) (nt :B))}
+      (ebnf "<A> = '='*")
+      {:B (ebnf "'b' '='")})
+    :start :S))
+
+(defn spans [t]
+  (if (sequential? t)
+    (cons (insta/span t) (map spans (next t)))
+    t))      
+
+(defn spans-hiccup-tag [t]
+  (if (sequential? t)
+    (cons {:tag (first t) :span (insta/span t)} (map spans (next t)))
+    t))      
+
+(defn spans-enlive [t]
+  (if (map? t)
+    (assoc t :span (insta/span t) :content (map spans-enlive (:content t)))
+    t))
+
 (def whitespace 
   (insta/parser
     "whitespace = #'\\s+'"))
@@ -546,7 +570,13 @@
     [:S [:B "b" "b" "b" "b" "b"]]
     
     (combo-build-example "bbbbb")
-    (combo-build-example "bbbbb" :optimize :memory)    
+    (combo-build-example "bbbbb" :optimize :memory)
+
+    (tricky-ebnf-build "===")
+    [:S "=" "=" "="]
+
+    (tricky-ebnf-build "b=")
+    [:S [:B "b" "="]]
     
     ((insta/parser "S = ('a'?)+") "")
     [:S]
@@ -621,6 +651,11 @@
     
     (insta/transform {:ADD +} [:ADD 10 5])
     15
+
+    (->> "a"
+         ((insta/parser "<S> = 'a'"))
+         (insta/transform {}))
+    '("a")
     ))    
 
 #?(:clj (do ;; CLOJURE ONLY TESTS
