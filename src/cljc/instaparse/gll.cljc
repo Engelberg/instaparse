@@ -650,21 +650,54 @@
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
 
+#?(:clj
+   (defn single-char-code-at
+     "Returns the int value of a single char at the given index,
+  assuming we're looking for up to 0xFFFF (the maximum value for a
+  UTF-16 single char)."
+     [^CharSequence text index]
+     (int (.charAt text index)))
+   :cljs
+   (defn single-char-code-at
+     [text index]
+     (.charCodeAt text index)))
+
+#?(:clj
+   (defn unicode-code-point-at
+     "Returns the unicode code point representing one or two chars at
+  the given index."
+     [^CharSequence text index]
+     (Character/codePointAt text (int index)))
+   :cljs
+   (defn unicode-code-point-at
+     [text index]
+     (u/getCodePointAround text (int index))))
+
+#?(:clj
+   (defn code-point->chars
+     "Takes a Unicode code point, and returns a string of one or two chars."
+     [code-point]
+     (String. (Character/toChars code-point)))
+   :cljs
+   (defn code-point->chars
+     [code-point]
+     (u/fromCharCode code-point)))
+
 (defn char-range-parse
   [this index tramp]
   (let [lo (:lo this)
         hi (:hi this)
-        ^String text (:text tramp)]
+        text (:text tramp)]
     (cond
       (>= index (count text)) (fail tramp [index this] index
                                     {:tag :char :expecting {:char-range true :lo lo :hi hi}})
-      (<= hi 0xFFFF) (let [character (.charAt text index)]
-                       (if (<= lo (int character) hi)
-                         (success tramp [index this] (str character) (inc index))
+      (<= hi 0xFFFF) (let [code (single-char-code-at text index)]
+                       (if (<= lo code hi)
+                         (success tramp [index this] (str (char code)) (inc index))
                          (fail tramp [index this] index
                                {:tag :char :expecting {:char-range true :lo lo :hi hi}})))
-      :else (let [code-point (Character/codePointAt text (int index))
-                  char-string (String. (Character/toChars code-point))]
+      :else (let [code-point (unicode-code-point-at text index)
+                  char-string (code-point->chars code-point)]
               (if (<= lo code-point hi)
                 (success tramp [index this] char-string
                          (+ index (count char-string)))
@@ -680,23 +713,30 @@
     (cond
       (>= index (count text)) (fail tramp [index this] index
                                     {:tag :char :expecting {:char-range true :lo lo :hi hi}})
-      (<= hi 0xFFFF) (let [character (.charAt ^String text index)]
-                       (if (and (= (inc index) end) (<= lo (int character) hi))
-                         (success tramp [index this] (str character) end)
+      (<= hi 0xFFFF) (let [code (single-char-code-at text index)]
+                       (if (and (= (inc index) end) (<= lo code hi))
+                         (success tramp [index this] (str (char code)) end)
                          (fail tramp [index this] index
                                {:tag :char :expecting {:char-range true :lo lo :hi hi}})))
-      :else (let [code-point (Character/codePointAt ^String text (int index))
-                  char-string (String. (Character/toChars code-point))]
+      :else (let [code-point (unicode-code-point-at text index)
+                  char-string (code-point->chars code-point)]
               (if (and (= (+ index (count char-string)) end) (<= lo code-point hi))
                 (success tramp [index this] char-string end)
                 (fail tramp [index this] index
                       {:tag :char :expecting {:char-range true :lo lo :hi hi} :full true}))))))
 
-(defn re-match-at-front [regexp text]
-  (let [^java.util.regex.Matcher matcher (re-matcher regexp text)
-        match? (.lookingAt matcher)]
-    (when match?
-      (.group matcher))))
+#?(:clj
+   (defn re-match-at-front [regexp text]
+     (let [^java.util.regex.Matcher matcher (re-matcher regexp text)
+           match? (.lookingAt matcher)]
+       (when match?
+         (.group matcher))))
+   :cljs
+   (defn re-match-at-front [regexp text]
+     (let [re (js/RegExp. (.-source regexp) "g")
+           m (.exec re text)]
+       (when (and m (zero? (.-index m)))
+         (first m)))))
     
 (defn regexp-parse
   [this index tramp]
