@@ -17,12 +17,12 @@
                         "cljsee" "once,"
                         "with-profile" "+1.5:+1.6:+1.7:+1.8" "test"]
             "test-cljs" ["cljsbuild" "test" "unit-tests"]}
-  :test-paths ["test/clj" "test/cljc" "target/generated/test/clj"]
-  :source-paths ["src/clj" "src/cljs" "src/cljc" "target/generated/src/clj"]
-  :cljsee {:builds [{:source-paths ["src/cljc"]
+  :test-paths ["test/" "target/generated/test/clj"]
+  :source-paths ["src/" "target/generated/src/clj"]
+  :cljsee {:builds [{:source-paths ["src/"]
                      :output-path "target/generated/src/clj"
                      :rules :clj}
-                    {:source-paths ["test/cljc"]
+                    {:source-paths ["test/"]
                      :output-path "target/generated/test/clj"
                      :rules :clj}]}
   :plugins [[lein-cljsbuild "1.1.3"]
@@ -32,19 +32,13 @@
   :scm {:name "git"
         :url "https://github.com/lbradstreet/instaparse-cljs"}
   :cljsbuild {:builds [{:id "none"
-                        :source-paths ["src/clj"
-                                       "src/cljs"
-                                       "src/cljc"]
+                        :source-paths ["src/"]
                         :compiler {:output-to "target/js/none.js"
                                    :optimizations :none
                                    :pretty-print true}}
                        {:id "test"
-                        :source-paths ["src/clj"
-                                       "src/cljs"
-                                       "src/cljc"
-                                       "test/clj"
-                                       "test/cljs"
-                                       "test/cljc"
+                        :source-paths ["src/"
+                                       "test/"
                                        "runner/cljs"]
                         :compiler {:output-to "target/js/advanced-test.js"
                                    :optimizations :advanced
