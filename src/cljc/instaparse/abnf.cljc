@@ -4,8 +4,11 @@
   (:require [instaparse.transform :as t]
             [instaparse.cfg :as cfg]
             [instaparse.gll :as gll]
-            [instaparse.reduction :as red])
-  (:use instaparse.combinators-source))
+            [instaparse.reduction :as red]
+            [instaparse.combinators-source :refer
+             [Epsilon opt plus star rep alt ord cat string-ci string
+              string-ci regexp nt look neg hide hide-tag unicode-char]]
+            #?(:cljs [goog.string.format])))
 
 (def ^:dynamic *case-insensitive*
   "This is normally set to false, in which case the non-terminals
@@ -39,13 +42,12 @@ you'll have to keep in mind when transforming)."
              (string "\u0009"))})  ;HTAB
 
 (def abnf-grammar
-  "
+  (str "
 <rulelist> = <opt-whitespace> (rule | hide-tag-rule)+;
 rule = rulename-left <defined-as> alternation <opt-whitespace>;
 hide-tag-rule = hide-tag <defined-as> alternation <opt-whitespace>;
 rulename-left = rulename;
 rulename-right = rulename;
-<rulename> = #'[a-zA-Z][-a-zA-Z0-9]*(?x) #identifier';
 <hide-tag> = <'<' opt-whitespace> rulename-left <opt-whitespace '>'>;
 defined-as = <opt-whitespace> ('=' | '=/') <opt-whitespace>;
 alternation = concatenation (<opt-whitespace '/' opt-whitespace> concatenation)*;
@@ -74,11 +76,21 @@ hex-char = HEXDIG+;
 NUM = DIGIT+;
 <DIGIT> = #'[0-9]';
 <HEXDIG> = #'[0-9a-fA-F]';
+  "
+       #?(:clj "
+<rulename> = #'[a-zA-Z][-a-zA-Z0-9]*(?x) #identifier';
 opt-whitespace = #'\\s*(?:;.*?(?:\\u000D?\\u000A\\s*|$))*(?x) # optional whitespace or comments';
 whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments';
 regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
        | #\"#\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"(?x) #Double-quoted regexp\"
-")
+"
+          :cljs "
+<rulename> = #'[a-zA-Z][-a-zA-Z0-9]*';
+opt-whitespace = #'\\s*(?:;.*?(?:\\u000D?\\u000A\\s*|$))*';
+whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*';
+regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
+       | #\"#\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"\"
+")))
 
 (defn get-char-combinator
   [& nums]
@@ -120,6 +132,13 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
       (hide-tag (alt p1 (dissoc p2 :red)))
       :else
       (alt p1 p2))))
+
+#?(:clj
+   (defn parse-int
+     ([string] (Integer/parseInt string))
+     ([string radix] (Integer/parseInt string radix)))
+   :cljs
+   (def parse-int js/parseInt))
         
 (def abnf-transformer
   {   
@@ -152,7 +171,8 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
                      (= (:low repeat) 1) (plus element)
                      (= (:high repeat) 1) (opt element)
                      :else (rep (or (:low repeat) 0)
-                                (or (:high repeat) Double/POSITIVE_INFINITY)
+                                (or (:high repeat) #?(:clj Double/POSITIVE_INFINITY
+                                                      :cljs js/Infinity))
                                 element)))
                  ([element]
                    element))
@@ -165,15 +185,15 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
                ; case insensitive string
                (string-ci (apply str cs)))
    :bin-char (fn [& cs]
-               (Integer/parseInt (apply str cs) 2))
+               (parse-int (apply str cs) 2))
    :dec-char (fn [& cs]
-               (Integer/parseInt (apply str cs)))
+               (parse-int (apply str cs)))
    :hex-char (fn [& cs]
-               (Integer/parseInt (apply str cs) 16))
+               (parse-int (apply str cs) 16))
    :bin-val get-char-combinator
    :dec-val get-char-combinator
    :hex-val get-char-combinator
-   :NUM #(Integer/parseInt (apply str %&))})
+   :NUM #(parse-int (apply str %&))})
 
 (def abnf-parser (red/apply-standard-reductions 
                    :hiccup (cfg/ebnf abnf-grammar)))
@@ -181,6 +201,13 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
 (defn rules->grammar-map
   [rules]
   (merge-core (apply merge-with alt-preserving-hide-tag rules)))
+
+#?(:clj
+   (defn runtime-exception
+     [message]
+     (RuntimeException. message))
+   :cljs
+   (def runtime-exception identity))
 
 (defn abnf
   "Takes an ABNF grammar specification string and returns the combinator version.
@@ -191,20 +218,20 @@ Useful for combining with other combinators."
   (if (re-find #"=" spec)
     (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
       (if (instance? instaparse.gll.Failure rule-tree)
-        (throw (RuntimeException. (str "Error parsing grammar specification:\n"
+        (throw (runtime-exception (str "Error parsing grammar specification:\n"
                                        (with-out-str (println rule-tree)))))
         (rules->grammar-map (t/transform abnf-transformer rule-tree))))      
     
     (let [rhs-tree (gll/parse abnf-parser :alternation spec false)]
       (if (instance? instaparse.gll.Failure rhs-tree)
-        (throw (RuntimeException. (str "Error parsing grammar specification:\n"
+        (throw (runtime-exception (str "Error parsing grammar specification:\n"
                                        (with-out-str (println rhs-tree)))))        
         (t/transform abnf-transformer rhs-tree)))))
 
 (defn build-parser [spec output-format]
   (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
     (if (instance? instaparse.gll.Failure rule-tree)
-      (throw (RuntimeException. (str "Error parsing grammar specification:\n"
+      (throw (runtime-exception (str "Error parsing grammar specification:\n"
                                      (with-out-str (println rule-tree)))))
       (let [rules (t/transform abnf-transformer rule-tree)
             grammar-map (rules->grammar-map rules)
