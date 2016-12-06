@@ -51,6 +51,9 @@
       (into {} (for [[k v] grammar]
                  (if (:red v) [k v]
                    [k (assoc v :red (reduction k))])))
-      (throw (IllegalArgumentException. 
-               (format "Invalid output format %s. Use :enlive or :hiccup." reduction-type))))))
-    
+      (throw
+       #?(:clj
+          (IllegalArgumentException.
+           (format "Invalid output format %s. Use :enlive or :hiccup." reduction-type))
+          :cljs
+          (str "Invalid output format" reduction-type ". Use :enlive or :hiccup."))))))
