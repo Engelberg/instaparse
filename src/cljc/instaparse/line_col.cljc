@@ -1,5 +1,6 @@
 (ns instaparse.line-col
-  (:require instaparse.transform))
+  (:require [instaparse.transform]
+            [instaparse.util :refer [throw-illegal-argument-exception]]))
 
 ; Function to annotate parse-tree with line and column metadata.
 
@@ -98,4 +99,5 @@ The start is inclusive, the end is exclusive. Lines and columns are 1-based."
       parse-tree
     
       :else
-      (throw (IllegalArgumentException. "Invalid parse-tree, not recognized as either enlive or hiccup format.")))))
+      (throw-illegal-argument-exception
+        "Invalid parse-tree, not recognized as either enlive or hiccup format."))))
