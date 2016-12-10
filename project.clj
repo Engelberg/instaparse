@@ -11,12 +11,17 @@
                     [rhizome "0.2.5"]]}
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
-             :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]]}
-             :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]]}}
+             :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]
+                                  [org.clojure/clojurescript "0.0-3196"]]}
+             :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]
+                                  [org.clojure/clojurescript "1.8.34"]]}
+             :1.9 {:dependencies [[org.clojure/clojure "1.9.0-alpha14"]
+                                  [org.clojure/clojurescript "1.9.14"]]}}
   :aliases {"test-all" ["do"
                         "cljsee" "once,"
-                        "with-profile" "+1.5:+1.6:+1.7:+1.8" "test"]
-            "test-cljs" ["cljsbuild" "test" "unit-tests"]}
+                        "with-profile" "+1.5:+1.6:+1.7:+1.8:+1.9" "test"]
+            "test-cljs" ["cljsbuild" "test" "unit-tests"]
+            "test-cljs-all" ["with-profile" "+1.7:+1.8:+1.9" "do" "clean," "test-cljs"]}
   :test-paths ["test/" "target/generated/test/clj"]
   :source-paths ["src/" "target/generated/src/clj"]
   :cljsee {:builds [{:source-paths ["src/"]
@@ -25,7 +30,7 @@
                     {:source-paths ["test/"]
                      :output-path "target/generated/test/clj"
                      :rules :clj}]}
-  :plugins [[lein-cljsbuild "1.1.3"]
+  :plugins [[lein-cljsbuild "1.1.5"]
             [cljsee "0.1.0"]]
   ;:hooks [leiningen.cljsbuild]
   :target-path "target"
