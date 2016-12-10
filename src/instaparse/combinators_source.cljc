@@ -3,7 +3,8 @@
   (:refer-clojure :exclude [cat])
   (:require [instaparse.reduction :refer [singleton? red
                                           raw-non-terminal-reduction
-                                          reduction-types]]))
+                                          reduction-types]]
+            [instaparse.util :refer [throw-illegal-argument-exception]]))
 
 ;; Ways to build parsers
 
@@ -143,7 +144,8 @@
   (if-let [reduction (reduction-types reduction-type)]
     (into {} (for [[k v] grammar]
                [k (assoc v :red (reduction k))]))
-    (throw (str "Invalid output format" reduction-type ". Use :enlive or :hiccup."))))
+    (throw-illegal-argument-exception
+      "Invalid output format " reduction-type ". Use :enlive or :hiccup.")))
 
 (defn unhide-all
   "Recursively undoes the effect of both hide and hide-tag"
@@ -151,7 +153,8 @@
   (if-let [reduction (reduction-types reduction-type)]
     (into {} (for [[k v] grammar]
                [k (assoc (unhide-content v) :red (reduction k))]))
-    (throw (str "Invalid output format" reduction-type ". Use :enlive or :hiccup."))))
+    (throw-illegal-argument-exception
+      "Invalid output format " reduction-type ". Use :enlive or :hiccup.")))
 
 
 ;; New beta feature: automatically add whitespace
