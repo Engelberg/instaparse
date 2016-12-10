@@ -1,29 +1,6 @@
-# Instaparse-cljs 1.4.1.2
-
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/lbradstreet/instaparse-cljs?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+# Instaparse-cljs 1.4.3
 
 *What if context-free grammars were as easy to use as regular expressions?*
-
-## Clojurescript Port
-
-This is a an alpha quality Clojurescript port of Mark Engelberg's fantastic Instaparse library (https://github.com/Engelberg/instaparse). 
-The Clojure code is still retained in this project, so it is still Clojure compatible. Once battle tested, the aim is to merge this upstream. 
-Version numbers will track upstream, with the 4th versioning identifier signaling the port version. 
-
-A few points of difference between the Clojure and Clojurescript versions of this library:
-
-+ Visualisation is not supported as it depends on Rhizome on the JVM.
-+ Slurping grammars is not supported, as slurp cannot be used from
-  clojurescript. 
-+ Tracing (introduced in Instaparse 1.4.0) is not supported.
-+ The Clojurescript version is slower by approximately a magnitude (tested with
-  V8, :advanced compile). Performance with optimizations :none will be slower
-  by around another factor of 3. Please let me know if you are using a grammar
-  that performs especially badly in the Clojurescript version compared to the
-  Clojure version. Any help with optimizations here would be appreciated. Note
-  that some grammars will have a large upfront initial parsing cost that could
-  be prohibitive for some client side use cases. Note that you can serialize
-  the parsed grammars and load them client side, avoiding this cost.
 
 ## Features
 
@@ -45,7 +22,7 @@ Instaparse requires Clojure v1.5.1 or later.  (It may work with earlier versions
 
 Add the following line to your leiningen dependencies:
 
-	[com.lucasbradstreet/instaparse-cljs "1.4.1.2"]
+	[instaparse "1.4.3"]
 
 Require instaparse in your namespace header:
 
