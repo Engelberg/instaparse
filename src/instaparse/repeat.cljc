@@ -1,11 +1,13 @@
 (ns instaparse.repeat
-  (:require [instaparse.gll :as gll] 
+  (:require [instaparse.gll :as gll
+             #?@(:clj [:refer [profile]])]
             [instaparse.combinators-source :as c]
             [instaparse.auto-flatten-seq :as afs]
             [instaparse.viz :as viz]
             [instaparse.reduction :as red]
             [instaparse.failure :as fail])
-  (:require-macros [instaparse.gll-macros :refer [profile]]))
+  #?(:cljs
+     (:require-macros [instaparse.gll :refer [profile]])))
 
 (defn empty-result? [result]
   (or (and (vector? result) (= (count result) 1))
@@ -15,10 +17,12 @@
 (def ^:constant failure-signal (gll/->Failure nil nil))
 
 (defn get-end 
-  (^number [parse]
+  (#?(:clj ^long [parse]
+      :cljs ^number [parse])
     (let [[start end] (viz/span parse)]
       (if end (long end) (count parse))))
-  (^number [parse ^number index]
+  (#?(:clj ^long [parse ^long index]
+      :cljs ^number [parse ^number index])
     (let [[start end] (viz/span parse)]
       (if end (long end) (+ index (count parse))))))
 
@@ -166,7 +170,7 @@
     
 (defn try-repeating-parse-strategy-with-header
   [grammar text start-production start-rule output-format]
-  (profile (gll/clear!))
+  (gll/profile (gll/clear!))
   (let [parsers (:parsers start-rule)
         repeating-parser (last parsers)]
     (if

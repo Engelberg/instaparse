@@ -3,25 +3,35 @@
    the parsing dispatch function, the nodes where listeners are stored,
    the different types of listeners, and the loop for executing the various
    listeners and parse commands that are on the stack."
-  
-  ;; Incremental vector provides a more performant hashing strategy 
-  ;; for this use-case for vectors
-  ;; We use the auto flatten version
-  (:require [instaparse.auto-flatten-seq :as afs])
-  
-  ;; failure contains the augment-failure function, which is called to
-  ;; add enough information to the failure object for pretty printing 
-  (:require [instaparse.failure :as fail])
-  
-  ;; reduction contains code relating to reductions and flattening.
-  (:require [instaparse.reduction :as red])
-  
-  ;; Two of the public combinators are needed.
-  (:require [instaparse.combinators-source :refer [Epsilon nt]])
-  
-  ;; Need a way to convert parsers into strings for printing and error messages.
-  (:require [instaparse.print :as print])  
-  )
+
+  (:require
+    ;; Incremental vector provides a more performant hashing strategy 
+    ;; for this use-case for vectors
+    ;; We use the auto flatten version
+    [instaparse.auto-flatten-seq :as afs]
+
+    ;; failure contains the augment-failure function, which is called to
+    ;; add enough information to the failure object for pretty printing 
+    [instaparse.failure :as fail]
+
+    ;; reduction contains code relating to reductions and flattening.
+    [instaparse.reduction :as red]
+
+    ;; Two of the public combinators are needed.
+    [instaparse.combinators-source :refer [Epsilon nt]]
+
+    ;; Need a way to convert parsers into strings for printing and error messages.
+    [instaparse.print :as print]
+
+    ;; Unicode utilities for char-range
+    #?(:cljs
+       [goog.i18n.uChar :as u]))
+
+  #?(:cljs
+     (:use-macros
+       [instaparse.gll :only
+        [log profile dprintln dpprint success
+         attach-diagnostic-meta trace-or-false]])))
 
 ;; As of Java 7, strings no longer have fast substring operation,
 ;; so we use Segments instead, which implement the CharSequence
@@ -33,18 +43,20 @@
 ;; to support the use of instaparse on Google App Engine,
 ;; we simply create our own Segment type.
 
-(deftype Segment [^CharSequence s ^int offset ^int count]
-  CharSequence
-  (length [this] count)
-  (subSequence [this start end]
-    (Segment. s (+ offset start) (- end start)))
-  (charAt [this index]
-    (.charAt s (+ offset index)))
-  (toString [this]
-    (.toString (doto (StringBuilder. count)
-                 (.append s offset (+ offset count))))))
+#?(:clj
+   (deftype Segment [^CharSequence s ^int offset ^int count]
+     CharSequence
+     (length [this] count)
+     (subSequence [this start end]
+       (Segment. s (+ offset start) (- end start)))
+     (charAt [this index]
+       (.charAt s (+ offset index)))
+     (toString [this]
+       (.toString (doto (StringBuilder. count)
+                    (.append s offset (+ offset count)))))))
 
 ;;;;; SETUP DIAGNOSTIC MACROS AND VARS
+#?(:clj (do
 
 (defonce PRINT false)
 (defmacro dprintln [& body]  
@@ -83,21 +95,25 @@
 (defmacro bind-trace [trace? body]
   `(if TRACE
      (binding [*trace* ~trace?] ~body)
-     ~body))
+          ~body))
 (defmacro trace-or-false []
   (if TRACE '*trace* false))
+
+))
 
 ; In diagnostic messages, how many characters ahead do we want to show.
 (def ^:dynamic *diagnostic-char-lookahead* 10)
 
-(declare sub-sequence)
-(defn string-context [^CharSequence text index]
-  (let [end (+ index *diagnostic-char-lookahead*),
-        length (.length text)]
-    (if (< length end)
-      (str (sub-sequence text index))
-      (str (sub-sequence text index end) "..."))))
-  
+(declare sub-sequence string-context)
+
+#?(:clj
+   (defn string-context [^CharSequence text index]
+     (let [end (+ index *diagnostic-char-lookahead*),
+           length (.length text)]
+       (if (< length end)
+         (str (sub-sequence text index))
+         (str (sub-sequence text index end) "...")))))
+
 (profile (def stats (atom {})))
 (profile (defn add! [call] (swap! stats update-in [call] (fnil inc 0))))
 (profile (defn clear! [] (reset! stats {})))
@@ -157,10 +173,18 @@
     :neg (negative-lookahead-parse parser index tramp)
     :ord (ordered-alt-full-parse parser index tramp)))
 
-(defrecord Failure [index reason])  
-(defmethod clojure.core/print-method Failure [x writer]
-  (binding [*out* writer]
-    (fail/pprint-failure x)))
+(defrecord Failure [index reason])
+
+#?(:clj
+   (defmethod clojure.core/print-method Failure [x writer]
+     (binding [*out* writer]
+       (fail/pprint-failure x)))
+   :cljs
+   (extend-protocol IPrintWithWriter
+     instaparse.gll/Failure
+     (-pr-writer [fail writer _]
+       (-write writer (with-out-str
+                        (fail/pprint-failure fail))))))
 
 ; This is a trick to make sure we can recognize the type of
 ; a Failure record after this namespace is recompiled,
@@ -168,17 +192,27 @@
 ; which is what happens when tracing is enabled.
 (def failure-type (type (Failure. nil nil)))
 
-(defn text->segment
-  "Converts text to a Segment, which has fast subsequencing"
-  [^CharSequence text]
-  (Segment. text 0 (count text)))
+#?(:clj
+   (defn text->segment
+     "Converts text to a Segment, which has fast subsequencing"
+     [^CharSequence text]
+     (Segment. text 0 (count text)))
 
-(defn sub-sequence
-  "Like clojure.core/subs but consumes and returns a CharSequence"
-  (^CharSequence [^CharSequence text start]
-     (.subSequence text start (.length text)))
-  (^CharSequence [^CharSequence text start end]
-     (.subSequence text start end)))
+   :cljs
+   (defn text->segment
+     [text]
+     text))
+
+#?(:clj
+   (defn sub-sequence
+     "Like clojure.core/subs but consumes and returns a CharSequence"
+     (^CharSequence [^CharSequence text start]
+      (.subSequence text start (.length text)))
+     (^CharSequence [^CharSequence text start end]
+      (.subSequence text start end)))
+
+   :cljs
+   (def sub-sequence subs))
 
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
@@ -287,7 +321,8 @@
         node))))
 
 (defn safe-with-meta [obj metamap]
-  (if (instance? clojure.lang.IObj obj)
+  (if #?(:clj (instance? clojure.lang.IObj obj)
+         :cljs (satisfies? cljs.core/IWithMeta obj))
     (with-meta obj metamap)
     obj))
 
@@ -374,8 +409,9 @@
 ;(defn success [tramp node-key result end]
 ;  (push-result tramp node-key (make-success result end)))
 
-(defmacro success [tramp node-key result end]
-  `(push-result ~tramp ~node-key (make-success ~result ~end)))
+#?(:clj
+   (defmacro success [tramp node-key result end]
+     `(push-result ~tramp ~node-key (make-success ~result ~end))))
 
 (declare build-node-with-meta)
 (defn fail [tramp node-key index reason]
@@ -538,30 +574,34 @@
 
 ; The fifth kind of listener is a RepListener, which wants between m and n repetitions of a parser
 
-(defn RepListener [results-so-far parser m n prev-index node-key tramp]
-  (fn [result]    
-    (let [{parsed-result :result continue-index :index} result]      
+(defn RepListener [results-so-far n-results-so-far parser m n prev-index node-key tramp]
+  (fn [result]
+    (let [{parsed-result :result continue-index :index} result]
       ;(dprintln "Rep" (type results-so-far))
-      (let [new-results-so-far (afs/conj-flat results-so-far parsed-result)]
-        (when (<= m (count new-results-so-far) n)
+      (let [new-results-so-far (afs/conj-flat results-so-far parsed-result)
+            new-n-results-so-far (inc n-results-so-far)]
+        (when (<= m new-n-results-so-far n)
           (success tramp node-key new-results-so-far continue-index))
-        (when (< (count new-results-so-far) n)
+        (when (< new-n-results-so-far n)
           (push-listener tramp [continue-index parser]
-                         (RepListener new-results-so-far parser m n continue-index
-                                       node-key tramp)))))))                   
+                         (RepListener new-results-so-far new-n-results-so-far
+                                      parser m n continue-index
+                                      node-key tramp)))))))
 
-(defn RepFullListener [results-so-far parser m n prev-index node-key tramp]
+(defn RepFullListener [results-so-far n-results-so-far parser m n prev-index node-key tramp]
   (fn [result]
     (let [{parsed-result :result continue-index :index} result]
       ;(dprintln "RepFull" (type parsed-result))
-      (let [new-results-so-far (afs/conj-flat results-so-far parsed-result)]        
+      (let [new-results-so-far (afs/conj-flat results-so-far parsed-result)
+            new-n-results-so-far (inc n-results-so-far)]
         (if (= continue-index (count (:text tramp)))
-          (when (<= m (count new-results-so-far) n)
+          (when (<= m new-n-results-so-far n)
             (success tramp node-key new-results-so-far continue-index))
-          (when (< (count new-results-so-far) n)
+          (when (< new-n-results-so-far n)
             (push-listener tramp [continue-index parser]
-                           (RepFullListener new-results-so-far parser m n continue-index 
-                                             node-key tramp))))))))
+                           (RepFullListener new-results-so-far new-n-results-so-far
+                                            parser m n continue-index
+                                            node-key tramp))))))))
 
 ; The top level listener is the final kind of listener
 
@@ -593,13 +633,20 @@
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
 
+#?(:clj
+   (defn equals-ignore-case [^String s1 ^String s2]
+     (.equalsIgnoreCase s1 s2))
+   :cljs
+   (defn equals-ignore-case [s1 s2]
+     (= (.toUpperCase s1) (.toUpperCase s2))))
+
 (defn string-case-insensitive-parse
   [this index tramp]
   (let [string (:string this)
         text (:text tramp)
         end (min (count text) (+ index (count string)))
         head (sub-sequence text index end)]      
-    (if (.equalsIgnoreCase ^String string head)
+    (if (equals-ignore-case string head)
       (success tramp [index this] string end)
       (fail tramp [index this] index
             {:tag :string :expecting string}))))
@@ -610,26 +657,59 @@
         text (:text tramp)
         end (min (count text) (+ index (count string)))
         head (sub-sequence text index end)]      
-    (if (and (= end (count text)) (.equalsIgnoreCase ^String string head))
+    (if (and (= end (count text)) (equals-ignore-case string head))
       (success tramp [index this] string end)
       (fail tramp [index this] index
             {:tag :string :expecting string :full true}))))
+
+#?(:clj
+   (defn single-char-code-at
+     "Returns the int value of a single char at the given index,
+  assuming we're looking for up to 0xFFFF (the maximum value for a
+  UTF-16 single char)."
+     [^CharSequence text index]
+     (int (.charAt text index)))
+   :cljs
+   (defn single-char-code-at
+     [text index]
+     (.charCodeAt text index)))
+
+#?(:clj
+   (defn unicode-code-point-at
+     "Returns the unicode code point representing one or two chars at
+  the given index."
+     [^CharSequence text index]
+     (Character/codePointAt text (int index)))
+   :cljs
+   (defn unicode-code-point-at
+     [text index]
+     (u/getCodePointAround text (int index))))
+
+#?(:clj
+   (defn code-point->chars
+     "Takes a Unicode code point, and returns a string of one or two chars."
+     [code-point]
+     (String. (Character/toChars code-point)))
+   :cljs
+   (defn code-point->chars
+     [code-point]
+     (u/fromCharCode code-point)))
 
 (defn char-range-parse
   [this index tramp]
   (let [lo (:lo this)
         hi (:hi this)
-        ^String text (:text tramp)]
+        text (:text tramp)]
     (cond
       (>= index (count text)) (fail tramp [index this] index
                                     {:tag :char :expecting {:char-range true :lo lo :hi hi}})
-      (<= hi 0xFFFF) (let [character (.charAt text index)]
-                       (if (<= lo (int character) hi)
-                         (success tramp [index this] (str character) (inc index))
+      (<= hi 0xFFFF) (let [code (single-char-code-at text index)]
+                       (if (<= lo code hi)
+                         (success tramp [index this] (str (char code)) (inc index))
                          (fail tramp [index this] index
                                {:tag :char :expecting {:char-range true :lo lo :hi hi}})))
-      :else (let [code-point (Character/codePointAt text (int index))
-                  char-string (String. (Character/toChars code-point))]
+      :else (let [code-point (unicode-code-point-at text index)
+                  char-string (code-point->chars code-point)]
               (if (<= lo code-point hi)
                 (success tramp [index this] char-string
                          (+ index (count char-string)))
@@ -645,23 +725,30 @@
     (cond
       (>= index (count text)) (fail tramp [index this] index
                                     {:tag :char :expecting {:char-range true :lo lo :hi hi}})
-      (<= hi 0xFFFF) (let [character (.charAt ^String text index)]
-                       (if (and (= (inc index) end) (<= lo (int character) hi))
-                         (success tramp [index this] (str character) end)
+      (<= hi 0xFFFF) (let [code (single-char-code-at text index)]
+                       (if (and (= (inc index) end) (<= lo code hi))
+                         (success tramp [index this] (str (char code)) end)
                          (fail tramp [index this] index
                                {:tag :char :expecting {:char-range true :lo lo :hi hi}})))
-      :else (let [code-point (Character/codePointAt ^String text (int index))
-                  char-string (String. (Character/toChars code-point))]
+      :else (let [code-point (unicode-code-point-at text index)
+                  char-string (code-point->chars code-point)]
               (if (and (= (+ index (count char-string)) end) (<= lo code-point hi))
                 (success tramp [index this] char-string end)
                 (fail tramp [index this] index
                       {:tag :char :expecting {:char-range true :lo lo :hi hi} :full true}))))))
 
-(defn re-match-at-front [regexp text]
-  (let [^java.util.regex.Matcher matcher (re-matcher regexp text)
-        match? (.lookingAt matcher)]
-    (when match?
-      (.group matcher))))
+#?(:clj
+   (defn re-match-at-front [regexp text]
+     (let [^java.util.regex.Matcher matcher (re-matcher regexp text)
+           match? (.lookingAt matcher)]
+       (when match?
+         (.group matcher))))
+   :cljs
+   (defn re-match-at-front [regexp text]
+     (let [re (js/RegExp. (.-source regexp) "g")
+           m (.exec re text)]
+       (when (and m (zero? (.-index m)))
+         (first m)))))
     
 (defn regexp-parse
   [this index tramp]
@@ -685,80 +772,78 @@
       (success tramp [index this] match (count text))
       (fail tramp [index this] index
             {:tag :regexp :expecting regexp :full true}))))
-        
-(let [empty-cat-result afs/EMPTY]
-	(defn cat-parse
-	  [this index tramp]
-	  (let [parsers (:parsers this)]
-	    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
-	    ; and with a final target of notifying this parser when the whole sequence is complete
-	    (push-listener tramp [index (first parsers)] 
-                    (CatListener empty-cat-result (next parsers) [index this] tramp))))	      
-	
-	(defn cat-full-parse
-	  [this index tramp]
-	  (let [parsers (:parsers this)]
-	    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
-	    ; and with a final target of notifying this parser when the whole sequence is complete
-	    (push-listener tramp [index (first parsers)] 
-                    (CatFullListener empty-cat-result (next parsers) [index this] tramp))))	      
- 
- (defn plus-parse
-	  [this index tramp]
-	  (let [parser (:parser this)]
-	    (push-listener tramp [index parser] 
-                    (PlusListener empty-cat-result parser index [index this] tramp))))       
- 
- (defn plus-full-parse
-   [this index tramp]
-   (let [parser (:parser this)]
-     (push-listener tramp [index parser] 
-                    (PlusFullListener empty-cat-result parser index [index this] tramp))))       
 
- (defn rep-parse
-   [this index tramp]
-   (let [parser (:parser this),
-         m (:min this),
-         n (:max this)]     
-     (if (zero? m)
-       (do 
-         (success tramp [index this] nil index)
-         (when (>= n 1)
-           (push-listener tramp [index parser]
-                          (RepListener empty-cat-result parser 1 n index [index this] tramp))))
-       (push-listener tramp [index parser]
-                      (RepListener empty-cat-result parser m n index [index this] tramp)))))
- 
- (defn rep-full-parse
-   [this index tramp]
-   (let [parser (:parser this),
-         m (:min this),
-         n (:max this)]
-     (if (zero? m)
-       (do 
-         (success tramp [index this] nil index)
-         (when (>= n 1)
-           (push-listener tramp [index parser]
-                          (RepFullListener empty-cat-result parser 1 n index [index this] tramp))))
-       (push-listener tramp [index parser]
-                      (RepFullListener empty-cat-result parser m n index [index this] tramp)))))                 
- 
- (defn star-parse
-	  [this index tramp]
-	  (let [parser (:parser this)]
-	    (push-listener tramp [index parser] 
-                    (PlusListener empty-cat-result parser index [index this] tramp))              
-     (success tramp [index this] nil index)))
+(defn cat-parse
+  [this index tramp]
+  (let [parsers (:parsers this)]
+    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
+    ; and with a final target of notifying this parser when the whole sequence is complete
+    (push-listener tramp [index (first parsers)] 
+                   (CatListener afs/EMPTY (next parsers) [index this] tramp))))	      
 
- (defn star-full-parse
-   [this index tramp]
-   (let [parser (:parser this)]
-     (if (= index (count (:text tramp)))
-       (success tramp [index this] nil index)
-       (do
-         (push-listener tramp [index parser] 
-                        (PlusFullListener empty-cat-result parser index [index this] tramp))))))         
- )
+(defn cat-full-parse
+  [this index tramp]
+  (let [parsers (:parsers this)]
+    ; Kick-off the first parser, with a CatListener ready to pass the result on in the chain
+    ; and with a final target of notifying this parser when the whole sequence is complete
+    (push-listener tramp [index (first parsers)] 
+                   (CatFullListener afs/EMPTY (next parsers) [index this] tramp))))	      
+
+(defn plus-parse
+  [this index tramp]
+  (let [parser (:parser this)]
+    (push-listener tramp [index parser] 
+                   (PlusListener afs/EMPTY parser index [index this] tramp))))       
+
+(defn plus-full-parse
+  [this index tramp]
+  (let [parser (:parser this)]
+    (push-listener tramp [index parser] 
+                   (PlusFullListener afs/EMPTY parser index [index this] tramp))))       
+
+(defn rep-parse
+  [this index tramp]
+  (let [parser (:parser this),
+        m (:min this),
+        n (:max this)]     
+    (if (zero? m)
+      (do 
+        (success tramp [index this] nil index)
+        (when (>= n 1)
+          (push-listener tramp [index parser]
+                         (RepListener afs/EMPTY 0 parser 1 n index [index this] tramp))))
+      (push-listener tramp [index parser]
+                     (RepListener afs/EMPTY 0 parser m n index [index this] tramp)))))
+
+(defn rep-full-parse
+  [this index tramp]
+  (let [parser (:parser this),
+        m (:min this),
+        n (:max this)]
+    (if (zero? m)
+      (do 
+        (success tramp [index this] nil index)
+        (when (>= n 1)
+          (push-listener tramp [index parser]
+                         (RepFullListener afs/EMPTY 0 parser 1 n index [index this] tramp))))
+      (push-listener tramp [index parser]
+                     (RepFullListener afs/EMPTY 0 parser m n index [index this] tramp)))))                 
+
+(defn star-parse
+  [this index tramp]
+  (let [parser (:parser this)]
+    (push-listener tramp [index parser] 
+                   (PlusListener afs/EMPTY parser index [index this] tramp))              
+    (success tramp [index this] nil index)))
+
+(defn star-full-parse
+  [this index tramp]
+  (let [parser (:parser this)]
+    (if (= index (count (:text tramp)))
+      (success tramp [index this] nil index)
+      (do
+        (push-listener tramp [index parser] 
+                       (PlusFullListener afs/EMPTY parser index [index this] tramp))))))
 
 (defn alt-parse
   [this index tramp]

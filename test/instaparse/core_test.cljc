@@ -1,17 +1,19 @@
 (ns instaparse.core-test
-  #+clj (:refer-clojure :exclude [cat read-string])
-  (:require #+clj [clojure.test :refer [deftest are is]]
-            #+clj [clojure.edn :refer [read-string]]
-            #+cljs [cljs.test :as t]
-            #+cljs [cljs.reader :refer [read-string]]
-            [instaparse.core :as insta]
-            [instaparse.cfg :refer [ebnf]]
-            [instaparse.line-col :as lc]
-            [instaparse.combinators-source :refer [Epsilon opt plus star rep 
-                                                   alt ord cat string-ci string
-                                                   string-ci regexp nt look neg 
-                                                   hide hide-tag]])
-  #+cljs (:require-macros [cljs.test :refer [is are deftest run-tests]]))
+  #?(:clj (:refer-clojure :exclude [cat read-string]))
+  (:require
+    #?(:clj  [clojure.test :refer [deftest are is]]
+       :cljs [cljs.test :as t])
+    #?(:clj  [clojure.edn :refer [read-string]]
+       :cljs [cljs.reader :refer [read-string]])
+    [instaparse.core :as insta]
+    [instaparse.cfg :refer [ebnf]]
+    [instaparse.line-col :as lc]
+    [instaparse.combinators-source :refer [Epsilon opt plus star rep 
+                                           alt ord cat string-ci string
+                                           string-ci regexp nt look neg 
+                                           hide hide-tag]])
+  #?(:cljs (:require-macros
+             [cljs.test :refer [is are deftest run-tests]])))
 
 (def as-and-bs
   (insta/parser
@@ -251,6 +253,30 @@
       {:B (ebnf "'b'+")})
     :start :S))
 
+(def tricky-ebnf-build
+  "https://github.com/Engelberg/instaparse/issues/107"
+  (insta/parser
+    (merge
+      {:S (alt (nt :A) (nt :B))}
+      (ebnf "<A> = '='*")
+      {:B (ebnf "'b' '='")})
+    :start :S))
+
+(defn spans [t]
+  (if (sequential? t)
+    (cons (insta/span t) (map spans (next t)))
+    t))      
+
+(defn spans-hiccup-tag [t]
+  (if (sequential? t)
+    (cons {:tag (first t) :span (insta/span t)} (map spans (next t)))
+    t))      
+
+(defn spans-enlive [t]
+  (if (map? t)
+    (assoc t :span (insta/span t) :content (map spans-enlive (:content t)))
+    t))
+
 (def whitespace 
   (insta/parser
     "whitespace = #'\\s+'"))
@@ -332,10 +358,10 @@
      [:AB [:A "a" "a" "a" "a" "a"] [:B "b" "b" "b"]]
      [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]
     
-    #+clj (as-and-bs (StringBuilder. "aaaaabbbaaaabb"))
-    #+clj [:S
+#?@(:clj [(as-and-bs (StringBuilder. "aaaaabbbaaaabb"))
+          [:S
            [:AB [:A "a" "a" "a" "a" "a"] [:B "b" "b" "b"]]
-           [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]
+           [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]])
     
     (as-and-bs "aaaaabbbaaaabb")
     (as-and-bs "aaaaabbbaaaabb" :optimize :memory)
@@ -544,7 +570,13 @@
     [:S [:B "b" "b" "b" "b" "b"]]
     
     (combo-build-example "bbbbb")
-    (combo-build-example "bbbbb" :optimize :memory)    
+    (combo-build-example "bbbbb" :optimize :memory)
+
+    (tricky-ebnf-build "===")
+    [:S "=" "=" "="]
+
+    (tricky-ebnf-build "b=")
+    [:S [:B "b" "="]]
     
     ((insta/parser "S = ('a'?)+") "")
     [:S]
@@ -619,27 +651,30 @@
     
     (insta/transform {:ADD +} [:ADD 10 5])
     15
+
+    (->> "a"
+         ((insta/parser "<S> = 'a'"))
+         (insta/transform {}))
+    '("a")
     ))    
 
-#+clj
+#?(:clj (do ;; CLOJURE ONLY TESTS
+
 (defn spans [t]
   (if (sequential? t)
     (cons (insta/span t) (map spans (next t)))
     t))      
 
-#+clj
 (defn spans-hiccup-tag [t]
   (if (sequential? t)
     (cons {:tag (first t) :span (insta/span t)} (map spans (next t)))
-    t))      
+    t))
 
-#+clj
 (defn spans-enlive [t]
   (if (map? t)
     (assoc t :span (insta/span t) :content (map spans-enlive (:content t)))
     t))
 
-#+clj
 (deftest span-tests
   (are [x y] (= x y)
     (spans (as-and-bs "aaaabbbaabbab"))
@@ -681,6 +716,8 @@
          :number (comp (partial array-map :number) read-string str)})
       spans-enlive)
     '{:span [0 11], :tag :sentence, :content ({:content (), :span [0 3], :word "abc"} {:content (), :span [4 7], :number 123} {:content (), :span [8 11], :word "def"})}))
+
+)) ;; END CLOJURE ONLY TESTS
 
 (defn round-trip [parser]
   (insta/parser (prn-str parser)))
@@ -767,5 +804,6 @@
       (is (= (str expected-output)
              (str actual-output))))))
 
-#+cljs (defn ^:export run []
-         (run-tests))
+#?(:cljs
+   (defn ^:export run []
+         (run-tests)))

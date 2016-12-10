@@ -1,5 +1,6 @@
 (ns instaparse.failure
   "Facilities for printing and manipulating error messages."
+  #?(:clj (:import java.io.BufferedReader java.io.StringReader))
   (:require [instaparse.print :as print]))
 
 (defn index->line-column
@@ -11,18 +12,25 @@
       (= \newline (get text counter)) (recur (inc line) 1 (inc counter))
       :else (recur line (inc col) (inc counter)))))
 
-(defn newline-chars? [c] 
-  (boolean (#{\newline \return} c)))
+#?(:clj
+   (defn get-line
+     "Returns nth line of text, 1-based"
+     [n text]
+     (try (nth (line-seq (BufferedReader. (StringReader. (str text)))) (dec n))
+          (catch Exception e "")))
+   :cljs
+   (do (defn newline-chars? [c] 
+         (boolean (#{\newline \return} c)))
 
-(defn get-line
-  [n text]
-  (loop [chars (seq (clojure.string/replace text "\r\n" "\n"))
-         n n]
-    (cond
-      (empty? chars) ""
-      (= n 1) (apply str (take-while (complement newline-chars?) chars))
-      (newline-chars? (first chars)) (recur (next chars) (dec n))
-      :else (recur (next chars) n))))
+       (defn get-line
+         [n text]
+         (loop [chars (seq (clojure.string/replace text "\r\n" "\n"))
+                n n]
+           (cond
+             (empty? chars) ""
+             (= n 1) (apply str (take-while (complement newline-chars?) chars))
+             (newline-chars? (first chars)) (recur (next chars) (dec n))
+             :else (recur (next chars) n))))))
 
 (defn marker
   "Creates string with caret at nth position, 1-based"
@@ -44,11 +52,13 @@
   [r]
   (cond
     (:NOT r)
-    (do (print "NOT ")    
+    (do (print "NOT ")
         (print (:NOT r))),
     (:char-range r)
     (print (print/char-range->str r))
-    (instance? js/RegExp r)
+    (instance? #?(:clj java.util.regex.Pattern
+                  :cljs js/RegExp)
+               r)
     (print (print/regexp->str r))
     :else
     (pr r)))

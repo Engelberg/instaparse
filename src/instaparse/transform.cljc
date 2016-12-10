@@ -1,6 +1,7 @@
 (ns instaparse.transform
   "Functions to transform parse trees"
-  (:require instaparse.gll))
+  (:require [instaparse.gll]
+            [instaparse.util :refer [throw-illegal-argument-exception]]))
 
 (defn map-preserving-meta [f l]
   (with-meta (map f l) (meta l)))
@@ -9,7 +10,8 @@
   "This variation of the merge-meta in gll does nothing if obj is not
 something that can have a metamap attached."
   [obj metamap]
-  (if (instance? clojure.lang.IObj obj)
+  (if #?(:clj (instance? clojure.lang.IObj obj)
+         :cljs (satisfies? IWithMeta obj))
     (instaparse.gll/merge-meta obj metamap)
     obj))
 
@@ -53,6 +55,10 @@ something that can have a metamap attached."
   [transform-map parse-tree]
   ; Detect what kind of tree this is
   (cond
+    (string? parse-tree)
+    ; This is a leaf of the tree that should pass through unchanged
+    parse-tree
+
     (and (map? parse-tree) (:tag parse-tree))
     ; This is an enlive tree-seq
     (enlive-transform transform-map parse-tree)
@@ -71,4 +77,5 @@ something that can have a metamap attached."
     parse-tree
     
     :else
-    (throw (IllegalArgumentException. "Invalid parse-tree, not recognized as either enlive or hiccup format."))))
+    (throw-illegal-argument-exception
+      "Invalid parse-tree, not recognized as either enlive or hiccup format.")))

@@ -1,5 +1,17 @@
 # Instaparse Change Log
 
+## 1.4.3
+
+### Bugfixes
+
+* Fixed bug with insta/transform on tree with hidden root tag and strings at the top level of the tree.
+
+## 1.4.2
+
+### Bugfixes
+
+* Fixed problem with counted repetitions in ABNF.
+
 ## 1.4.1
 
 ### Features

@@ -1,10 +1,12 @@
 (ns instaparse.combinators
   "The combinator public API for instaparse"
   (:refer-clojure :exclude [cat])
-  (:use instaparse.clone)
-  (:require [instaparse.combinators-source :as c])
-  (:require [instaparse.cfg :as cfg])
-  (:require [instaparse.abnf :as abnf]))
+  #?(:clj (:use instaparse.macros)
+     :cljs (:require-macros
+            [instaparse.macros :refer [defclone]]))
+  (:require [instaparse.combinators-source :as c]
+            [instaparse.cfg :as cfg]
+            [instaparse.abnf :as abnf]))
 
 ;; The actual source is in combinators-source.
 ;; This was necessary to avoid a cyclical dependency in the namespaces.

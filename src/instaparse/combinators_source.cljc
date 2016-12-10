@@ -3,7 +3,8 @@
   (:refer-clojure :exclude [cat])
   (:require [instaparse.reduction :refer [singleton? red
                                           raw-non-terminal-reduction
-                                          reduction-types]]))
+                                          reduction-types]]
+            [instaparse.util :refer [throw-illegal-argument-exception]]))
 
 ;; Ways to build parsers
 
@@ -75,20 +76,21 @@
    (assert (<= lo hi) "Character range minimum must be less than or equal the maximum")
    {:tag :char :lo lo :hi hi}))
 
-(defn- regexp->str
-  "(str regexp) in clojurescript puts slashes around the result, unlike
-   in clojure. Work around that."
-  [r]
-  (if (regexp? r)
-    (let [s (str r)]
-      (subs s 1 (dec (count s))))
-    r))
+#?(:cljs
+   (defn- add-beginning-constraint
+     "JavaScript regexes have no .lookingAt method, so in cljs we just
+  add a '^' character to the front of the regex."
+     [r]
+     (if (regexp? r)
+       (re-pattern (str "^" (.-source r)))
+       r)))
 
 (defn regexp "Create a regexp terminal out of regular expression r"
   [r]
-  (let [s (str \^ (regexp->str r))]
-    (if (= s "^") Epsilon
-      {:tag :regexp :regexp (re-pattern s)})))
+  (if (= r "") Epsilon
+      {:tag :regexp
+       :regexp (-> (re-pattern r)
+                   #?(:cljs add-beginning-constraint))}))
 
 (defn nt "Refers to a non-terminal defined by the grammar map"
   [s] 
@@ -142,7 +144,8 @@
   (if-let [reduction (reduction-types reduction-type)]
     (into {} (for [[k v] grammar]
                [k (assoc v :red (reduction k))]))
-    (throw (str "Invalid output format" reduction-type ". Use :enlive or :hiccup."))))
+    (throw-illegal-argument-exception
+      "Invalid output format " reduction-type ". Use :enlive or :hiccup.")))
 
 (defn unhide-all
   "Recursively undoes the effect of both hide and hide-tag"
@@ -150,7 +153,8 @@
   (if-let [reduction (reduction-types reduction-type)]
     (into {} (for [[k v] grammar]
                [k (assoc (unhide-content v) :red (reduction k))]))
-    (throw (str "Invalid output format" reduction-type ". Use :enlive or :hiccup."))))
+    (throw-illegal-argument-exception
+      "Invalid output format " reduction-type ". Use :enlive or :hiccup.")))
 
 
 ;; New beta feature: automatically add whitespace
