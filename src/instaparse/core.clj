@@ -139,7 +139,7 @@
 
 (defmethod clojure.core/print-method Parser [x writer]
   (binding [*out* writer]
-    (println (print/Parser->str x))))
+    (println (print/pparser->str x))))
 
 (defn parser
   "Takes a string specification of a context-free grammar,
