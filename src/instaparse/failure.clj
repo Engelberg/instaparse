@@ -9,7 +9,7 @@
   (loop [line 1, col 1, counter 0]
     (cond
       (= index counter) {:line line :column col}
-      (= \newline (get text counter)) (recur (inc line) 1 (inc counter))
+      (#{\return \newline} (get text counter)) (recur (inc line) 1 (inc counter))       
       :else (recur line (inc col) (inc counter)))))
 
 (defn get-line
