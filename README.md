@@ -1,4 +1,4 @@
-# Instaparse-cljs 1.4.3
+# Instaparse 1.4.3
 
 *What if context-free grammars were as easy to use as regular expressions?*
 
