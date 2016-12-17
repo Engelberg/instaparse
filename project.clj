@@ -3,16 +3,16 @@
   :url "https://github.com/Engelberg/instaparse"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.8.0"]
-                 [org.clojure/clojurescript "1.8.40"]]
+  :dependencies [[org.clojure/clojure "1.8.0"]]
   :profiles {:dev {:dependencies 
-                   [[org.clojure/tools.trace "0.7.5"]
+                   [[org.clojure/clojurescript "1.8.40"]
+                    [org.clojure/tools.trace "0.7.5"]
                     [criterium "0.3.1"]
                     [rhizome "0.2.5"]]}
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
              :1.7 {:dependencies [[org.clojure/clojure "1.7.0"]
-                                  [org.clojure/clojurescript "0.0-3196"]]}
+                                  [org.clojure/clojurescript "0.0-3211"]]}
              :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]
                                   [org.clojure/clojurescript "1.8.34"]]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0-alpha14"]
