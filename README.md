@@ -18,7 +18,7 @@ Instaparse aims to be the simplest way to build parsers in Clojure.
 
 ## Quickstart
 
-Instaparse requires Clojure v1.5.1 or later, or ClojureScript v0.0-3196 or later.
+Instaparse requires Clojure v1.5.1 or later, or ClojureScript v1.7.28 or later.
 
 Add the following line to your leiningen dependencies:
 
