@@ -116,6 +116,38 @@ You can also use a specification contained in a local resource in your classpath
 
 	(insta/parser (clojure.java.io/resource "myparser.bnf"))
 
+### `defparser`
+
+On ClojureScript, the `(def my-parser (insta/parser "..."))` use case
+has the following disadvantages:
+
+- ClojureScript does not support `slurp`, so file paths / URLs cannot be automatically read from.
+- Having to parse a grammar string at runtime can impact the startup performance of an application or webpage.
+
+To solve those problems, a macro `instaparse.core/defparser` is
+provided that, if given a string for a grammar specification, will
+parse that as a grammar up front and emit more performant code.
+
+```clojure
+;; Clojure
+(:require [instaparse.core :as insta :refer [defparser]])
+;; ClojureScript
+(:require [instaparse.core :as insta :refer-macros [defparser]])
+
+=> (time (def p (insta/parser "S = A B; A = 'a'+; B = 'b'+")))
+"Elapsed time: 4.368179 msecs"
+#'user/p
+=> (time (defparser p "S = A B; A = 'a'+; B = 'b'+")) ; the meat of the work happens at macro-time
+"Elapsed time: 0.091689 msecs"
+#'user/p
+=> (defparser myparser "https://gist.github.com/Engelberg/5283346/raw/77e0b1d0cd7388a7ddf43e307804861f49082eb6/SingleA") ; works even in cljs!
+#'user/myparser
+=> (defparser myparser [:S (c/plus (c/string "a"))]) ; still works, but won't do any extra magic behind the scenes
+#'user/myparser
+=> (defparser myparser "S = 1*'a'" :input-format :abnf :output-format :enlive) ; takes additional keyword arguments
+#'user/myparser
+```
+
 ### Escape characters
 
 Putting your grammar in a separate resource file has an additional advantage -- it provides a very straightforward "what you see is what you get" view of the grammar.  The only escape characters needed are the ordinary escape characters for strings and regular expressions (additionally, instaparse also supports `\'` inside single-quoted strings).

@@ -2,7 +2,8 @@
   (#?(:clj :require :cljs :require-macros)
     [instaparse.macros :refer [defclone
                                set-global-var!]])
-  (:require [instaparse.gll :as gll] 
+  (:require [clojure.walk :as walk]
+            [instaparse.gll :as gll]
             [instaparse.cfg :as cfg]
             [instaparse.failure :as fail]
             [instaparse.print :as print]
@@ -168,7 +169,7 @@
 
 (defn parser
   "Takes a string specification of a context-free grammar,
-  or a URI for a text file containing such a specification,
+  or a URI for a text file containing such a specification (Clj only),
   or a map of parser combinators and returns a parser for that grammar.
 
   Optional keyword arguments:
@@ -258,6 +259,34 @@
                (c/auto-whitespace (:grammar built-parser) (:start-production built-parser)
                                   ws-grammar ws-start))
         built-parser))))
+
+#?(:clj
+   (defmacro defparser
+     "Takes a string specification of a context-free grammar,
+  or a URI for a text file containing such a specification,
+  or a map of parser combinators and sets a variable to a parser for that grammar.
+
+  String specifications are processed at macro-time, not runtime, so this is an
+  appealing alternative to (def _ (parser \"...\")) for ClojureScript users."
+     [name grammar & opts]
+     (if (string? grammar)
+       `(def ~name
+          (map->Parser
+           ~(let [parser-map (into {} (apply parser grammar opts))]
+              (->> parser-map
+                   (walk/postwalk
+                     (fn [form]
+                       (cond
+                         ;; Lists cannot be evaluated verbatim
+                         (seq? form)
+                         (list* 'list form)
+
+                         ;; Regexp terminals are handled differently in cljs
+                         (= :regexp (:tag form))
+                         `(c/regexp ~(str (:regexp form)))
+
+                         :else form)))))))
+       `(def ~name (parser ~grammar ~@opts)))))
         
 (defn failure?
   "Tests whether a parse result is a failure."

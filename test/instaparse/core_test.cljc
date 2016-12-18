@@ -5,7 +5,8 @@
        :cljs [cljs.test :as t])
     #?(:clj  [clojure.edn :refer [read-string]]
        :cljs [cljs.reader :refer [read-string]])
-    [instaparse.core :as insta]
+    #?(:clj  [instaparse.core :as insta :refer [defparser]]
+       :cljs [instaparse.core :as insta :refer-macros [defparser]])
     [instaparse.cfg :refer [ebnf]]
     [instaparse.line-col :as lc]
     [instaparse.combinators-source :refer [Epsilon opt plus star rep 
@@ -120,6 +121,16 @@
      <letter> = #'[a-zA-Z]'
      <digit> = #'[0-9]'"
     :output-format :enlive))
+
+(defparser words-and-numbers-enlive-defparser
+  "sentence = token (<whitespace> token)*
+     <token> = word | number
+     whitespace = #'\\s+'
+     word = letter+
+     number = digit+ 
+     <letter> = #'[a-zA-Z]'
+     <digit> = #'[0-9]'"
+  :output-format :enlive)
 
 (insta/transform 
   {:word str, 
@@ -517,6 +528,12 @@
     [:sentence "abc" 123 "def"]
     
     (->> (words-and-numbers-enlive "abc 123 def")
+      (insta/transform
+        {:word str,
+         :number (comp read-string str)}))
+    {:tag :sentence, :content ["abc" 123 "def"]}
+
+    (->> (words-and-numbers-enlive-defparser "abc 123 def")
       (insta/transform
         {:word str,
          :number (comp read-string str)}))
