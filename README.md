@@ -1001,14 +1001,15 @@ All the functionality you've seen in this tutorial is packed into an API of just
 
 	   :string-ci true (treat all string literals as case insensitive)
 
+	   :auto-whitespace (:standard or :comma)
+	   or
+	   :auto-whitespace custom-whitespace-parser
+
+       Clj only:
 	   :no-slurp true (disables use of slurp to auto-detect whether
 	                   input is a URI.  When using this option, input
 	                   must be a grammar string or grammar map.  Useful
 	                   for platforms where slurp is slow or not available.)
-
-	   :auto-whitespace (:standard or :comma)
-	   or
-	   :auto-whitespace custom-whitespace-parser
 
 	=> (doc insta/parse)
 	-------------------------
@@ -1025,6 +1026,9 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	   :unhide <:tags or :content or :all> (for this parse, disable hiding)
 	   :optimize :memory   (when possible, employ strategy to use less memory)
 
+       Clj only:
+       :trace true      (print diagnostic trace while parsing)
+
 	=> (doc insta/parses)
 	-------------------------
 	instaparse.core/parses
@@ -1039,7 +1043,10 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	   :total true      (if parse fails, embed failure node in tree)
 	   :unhide <:tags or :content or :all> (for this parse, disable hiding)
 
-	=> (doc insta/set-default-output-format!)
+       Clj only:
+       :trace true      (print diagnostic trace while parsing)
+
+    => (doc insta/set-default-output-format!)
 	-------------------------
 	instaparse.core/set-default-output-format!
 	([type])
