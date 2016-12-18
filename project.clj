@@ -16,7 +16,7 @@
              :1.8 {:dependencies [[org.clojure/clojure "1.8.0"]
                                   [org.clojure/clojurescript "1.8.34"]]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0-alpha14"]
-                                  [org.clojure/clojurescript "1.9.14"]]}}
+                                  [org.clojure/clojurescript "1.9.293"]]}}
   :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7:+1.8:+1.9" "test"]
             "test-cljs" ["cljsbuild" "test" "unit-tests"]
             "test-cljs-all" ["with-profile" "+1.7:+1.8:+1.9" "do" "clean," "test-cljs"]}
