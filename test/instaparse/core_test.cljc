@@ -262,21 +262,6 @@
       {:B (ebnf "'b' '='")})
     :start :S))
 
-(defn spans [t]
-  (if (sequential? t)
-    (cons (insta/span t) (map spans (next t)))
-    t))      
-
-(defn spans-hiccup-tag [t]
-  (if (sequential? t)
-    (cons {:tag (first t) :span (insta/span t)} (map spans (next t)))
-    t))      
-
-(defn spans-enlive [t]
-  (if (map? t)
-    (assoc t :span (insta/span t) :content (map spans-enlive (:content t)))
-    t))
-
 (def whitespace 
   (insta/parser
     "whitespace = #'\\s+'"))
@@ -658,8 +643,6 @@
     '("a")
     ))    
 
-#?(:clj (do ;; CLOJURE ONLY TESTS
-
 (defn spans [t]
   (if (sequential? t)
     (cons (insta/span t) (map spans (next t)))
@@ -716,8 +699,6 @@
          :number (comp (partial array-map :number) read-string str)})
       spans-enlive)
     '{:span [0 11], :tag :sentence, :content ({:content (), :span [0 3], :word "abc"} {:content (), :span [4 7], :number 123} {:content (), :span [8 11], :word "def"})}))
-
-)) ;; END CLOJURE ONLY TESTS
 
 (defn round-trip [parser]
   (insta/parser (prn-str parser)))
