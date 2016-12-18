@@ -267,25 +267,29 @@
   or a map of parser combinators and sets a variable to a parser for that grammar.
 
   String specifications are processed at macro-time, not runtime, so this is an
-  appealing alternative to (def _ (parser \"...\")) for ClojureScript users."
-     [name grammar & opts]
+  appealing alternative to (def _ (parser \"...\")) for ClojureScript users.
+
+  Optional keyword arguments unique to `defparser`:
+  - :instaparse.abnf/case-insensitive true"
+     [name grammar & {:as opts}]
      (if (string? grammar)
        `(def ~name
           (map->Parser
-           ~(let [parser-map (into {} (apply parser grammar opts))]
-              (->> parser-map
-                   (walk/postwalk
-                     (fn [form]
-                       (cond
-                         ;; Lists cannot be evaluated verbatim
-                         (seq? form)
-                         (list* 'list form)
+           ~(binding [abnf/*case-insensitive* (:instaparse.abnf/case-insensitive opts false)]
+              (let [parser-map (into {} (apply parser grammar (apply concat opts)))]
+                (->> parser-map
+                     (walk/postwalk
+                       (fn [form]
+                         (cond
+                           ;; Lists cannot be evaluated verbatim
+                           (seq? form)
+                           (list* 'list form)
 
-                         ;; Regexp terminals are handled differently in cljs
-                         (= :regexp (:tag form))
-                         `(c/regexp ~(str (:regexp form)))
+                           ;; Regexp terminals are handled differently in cljs
+                           (= :regexp (:tag form))
+                           `(merge (c/regexp ~(str (:regexp form))) ~(dissoc form :tag :regexp))
 
-                         :else form)))))))
+                           :else form))))))))
        `(def ~name (parser ~grammar ~@opts)))))
         
 (defn failure?
