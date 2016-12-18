@@ -140,11 +140,11 @@ parse that as a grammar up front and emit more performant code.
 => (time (defparser p "S = A B; A = 'a'+; B = 'b'+")) ; the meat of the work happens at macro-time
 "Elapsed time: 0.091689 msecs"
 #'user/p
-=> (defparser myparser "https://gist.github.com/Engelberg/5283346/raw/77e0b1d0cd7388a7ddf43e307804861f49082eb6/SingleA") ; works even in cljs!
+=> (defparser p "https://gist.github.com/Engelberg/5283346/raw/77e0b1d0cd7388a7ddf43e307804861f49082eb6/SingleA") ; works even in cljs!
 #'user/myparser
-=> (defparser myparser [:S (c/plus (c/string "a"))]) ; still works, but won't do any extra magic behind the scenes
+=> (defparser p [:S (c/plus (c/string "a"))]) ; still works, but won't do any extra magic behind the scenes
 #'user/myparser
-=> (defparser myparser "S = 1*'a'" :input-format :abnf :output-format :enlive) ; takes additional keyword arguments
+=> (defparser p "S = 1*'a'" :input-format :abnf :output-format :enlive) ; takes additional keyword arguments
 #'user/myparser
 ```
 
