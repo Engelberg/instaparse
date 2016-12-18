@@ -19,18 +19,15 @@
      (try (nth (line-seq (BufferedReader. (StringReader. (str text)))) (dec n))
           (catch Exception e "")))
    :cljs
-   (do (defn newline-chars? [c] 
-         (boolean (#{\newline \return} c)))
-
-       (defn get-line
-         [n text]
-         (loop [chars (seq (clojure.string/replace text "\r\n" "\n"))
-                n n]
-           (cond
-             (empty? chars) ""
-             (= n 1) (apply str (take-while (complement newline-chars?) chars))
-             (newline-chars? (first chars)) (recur (next chars) (dec n))
-             :else (recur (next chars) n))))))
+   (defn get-line
+     [n text]
+     (loop [chars (seq (clojure.string/replace text "\r\n" "\n"))
+            n n]
+       (cond
+         (empty? chars) ""
+         (= n 1) (apply str (take-while (complement #{\newline}) chars))
+         (= \newline (first chars)) (recur (next chars) (dec n))
+         :else (recur (next chars) n)))))
 
 (defn marker
   "Creates string with caret at nth position, 1-based"
@@ -66,7 +63,7 @@
 (defn pprint-failure
   "Takes an augmented failure object and prints the error message"
   [{:keys [line column text reason]}]
-  (println "Parse error at line" line ", column" column ":\n")
+  (println (str "Parse error at line " line ", column " column ":"))
   (println text)
   (println (marker column))
   (let [full-reasons (distinct (map :expecting
