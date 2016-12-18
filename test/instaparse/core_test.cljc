@@ -804,6 +804,22 @@
       (is (= (str expected-output)
              (str actual-output))))))
 
+(deftest invoke-test
+  (let [parser (insta/parser "S = 'a'")
+        text "a"]
+    (are [x] (= [:S "a"] (parser text))
+      (parser text 0 0)
+      (parser text 0 0 1 1)
+      (parser text 0 0 1 1 2 2)
+      (parser text 0 0 1 1 2 2 3 3)
+      (parser text 0 0 1 1 2 2 3 3 4 4)
+      (parser text 0 0 1 1 2 2 3 3 4 4 5 5)
+      (parser text 0 0 1 1 2 2 3 3 4 4 5 5 6 6)
+      (parser text 0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7)
+      (parser text 0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8)
+      (parser text 0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9)
+      (parser text 0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10))))
+
 #?(:cljs
    (defn ^:export run []
          (run-tests)))

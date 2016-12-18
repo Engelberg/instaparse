@@ -148,7 +148,13 @@
      (-invoke [parser text key1 val1] (parse parser text key1 val1))
      (-invoke [parser text key1 val1 key2 val2] (parse parser text key1 val1 key2 val2))
      (-invoke [parser text key1 val1 key2 val2 key3 val3] (parse parser text key1 val1 key2 val2 key3 val3))
-     #_(-applyTo [parser args] (apply parse parser args))]))
+     (-invoke [parser text a b c d e f g h] (parse parser text a b c d e f g h))
+     (-invoke [parser text a b c d e f g h i j] (parse parser text a b c d e f g h i j))
+     (-invoke [parser text a b c d e f g h i j k l] (parse parser text a b c d e f g h i j k l))
+     (-invoke [parser text a b c d e f g h i j k l m n] (parse parser text a b c d e f g h i j k l m n))
+     (-invoke [parser text a b c d e f g h i j k l m n o p] (parse parser text a b c d e f g h i j k l m n o p))
+     (-invoke [parser text a b c d e f g h i j k l m n o p q r] (parse parser text a b c d e f g h i j k l m n o p))
+     (-invoke [parser text a b c d e f g h i j k l m n o p q r s more] (apply parse parser text a b c d e f g h i j k l m n o p q r s more))]))
 
 #?(:clj
    (defmethod clojure.core/print-method Parser [x writer]
