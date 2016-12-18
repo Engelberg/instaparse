@@ -121,7 +121,7 @@ You can also use a specification contained in a local resource in your classpath
 On ClojureScript, the `(def my-parser (insta/parser "..."))` use case
 has the following disadvantages:
 
-- ClojureScript does not support `slurp`, so file paths / URLs cannot be automatically read from.
+- ClojureScript does not support `slurp`, so `parser` cannot automatically read from file paths / URLs.
 - Having to parse a grammar string at runtime can impact the startup performance of an application or webpage.
 
 To solve those problems, a macro `instaparse.core/defparser` is
