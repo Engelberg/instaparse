@@ -4,7 +4,7 @@
 
 ### Enhancements
 
-* Instaparse is now cross-platform compatible.
+* Instaparse is now cross-platform compatible between Clojure and Clojurescript.
 
 ### Features
 
