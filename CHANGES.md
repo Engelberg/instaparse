@@ -1,5 +1,15 @@
 # Instaparse Change Log
 
+## 1.4.4
+
+### Enhancements
+
+* Instaparse is now cross-platform compatible.
+
+### Features
+
+* defparser - builds parser at compile time
+
 ## 1.4.3
 
 ### Bugfixes

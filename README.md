@@ -1,4 +1,4 @@
-# Instaparse 1.4.3
+# Instaparse 1.4.4
 
 *What if context-free grammars were as easy to use as regular expressions?*
 
@@ -22,7 +22,7 @@ Instaparse requires Clojure v1.5.1 or later, or ClojureScript v1.7.28 or later.
 
 Add the following line to your leiningen dependencies:
 
-	[instaparse "1.4.3"]
+	[instaparse "1.4.4"]
 
 Require instaparse in your namespace header:
 
@@ -840,7 +840,7 @@ start-line and start-column point to the same character as start-index, and end-
 
 #### Visualizing the tree
 
-Instaparse contains a function, `insta/visualize`, that will give you a visual overview of the parse tree, showing the tags, the character spans, and the leaves of the tree.
+Instaparse contains a function, `insta/visualize` *(Clojure only)*, that will give you a visual overview of the parse tree, showing the tags, the character spans, and the leaves of the tree.
 
 	=> (insta/visualize (as-and-bs "aaabbab"))
 
