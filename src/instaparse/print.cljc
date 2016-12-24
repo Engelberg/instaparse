@@ -26,13 +26,29 @@
 
 (defn regexp->str [r]
   (str/replace 
-    (str "#\"" (str r) "\"")
+    (str "#\""
+         #?(:clj (str r)
+            :cljs (subs (.-source r) 1))
+         "\"")
     #"[\s]" regexp-replace))
 
-(defn char-range->str [{:keys [lo hi]}]
-  (if (= lo hi)
-    (format "%%x%04x" lo)
-    (format "%%x%04x-%04x" lo hi)))
+#?(:clj
+   (defn char-range->str [{:keys [lo hi]}]
+     (if (= lo hi)
+       (format "%%x%04x" lo)
+       (format "%%x%04x-%04x" lo hi)))
+
+   :cljs
+   (do
+     (defn number->hex-padded [n]
+       (if (<= n 0xFFF)
+         (.substr (str "0000" (.toString n 16)) -4)
+         (.toString n 16)))
+
+     (defn char-range->str [{:keys [lo hi]}]
+       (if (= lo hi)
+         (str "%x" (number->hex-padded lo))
+         (str "%x" (number->hex-padded lo) "-" (number->hex-padded hi))))))
 
 (defn combinators->str
   "Stringifies a parser built from combinators"

@@ -1,5 +1,9 @@
 (ns instaparse.auto-flatten-seq-test
-  (:use clojure.test instaparse.auto-flatten-seq))
+  (:require
+    [instaparse.auto-flatten-seq :refer [auto-flatten-seq conj-flat convert-afs-to-vec]]
+    #?(:clj [clojure.test :refer [deftest are is]]
+       :cljs [cljs.test]))
+  #?(:cljs (:require-macros [cljs.test :refer [deftest are is]])))
 
 (defn rand-mutation [v iv]
   (let [rnd (int (rand-int 3))]

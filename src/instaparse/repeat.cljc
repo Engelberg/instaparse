@@ -1,10 +1,13 @@
 (ns instaparse.repeat
-  (:require [instaparse.gll :as gll] 
+  (:require [instaparse.gll :as gll
+             #?@(:clj [:refer [profile]])]
             [instaparse.combinators-source :as c]
             [instaparse.auto-flatten-seq :as afs]
             [instaparse.viz :as viz]
             [instaparse.reduction :as red]
-            [instaparse.failure :as fail]))
+            [instaparse.failure :as fail])
+  #?(:cljs
+     (:require-macros [instaparse.gll :refer [profile]])))
 
 (defn empty-result? [result]
   (or (and (vector? result) (= (count result) 1))
@@ -14,10 +17,12 @@
 (def ^:constant failure-signal (gll/->Failure nil nil))
 
 (defn get-end 
-  (^long [parse]
+  (#?(:clj ^long [parse]
+      :cljs ^number [parse])
     (let [[start end] (viz/span parse)]
       (if end (long end) (count parse))))
-  (^long [parse ^long index]
+  (#?(:clj ^long [parse ^long index]
+      :cljs ^number [parse ^number index])
     (let [[start end] (viz/span parse)]
       (if end (long end) (+ index (count parse))))))
 
@@ -184,7 +189,7 @@
   (let [grammar (:grammar parser)
         output-format (:output-format parser)
         start-rule (get grammar start-production)]
-    (gll/profile (gll/clear!))
+    (profile (gll/clear!))
     (cond
       (= (:hide start-rule) true) failure-signal
       (= (:red start-rule) red/raw-non-terminal-reduction)

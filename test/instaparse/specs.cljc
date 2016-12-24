@@ -1,5 +1,4 @@
-(ns instaparse.specs
-  (:use clojure.test instaparse.core))
+(ns instaparse.specs)
 
 (def cfg1 "S = 'a'")
 (def cfg2 

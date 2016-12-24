@@ -1,6 +1,6 @@
 (ns instaparse.failure
   "Facilities for printing and manipulating error messages."
-  (:import java.io.BufferedReader java.io.StringReader)
+  #?(:clj (:import java.io.BufferedReader java.io.StringReader))
   (:require [instaparse.print :as print]))
 
 (defn index->line-column
@@ -12,11 +12,22 @@
       (= \newline (get text counter)) (recur (inc line) 1 (inc counter))
       :else (recur line (inc col) (inc counter)))))
 
-(defn get-line
-  "Returns nth line of text, 1-based"
-  [n text]
-  (try (nth (line-seq (BufferedReader. (StringReader. (str text)))) (dec n))
-    (catch Exception e "")))
+#?(:clj
+   (defn get-line
+     "Returns nth line of text, 1-based"
+     [n text]
+     (try (nth (line-seq (BufferedReader. (StringReader. (str text)))) (dec n))
+          (catch Exception e "")))
+   :cljs
+   (defn get-line
+     [n text]
+     (loop [chars (seq (clojure.string/replace text "\r\n" "\n"))
+            n n]
+       (cond
+         (empty? chars) ""
+         (= n 1) (apply str (take-while (complement #{\newline}) chars))
+         (= \newline (first chars)) (recur (next chars) (dec n))
+         :else (recur (next chars) n)))))
 
 (defn marker
   "Creates string with caret at nth position, 1-based"
@@ -42,7 +53,9 @@
         (print (:NOT r))),
     (:char-range r)
     (print (print/char-range->str r))
-    (instance? java.util.regex.Pattern r)
+    (instance? #?(:clj java.util.regex.Pattern
+                  :cljs js/RegExp)
+               r)
     (print (print/regexp->str r))
     :else
     (pr r)))
@@ -50,8 +63,7 @@
 (defn pprint-failure
   "Takes an augmented failure object and prints the error message"
   [{:keys [line column text reason]}]
-  (printf "Parse error at line %d, column %d:\n"
-          line column)
+  (println (str "Parse error at line " line ", column " column ":"))
   (println text)
   (println (marker column))
   (let [full-reasons (distinct (map :expecting

@@ -17,3 +17,7 @@ todo.txt
 /.settings
 .nrepl-port
 .lein-repl-history
+*~
+*#*#
+.cljs_node_repl/
+.nrepl-history

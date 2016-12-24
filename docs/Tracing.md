@@ -1,6 +1,6 @@
 # Tracing
 
-Instaparse 1.4.0 and up features the ability to look at a trace of what the parser is doing.  As an example, let's take a look at the as-and-bs parser from the tutorial.
+Instaparse 1.4.0 and up (in Clojure only) features the ability to look at a trace of what the parser is doing.  As an example, let's take a look at the as-and-bs parser from the tutorial.
 
 ```
 => (as-and-bs "aaabb")

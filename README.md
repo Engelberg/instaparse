@@ -1,4 +1,4 @@
-# Instaparse 1.4.3
+# Instaparse 1.4.4
 
 *What if context-free grammars were as easy to use as regular expressions?*
 
@@ -18,11 +18,11 @@ Instaparse aims to be the simplest way to build parsers in Clojure.
 
 ## Quickstart
 
-Instaparse requires Clojure v1.5.1 or later.  (It may work with earlier versions, but its speed relies extensively on features new to 1.5.)  A [Clojurescript port](https://github.com/lbradstreet/instaparse-cljs) is also available.
+Instaparse requires Clojure v1.5.1 or later, or ClojureScript v1.7.28 or later.
 
 Add the following line to your leiningen dependencies:
 
-	[instaparse "1.4.3"]
+	[instaparse "1.4.4"]
 
 Require instaparse in your namespace header:
 
@@ -115,6 +115,38 @@ This provides a convenienent way to share parser specifications over the Interne
 You can also use a specification contained in a local resource in your classpath:
 
 	(insta/parser (clojure.java.io/resource "myparser.bnf"))
+
+### `defparser`
+
+On ClojureScript, the `(def my-parser (insta/parser "..."))` use case
+has the following disadvantages:
+
+- ClojureScript does not support `slurp`, so `parser` cannot automatically read from file paths / URLs.
+- Having to parse a grammar string at runtime can impact the startup performance of an application or webpage.
+
+To solve those problems, a macro `instaparse.core/defparser` is
+provided that, if given a string for a grammar specification, will
+parse that as a grammar up front and emit more performant code.
+
+```clojure
+;; Clojure
+(:require [instaparse.core :as insta :refer [defparser]])
+;; ClojureScript
+(:require [instaparse.core :as insta :refer-macros [defparser]])
+
+=> (time (def p (insta/parser "S = A B; A = 'a'+; B = 'b'+")))
+"Elapsed time: 4.368179 msecs"
+#'user/p
+=> (time (defparser p "S = A B; A = 'a'+; B = 'b'+")) ; the meat of the work happens at macro-time
+"Elapsed time: 0.091689 msecs"
+#'user/p
+=> (defparser p "https://gist.github.com/Engelberg/5283346/raw/77e0b1d0cd7388a7ddf43e307804861f49082eb6/SingleA") ; works even in cljs!
+#'user/myparser
+=> (defparser p [:S (c/plus (c/string "a"))]) ; still works, but won't do any extra magic behind the scenes
+#'user/myparser
+=> (defparser p "S = 1*'a'" :input-format :abnf :output-format :enlive) ; takes additional keyword arguments
+#'user/myparser
+```
 
 ### Escape characters
 
@@ -808,7 +840,7 @@ start-line and start-column point to the same character as start-index, and end-
 
 #### Visualizing the tree
 
-Instaparse contains a function, `insta/visualize`, that will give you a visual overview of the parse tree, showing the tags, the character spans, and the leaves of the tree.
+Instaparse contains a function, `insta/visualize` *(Clojure only)*, that will give you a visual overview of the parse tree, showing the tags, the character spans, and the leaves of the tree.
 
 	=> (insta/visualize (as-and-bs "aaabbab"))
 
@@ -1001,14 +1033,15 @@ All the functionality you've seen in this tutorial is packed into an API of just
 
 	   :string-ci true (treat all string literals as case insensitive)
 
+	   :auto-whitespace (:standard or :comma)
+	   or
+	   :auto-whitespace custom-whitespace-parser
+
+       Clj only:
 	   :no-slurp true (disables use of slurp to auto-detect whether
 	                   input is a URI.  When using this option, input
 	                   must be a grammar string or grammar map.  Useful
 	                   for platforms where slurp is slow or not available.)
-
-	   :auto-whitespace (:standard or :comma)
-	   or
-	   :auto-whitespace custom-whitespace-parser
 
 	=> (doc insta/parse)
 	-------------------------
@@ -1025,6 +1058,9 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	   :unhide <:tags or :content or :all> (for this parse, disable hiding)
 	   :optimize :memory   (when possible, employ strategy to use less memory)
 
+       Clj only:
+       :trace true      (print diagnostic trace while parsing)
+
 	=> (doc insta/parses)
 	-------------------------
 	instaparse.core/parses
@@ -1039,7 +1075,10 @@ All the functionality you've seen in this tutorial is packed into an API of just
 	   :total true      (if parse fails, embed failure node in tree)
 	   :unhide <:tags or :content or :all> (for this parse, disable hiding)
 
-	=> (doc insta/set-default-output-format!)
+       Clj only:
+       :trace true      (print diagnostic trace while parsing)
+
+    => (doc insta/set-default-output-format!)
 	-------------------------
 	instaparse.core/set-default-output-format!
 	([type])
@@ -1118,11 +1157,11 @@ My interest in this project began while watching a video of Matt Might's [*Parsi
 
 Matt Might has published a [paper](http://matt.might.net/papers/might2011derivatives.pdf) about a specific approach to achieving that goal, but I had difficulty getting his *Parsing with Derivatives* technique to work in a performant way.
 
-I probably would have given up, but then Danny Yoo released the [Ragg parser generator](http://hashcollision.org/ragg/index.html) for the Racket language.  The Ragg library was a huge inspiration -- a model for what I wanted instaparse to become.  I asked Danny what technique he used, and he gave me more information about the algorithm he used.  However, he told me that if he were to do it again from scratch, he'd probably choose to use a [GLL algorithm](http://ldta.info/2009/ldta2009proceedings.pdf) by Adrian Johnstone and Elizabeth Scott, and he pointed me to a fantastic article about it by Vegard Øye, [posted on Github with source code in Racket](https://github.com/epsil/gll).
+I probably would have given up, but then Danny Yoo released the [Ragg parser generator](http://hashcollision.org/ragg/index.html) for the Racket language.  The Ragg library was a huge inspiration -- a model for what I wanted instaparse to become.  I asked Danny what technique he used, and he gave me more information about the algorithm he used.  However, he told me that if he were to do it again from scratch, he'd probably choose to use a [GLL algorithm](http://ldta.info/2009/ldta2009proceedings.pdf) by Adrian Johnstone and Elizabeth Scott, and he pointed me to a fantastic article about it by Vegard Ã˜ye, [posted on Github with source code in Racket](https://github.com/epsil/gll).
 
 That article had a link to a [paper](http://www.cs.uwm.edu/%7Edspiewak/papers/generalized-parser-combinators.pdf) and [Scala code](https://github.com/djspiewak/gll-combinators) by Daniel Spiewak, which was also extremely helpful.
 
-Alex Engelberg coded the first version of instaparse, proving the capabilities of the GLL algorithm.  He encouraged me to take his code and build and document a user-friendly API around it.  He continues to be a main contributor on the project, most recently developing the ABNF front-end.
+Alex Engelberg coded the first version of instaparse, proving the capabilities of the GLL algorithm.  He encouraged me to take his code and build and document a user-friendly API around it.  He continues to be a main contributor on the project, most recently developing the ABNF front-end, bringing the Clojurescript port up to feature parity with the Clojure version, and working out the details of merging the two codebases.
 
 I studied a number of other Clojure parser generators to help frame my ideas about what the API should look like.  I communicated with Eric Normand ([squarepeg](https://github.com/ericnormand/squarepeg)) and Christophe Grand ([parsley](https://github.com/cgrand/parsley)), both of whom provided useful advice and encouraged me to pursue my vision.
 

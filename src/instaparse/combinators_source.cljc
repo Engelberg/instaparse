@@ -1,7 +1,10 @@
 (ns instaparse.combinators-source
   "This is the underlying implementation of the various combinators."
   (:refer-clojure :exclude [cat])
-  (:use instaparse.reduction))
+  (:require [instaparse.reduction :refer [singleton? red
+                                          raw-non-terminal-reduction
+                                          reduction-types]]
+            [instaparse.util :refer [throw-illegal-argument-exception]]))
 
 ;; Ways to build parsers
 
@@ -47,7 +50,7 @@
       (if (seq parsers)
         (ord2 parser1 (apply ord parsers))
         parser1))))
-  
+
 (defn cat "Concatenation, i.e., parser1 parser2 ..."
   [& parsers]
   (if (every? (partial = Epsilon) parsers) Epsilon
@@ -63,20 +66,31 @@
 (defn string-ci "Create a case-insensitive string terminal out of s" 
   [s] 
   (if (= s "") Epsilon
-    {:tag :string-ci :string s}))
+      {:tag :string-ci :string s}))
 
 (defn unicode-char
   "Matches a Unicode code point or a range of code points"
   ([code-point]
-   (unicode-char code-point code-point)) ; represented the same internally
+   (unicode-char code-point code-point))
   ([lo hi]
    (assert (<= lo hi) "Character range minimum must be less than or equal the maximum")
    {:tag :char :lo lo :hi hi}))
 
+#?(:cljs
+   (defn- add-beginning-constraint
+     "JavaScript regexes have no .lookingAt method, so in cljs we just
+  add a '^' character to the front of the regex."
+     [r]
+     (if (regexp? r)
+       (re-pattern (str "^" (.-source r)))
+       r)))
+
 (defn regexp "Create a regexp terminal out of regular expression r"
   [r]
   (if (= r "") Epsilon
-    {:tag :regexp :regexp (re-pattern r)}))
+      {:tag :regexp
+       :regexp (-> (re-pattern r)
+                   #?(:cljs add-beginning-constraint))}))
 
 (defn nt "Refers to a non-terminal defined by the grammar map"
   [s] 
@@ -116,7 +130,6 @@
       (= (:tag parser) :ord) (assoc parser 
                                     :parser1 (unhide-content (:parser1 parser))
                                     :parser2 (unhide-content (:parser2 parser)))
-                                    
       :else parser)))
 
 (defn unhide-all-content
@@ -131,8 +144,8 @@
   (if-let [reduction (reduction-types reduction-type)]
     (into {} (for [[k v] grammar]
                [k (assoc v :red (reduction k))]))
-    (throw (IllegalArgumentException. 
-             (format "Invalid output format %s. Use :enlive or :hiccup." reduction-type)))))
+    (throw-illegal-argument-exception
+      "Invalid output format " reduction-type ". Use :enlive or :hiccup.")))
 
 (defn unhide-all
   "Recursively undoes the effect of both hide and hide-tag"
@@ -140,8 +153,8 @@
   (if-let [reduction (reduction-types reduction-type)]
     (into {} (for [[k v] grammar]
                [k (assoc (unhide-content v) :red (reduction k))]))
-    (throw (IllegalArgumentException. 
-             (format "Invalid output format %s. Use :enlive or :hiccup." reduction-type)))))
+    (throw-illegal-argument-exception
+      "Invalid output format " reduction-type ". Use :enlive or :hiccup.")))
 
 
 ;; New beta feature: automatically add whitespace

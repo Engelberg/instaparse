@@ -1,10 +1,20 @@
 (ns instaparse.core-test
-  (:refer-clojure :exclude [cat])
-  (:use clojure.test)
-  (:require clojure.edn)
-  (:require [instaparse.core :as insta]) 
-  (:require [instaparse.line-col :as lc])
-  (:use instaparse.combinators))
+  #?(:clj (:refer-clojure :exclude [cat read-string]))
+  (:require
+    #?(:clj  [clojure.test :refer [deftest are is]]
+       :cljs [cljs.test :as t])
+    #?(:clj  [clojure.edn :refer [read-string]]
+       :cljs [cljs.reader :refer [read-string]])
+    #?(:clj  [instaparse.core :as insta :refer [defparser]]
+       :cljs [instaparse.core :as insta :refer-macros [defparser]])
+    [instaparse.cfg :refer [ebnf]]
+    [instaparse.line-col :as lc]
+    [instaparse.combinators-source :refer [Epsilon opt plus star rep 
+                                           alt ord cat string-ci string
+                                           string-ci regexp nt look neg 
+                                           hide hide-tag]])
+  #?(:cljs (:require-macros
+             [cljs.test :refer [is are deftest run-tests]])))
 
 (def as-and-bs
   (insta/parser
@@ -112,9 +122,19 @@
      <digit> = #'[0-9]'"
     :output-format :enlive))
 
+(defparser words-and-numbers-enlive-defparser
+  "sentence = token (<whitespace> token)*
+     <token> = word | number
+     whitespace = #'\\s+'
+     word = letter+
+     number = digit+ 
+     <letter> = #'[a-zA-Z]'
+     <digit> = #'[0-9]'"
+  :output-format :enlive)
+
 (insta/transform 
   {:word str, 
-   :number (comp clojure.edn/read-string str)}
+   :number (comp read-string str)}
   (words-and-numbers-one-character-at-a-time "abc 123 def"))
 
 (def ambiguous
@@ -253,21 +273,6 @@
       {:B (ebnf "'b' '='")})
     :start :S))
 
-(defn spans [t]
-  (if (sequential? t)
-    (cons (insta/span t) (map spans (next t)))
-    t))      
-
-(defn spans-hiccup-tag [t]
-  (if (sequential? t)
-    (cons {:tag (first t) :span (insta/span t)} (map spans (next t)))
-    t))      
-
-(defn spans-enlive [t]
-  (if (map? t)
-    (assoc t :span (insta/span t) :content (map spans-enlive (:content t)))
-    t))
-
 (def whitespace 
   (insta/parser
     "whitespace = #'\\s+'"))
@@ -349,10 +354,10 @@
      [:AB [:A "a" "a" "a" "a" "a"] [:B "b" "b" "b"]]
      [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]
     
-    (as-and-bs (StringBuilder. "aaaaabbbaaaabb"))
-    [:S
-     [:AB [:A "a" "a" "a" "a" "a"] [:B "b" "b" "b"]]
-     [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]
+#?@(:clj [(as-and-bs (StringBuilder. "aaaaabbbaaaabb"))
+          [:S
+           [:AB [:A "a" "a" "a" "a" "a"] [:B "b" "b" "b"]]
+           [:AB [:A "a" "a" "a" "a"] [:B "b" "b"]]]])
     
     (as-and-bs "aaaaabbbaaaabb")
     (as-and-bs "aaaaabbbaaaabb" :optimize :memory)
@@ -518,14 +523,20 @@
 
     (insta/transform 
      {:word str, 
-      :number (comp clojure.edn/read-string str)}
+      :number (comp read-string str)}
      (words-and-numbers-one-character-at-a-time "abc 123 def"))
     [:sentence "abc" 123 "def"]
     
     (->> (words-and-numbers-enlive "abc 123 def")
       (insta/transform
         {:word str,
-         :number (comp clojure.edn/read-string str)}))
+         :number (comp read-string str)}))
+    {:tag :sentence, :content ["abc" 123 "def"]}
+
+    (->> (words-and-numbers-enlive-defparser "abc 123 def")
+      (insta/transform
+        {:word str,
+         :number (comp read-string str)}))
     {:tag :sentence, :content ["abc" 123 "def"]}
     
     (arithmetic "1-2/(3-4)+5*6")
@@ -542,7 +553,7 @@
     (->> (arithmetic "1-2/(3-4)+5*6")
      (insta/transform
        {:add +, :sub -, :mul *, :div /, 
-        :number clojure.edn/read-string :expr identity}))
+        :number read-string :expr identity}))
     33
     
     (paren-ab-hide-both-tags "(aba)")
@@ -575,46 +586,6 @@
     ((insta/parser "S = ('a'?)+") "")
     ((insta/parser "S = ('a'?)+") "" :optimize :memory)    
     
-    (spans (as-and-bs "aaaabbbaabbab"))
-    '([0 13] ([0 7] ([0 4] "a" "a" "a" "a") ([4 7] "b" "b" "b")) ([7 11] ([7 9] "a" "a") ([9 11] "b" "b")) ([11 13] ([11 12] "a") ([12 13] "b")))
-    
-    (spans (as-and-bs "aaaabbbaabbab"))
-    (spans (as-and-bs "aaaabbbaabbab" :optimize :memory))    
-    
-    (spans ((insta/parser "S = 'a' S | '' ") "aaaa"))
-    '([0 4] "a" ([1 4] "a" ([2 4] "a" ([3 4] "a" ([4 4])))))
-    
-    (spans ((insta/parser "S = 'a' S | '' ") "aaaa"))
-    (spans ((insta/parser "S = 'a' S | '' ") "aaaa" :optimize :memory))    
-    
-    (spans (as-and-bs "aaaaabbbaacabb" :total true))
-    '([0 14] ([0 8] ([0 5] "a" "a" "a" "a" "a") ([5 8] "b" "b" "b")) ([8 14] ([8 10] "a" "a") ([10 14] ([10 14] "cabb"))))
-    
-    (spans (as-and-bs "aaaaabbbaacabb" :total true))
-    (spans (as-and-bs "aaaaabbbaacabb" :total true :optimize :memory))
-    
-    (spans-enlive (as-and-bs-enlive "aaaaabbbaacabb" :total true))
-    '{:span [0 14], :tag :S, :content ({:span [0 8], :tag :AB, :content ({:span [0 5], :tag :A, :content ("a" "a" "a" "a" "a")} {:span [5 8], :tag :B, :content ("b" "b" "b")})} {:span [8 14], :tag :AB, :content ({:span [8 10], :tag :A, :content ("a" "a")} {:span [10 14], :tag :B, :content ({:span [10 14], :tag :instaparse/failure, :content ("cabb")})})})}
-        
-    (spans-enlive (as-and-bs-enlive "aaaabbbaabbab"))
-    '{:span [0 13], :tag :S, :content ({:span [0 7], :tag :AB, :content ({:span [0 4], :tag :A, :content ("a" "a" "a" "a")} {:span [4 7], :tag :B, :content ("b" "b" "b")})} {:span [7 11], :tag :AB, :content ({:span [7 9], :tag :A, :content ("a" "a")} {:span [9 11], :tag :B, :content ("b" "b")})} {:span [11 13], :tag :AB, :content ({:span [11 12], :tag :A, :content ("a")} {:span [12 13], :tag :B, :content ("b")})})}
-    
-    (spans-enlive (as-and-bs-enlive "aaaabbbaabbab"))
-    (spans-enlive (as-and-bs-enlive "aaaabbbaabbab" :optimize :memory))
-        
-    (->> (words-and-numbers-enlive "abc 123 def")
-      (insta/transform
-        {:word (comp (partial array-map :word) str),
-         :number (comp (partial array-map :number) clojure.edn/read-string str)}))
-    {:tag :sentence, :content [{:word "abc"} {:number 123} {:word "def"}]}
-    
-    (->> (words-and-numbers-enlive "abc 123 def")
-      (insta/transform
-        {:word (comp (partial array-map :word) str),
-         :number (comp (partial array-map :number) clojure.edn/read-string str)})
-      spans-enlive)
-    '{:span [0 11], :tag :sentence, :content ({:content (), :span [0 3], :word "abc"} {:content (), :span [4 7], :number 123} {:content (), :span [8 11], :word "def"})}
-
     ((insta/parser
      "a = b c .
       b = 'b' .
@@ -689,6 +660,63 @@
     '("a")
     ))    
 
+(defn spans [t]
+  (if (sequential? t)
+    (cons (insta/span t) (map spans (next t)))
+    t))      
+
+(defn spans-hiccup-tag [t]
+  (if (sequential? t)
+    (cons {:tag (first t) :span (insta/span t)} (map spans (next t)))
+    t))
+
+(defn spans-enlive [t]
+  (if (map? t)
+    (assoc t :span (insta/span t) :content (map spans-enlive (:content t)))
+    t))
+
+(deftest span-tests
+  (are [x y] (= x y)
+    (spans (as-and-bs "aaaabbbaabbab"))
+    '([0 13] ([0 7] ([0 4] "a" "a" "a" "a") ([4 7] "b" "b" "b")) ([7 11] ([7 9] "a" "a") ([9 11] "b" "b")) ([11 13] ([11 12] "a") ([12 13] "b")))
+
+    (spans (as-and-bs "aaaabbbaabbab"))
+    (spans (as-and-bs "aaaabbbaabbab" :optimize :memory))    
+    
+    (spans ((insta/parser "S = 'a' S | '' ") "aaaa"))
+    '([0 4] "a" ([1 4] "a" ([2 4] "a" ([3 4] "a" ([4 4])))))
+    
+    (spans ((insta/parser "S = 'a' S | '' ") "aaaa"))
+    (spans ((insta/parser "S = 'a' S | '' ") "aaaa" :optimize :memory))    
+    
+    (spans (as-and-bs "aaaaabbbaacabb" :total true))
+    '([0 14] ([0 8] ([0 5] "a" "a" "a" "a" "a") ([5 8] "b" "b" "b")) ([8 14] ([8 10] "a" "a") ([10 14] ([10 14] "cabb"))))
+    
+    (spans (as-and-bs "aaaaabbbaacabb" :total true))
+    (spans (as-and-bs "aaaaabbbaacabb" :total true :optimize :memory))
+    
+    (spans-enlive (as-and-bs-enlive "aaaaabbbaacabb" :total true))
+    '{:span [0 14], :tag :S, :content ({:span [0 8], :tag :AB, :content ({:span [0 5], :tag :A, :content ("a" "a" "a" "a" "a")} {:span [5 8], :tag :B, :content ("b" "b" "b")})} {:span [8 14], :tag :AB, :content ({:span [8 10], :tag :A, :content ("a" "a")} {:span [10 14], :tag :B, :content ({:span [10 14], :tag :instaparse/failure, :content ("cabb")})})})}
+        
+    (spans-enlive (as-and-bs-enlive "aaaabbbaabbab"))
+    '{:span [0 13], :tag :S, :content ({:span [0 7], :tag :AB, :content ({:span [0 4], :tag :A, :content ("a" "a" "a" "a")} {:span [4 7], :tag :B, :content ("b" "b" "b")})} {:span [7 11], :tag :AB, :content ({:span [7 9], :tag :A, :content ("a" "a")} {:span [9 11], :tag :B, :content ("b" "b")})} {:span [11 13], :tag :AB, :content ({:span [11 12], :tag :A, :content ("a")} {:span [12 13], :tag :B, :content ("b")})})}
+    
+    (spans-enlive (as-and-bs-enlive "aaaabbbaabbab"))
+    (spans-enlive (as-and-bs-enlive "aaaabbbaabbab" :optimize :memory))
+        
+    (->> (words-and-numbers-enlive "abc 123 def")
+      (insta/transform
+        {:word (comp (partial array-map :word) str),
+         :number (comp (partial array-map :number) read-string str)}))
+    {:tag :sentence, :content [{:word "abc"} {:number 123} {:word "def"}]}
+    
+    (->> (words-and-numbers-enlive "abc 123 def")
+      (insta/transform
+        {:word (comp (partial array-map :word) str),
+         :number (comp (partial array-map :number) read-string str)})
+      spans-enlive)
+    '{:span [0 11], :tag :sentence, :content ({:content (), :span [0 3], :word "abc"} {:content (), :span [4 7], :number 123} {:content (), :span [8 11], :word "def"})}))
+
 (defn round-trip [parser]
   (insta/parser (prn-str parser)))
 
@@ -750,5 +778,46 @@
     (is (= (hiccup-line-col-spans hlc)
            '({:instaparse.gll/end-column 2, :instaparse.gll/end-line 5, :instaparse.gll/start-column 1, :instaparse.gll/start-line 1, :instaparse.gll/start-index 0, :instaparse.gll/end-index 13} ({:instaparse.gll/end-column 4, :instaparse.gll/end-line 1, :instaparse.gll/start-column 1, :instaparse.gll/start-line 1, :instaparse.gll/start-index 0, :instaparse.gll/end-index 3} "abc") ({:instaparse.gll/end-column 4, :instaparse.gll/end-line 2, :instaparse.gll/start-column 1, :instaparse.gll/start-line 2, :instaparse.gll/start-index 4, :instaparse.gll/end-index 7} "def") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 3, :instaparse.gll/start-column 1, :instaparse.gll/start-line 3, :instaparse.gll/start-index 8, :instaparse.gll/end-index 9} "g") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 4, :instaparse.gll/start-column 1, :instaparse.gll/start-line 4, :instaparse.gll/start-index 10, :instaparse.gll/end-index 11} "h") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 5, :instaparse.gll/start-column 1, :instaparse.gll/start-line 5, :instaparse.gll/start-index 12, :instaparse.gll/end-index 13} "i"))))))
 
-        
+(deftest print-test
+  ;; In scenarios when AutoFlattenSeq or FlattenOnDemandVector is
+  ;; returned to the user, does the parse output print properly?
+  (let [parser-str "<paren-wrapped> = <'('> seq-of-A-or-B <')'>
+                    seq-of-A-or-B = ('a' | 'b')*"
+        input "(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)"]
+    ;; input is 33 "a"s to trigger FlattenOnDemandVector in hiccup
+    ;; output format
+    (doseq [[output-mode expected-output]
+            [[:hiccup (list (into [:seq-of-A-or-B]
+                                  (repeat 33 "a")))]
+             [:enlive (list {:tag :seq-of-A-or-B
+                             :content (repeat 33 "a")})]]
 
+            :let [p (insta/parser parser-str :output-format output-mode)
+                  actual-output (p input)]]
+      (is (= expected-output actual-output))
+      (is (= (with-out-str (prn expected-output))
+             (with-out-str (prn actual-output))))
+      (is (= (with-out-str (println expected-output))
+             (with-out-str (println actual-output))))
+      (is (= (str expected-output)
+             (str actual-output))))))
+
+(deftest invoke-test
+  (let [parser (insta/parser "S = 'a'")
+        text "a"]
+    (are [x] (= [:S "a"] (parser text))
+      (parser text 0 0)
+      (parser text 0 0 1 1)
+      (parser text 0 0 1 1 2 2)
+      (parser text 0 0 1 1 2 2 3 3)
+      (parser text 0 0 1 1 2 2 3 3 4 4)
+      (parser text 0 0 1 1 2 2 3 3 4 4 5 5)
+      (parser text 0 0 1 1 2 2 3 3 4 4 5 5 6 6)
+      (parser text 0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7)
+      (parser text 0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8)
+      (parser text 0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9)
+      (parser text 0 0 1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9 10 10))))
+
+#?(:cljs
+   (defn ^:export run []
+         (run-tests)))

@@ -1,5 +1,6 @@
 (ns instaparse.reduction
-  (:require [instaparse.auto-flatten-seq :as afs]))
+  (:require [instaparse.auto-flatten-seq :as afs]
+            [instaparse.util :refer [throw-illegal-argument-exception]]))
 
 ;; utilities
 
@@ -51,6 +52,5 @@
       (into {} (for [[k v] grammar]
                  (if (:red v) [k v]
                    [k (assoc v :red (reduction k))])))
-      (throw (IllegalArgumentException. 
-               (format "Invalid output format %s. Use :enlive or :hiccup." reduction-type))))))
-    
+      (throw-illegal-argument-exception
+        "Invalid output format " reduction-type ". Use :enlive or :hiccup."))))

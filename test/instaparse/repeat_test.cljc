@@ -1,10 +1,9 @@
 (ns instaparse.repeat-test
-  (:use clojure.test)
-  (:require [instaparse.core :as insta]
-            [instaparse.repeat :as repeat]
-            ))
-
-(def text (slurp "https://gist.github.com/lewang/5900166/raw/3d23bd12bcb01036473c6e425e3798517b17820a/input_small.txt"))
+  (:require #?(:clj  [clojure.test :refer [deftest are]]
+               :cljs [cljs.test :as t])
+            [instaparse.core :as insta]
+            [instaparse.repeat :as repeat])
+  #?(:cljs (:require-macros [cljs.test :refer [are deftest]])))
 
 (def user-parser
 "content = user-block*
