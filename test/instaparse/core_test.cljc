@@ -16,6 +16,18 @@
   #?(:cljs (:require-macros
              [cljs.test :refer [is are deftest run-tests]])))
 
+(defn parsers-similar?
+  "Due to regexes, instaparse parsers can't be tested for structural
+  equality, so we'll stringify all of them before comparing.
+
+  Note that this may return some false negatives for parsers that
+  have structurally equal data, but happen to store information in a
+  different order due to the order in which the grammar was read. So
+  it's only useful for test cases in which we want to sanity-check
+  that various parser creation methods are behaving how we expect."
+  [& parsers]
+  (apply = (map pr-str parsers)))
+
 (def as-and-bs
   (insta/parser
     "S = AB*

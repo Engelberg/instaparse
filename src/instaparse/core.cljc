@@ -13,7 +13,8 @@
             [instaparse.repeat :as repeat]
             [instaparse.combinators-source :as c]
             [instaparse.line-col :as lc]
-            [instaparse.viz :as viz]))
+            [instaparse.viz :as viz]
+            [instaparse.util :refer [throw-illegal-argument-exception]]))
 
 (def ^:dynamic *default-output-format* :hiccup)
 (defn set-default-output-format!
@@ -247,7 +248,17 @@
                 (cfg/build-parser-from-combinators (apply hash-map grammar-specification)
                                                    output-format
                                                    start)]
-            (map->Parser parser)))]
+            (map->Parser parser))
+
+          :else
+          #?(:clj
+             (let [spec (slurp grammar-specification)
+                   parser (build-parser spec output-format)]
+               (map->Parser parser))
+             :cljs
+             (throw-illegal-argument-exception
+              "Expected string, map, or vector as grammar specification, got "
+              (pr-str grammar-specification))))]
 
     (let [auto-whitespace (get options :auto-whitespace)
           ; auto-whitespace is keyword, parser, or nil

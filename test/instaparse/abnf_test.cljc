@@ -2,9 +2,11 @@
   (:require
     #?(:clj  [instaparse.core :refer [parser parses defparser]]
        :cljs [instaparse.core :refer [parser parses] :refer-macros [defparser]])
+    [instaparse.core-test :refer [parsers-similar?]]
     [instaparse.combinators :refer [abnf]]
     #?(:clj [clojure.test :refer [deftest are is]]
-       :cljs [cljs.test]))
+       :cljs [cljs.test])
+    #?(:clj  [clojure.java.io :as io]))
   #?(:cljs (:require-macros
              [cljs.test :refer [is are deftest]])))
 
@@ -17,6 +19,29 @@
   "test/data/phone_uri.txt"
   :input-format :abnf
   :instaparse.abnf/case-insensitive true)
+
+#?(:clj
+   (deftest slurping-test
+     (is (parsers-similar?
+           uri-parser
+           (binding [instaparse.abnf/*case-insensitive* true]
+             (parser 
+              "test/data/abnf_uri.txt"
+              :input-format :abnf
+              :instaparse.abnf/case-insensitive true))
+           (binding [instaparse.abnf/*case-insensitive* true]
+             (parser 
+              (io/resource "data/abnf_uri.txt")
+              :input-format :abnf
+              :instaparse.abnf/case-insensitive true))
+           (binding [instaparse.abnf/*case-insensitive* true]
+             (parser 
+              (slurp "test/data/abnf_uri.txt")
+              :input-format :abnf
+              :instaparse.abnf/case-insensitive true)))
+         "Verify that defparser, auto-slurp from string filename,
+         auto-slurp from resource (URL), and manual slurp all return
+         equivalent parsers.")))
 
 (deftest abnf-uri
   (are [x y] (= x y)
