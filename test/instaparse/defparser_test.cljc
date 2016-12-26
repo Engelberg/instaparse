@@ -41,7 +41,8 @@
 
 (def a2 (insta/parser "S = #'a' / 'b'" :input-format :abnf))
 
-(def a3 (insta/parser "S = #'a' | 'b'" :input-format :ebnf, :string-ci true))
+(defparser a3 "S = #'a' | 'b'"
+  :input-format :ebnf, :string-ci true)
 
 (deftest defparser-test-abnf
   (is (parsers-similar? a1 a2 a3)))
