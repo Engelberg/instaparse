@@ -3,6 +3,7 @@
             [instaparse.abnf-test]
             [instaparse.auto-flatten-seq-test]
             [instaparse.core-test]
+            [instaparse.defparser-test]
             [instaparse.grammars]
             [instaparse.repeat-test]
             [instaparse.specs]
@@ -21,6 +22,7 @@
   (run-tests 'instaparse.abnf-test
              'instaparse.auto-flatten-seq-test
              'instaparse.core-test
+             'instaparse.defparser-test
              'instaparse.grammars
              'instaparse.repeat-test
              'instaparse.specs))

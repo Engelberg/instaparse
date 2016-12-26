@@ -12,21 +12,26 @@
     [instaparse.combinators-source :refer [Epsilon opt plus star rep 
                                            alt ord cat string-ci string
                                            string-ci regexp nt look neg 
-                                           hide hide-tag]])
+                                           hide hide-tag]]
+    [clojure.walk :as walk])
   #?(:cljs (:require-macros
              [cljs.test :refer [is are deftest run-tests]])))
 
 (defn parsers-similar?
-  "Due to regexes, instaparse parsers can't be tested for structural
-  equality, so we'll stringify all of them before comparing.
-
-  Note that this may return some false negatives for parsers that
-  have structurally equal data, but happen to store information in a
-  different order due to the order in which the grammar was read. So
-  it's only useful for test cases in which we want to sanity-check
-  that various parser creation methods are behaving how we expect."
+  "Tests if parsers are equal."
   [& parsers]
-  (apply = (map pr-str parsers)))
+  (->> parsers
+       ;; Ugh. Regexes have to be specially handled because
+       ;; (= #"a" #"a") => false
+       (map (partial
+              walk/postwalk
+              (fn [form]
+                (if (instance? #?(:clj java.util.regex.Pattern
+                                  :cljs js/RegExp)
+                               form)
+                  [::regex (str form)]
+                  form))))
+       (apply =)))
 
 (def as-and-bs
   (insta/parser

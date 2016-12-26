@@ -287,7 +287,8 @@
        `(def ~name
           (map->Parser
            ~(binding [abnf/*case-insensitive* (:instaparse.abnf/case-insensitive opts false)]
-              (let [macro-time-opts (select-keys opts [:input-format :string-ci :start])
+              (let [macro-time-opts (select-keys opts [:input-format :output-format
+                                                       :string-ci :start])
                     runtime-opts (dissoc opts :start)
                     macro-time-parser (apply parser grammar (apply concat macro-time-opts))
                     pre-processed-grammar (:grammar macro-time-parser)
