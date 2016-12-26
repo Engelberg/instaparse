@@ -274,8 +274,8 @@
 #?(:clj
    (defmacro defparser
      "Takes a string specification of a context-free grammar,
-  or a URI for a text file containing such a specification,
-  or a map of parser combinators and sets a variable to a parser for that grammar.
+  or a string URI for a text file containing such a specification,
+  or a map/vector of parser combinators, and sets a variable to a parser for that grammar.
 
   String specifications are processed at macro-time, not runtime, so this is an
   appealing alternative to (def _ (parser \"...\")) for ClojureScript users.
@@ -283,12 +283,22 @@
   Optional keyword arguments unique to `defparser`:
   - :instaparse.abnf/case-insensitive true"
      [name grammar & {:as opts}]
+     ;; For each of the macro-time opts, ensure that they are the data
+     ;; types we expect, not more complex quoted expressions.
+     {:pre [(or (nil? (:input-format opts))
+                (keyword? (:input-format opts)))
+            (or (nil? (:output-format opts))
+                (keyword? (:output-format opts)))
+            (contains? #{true false nil} (:string-ci opts))
+            (contains? #{true false nil} (:no-slurp opts))]}
      (if (string? grammar)
        `(def ~name
           (map->Parser
            ~(binding [abnf/*case-insensitive* (:instaparse.abnf/case-insensitive opts false)]
-              (let [macro-time-opts (select-keys opts [:input-format :output-format
-                                                       :string-ci :start])
+              (let [macro-time-opts (select-keys opts [:input-format
+                                                       :output-format
+                                                       :string-ci
+                                                       :no-slurp])
                     runtime-opts (dissoc opts :start)
                     macro-time-parser (apply parser grammar (apply concat macro-time-opts))
                     pre-processed-grammar (:grammar macro-time-parser)
@@ -310,7 +320,7 @@
                                :else form))))
 
                     start-production
-                    (:start-production macro-time-parser)]
+                    (or (:start opts) (:start-production macro-time-parser))]
                 `(parser ~grammar-producing-code
                          :start ~start-production
                          ~@(apply concat runtime-opts))))))

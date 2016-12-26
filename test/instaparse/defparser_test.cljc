@@ -24,7 +24,17 @@
   #?(:clj
      (are [x y] (thrown? y (eval (quote x)))
        (defparser p6 "test/data/parser_not_found.txt")
-       Exception)))
+       Exception
+
+       (defparser p7 "test/data/defparser_grammar.txt" :no-slurp true)
+       Exception
+
+       ;; We catch up front when someone tries to do something overly
+       ;; complicated in the macro-time options
+       (defparser p8 "S = #'a' | 'b'" :input-format (do :ebnf))
+       AssertionError)))
+
+
 
 (defparser a1 "S = #'a' / 'b'"
   :input-format :abnf)
@@ -35,6 +45,8 @@
 
 (deftest defparser-test-abnf
   (is (parsers-similar? a1 a2 a3)))
+
+
 
 (defparser ws1 "S = (<whitespace?> 'a')+ <whitespace?>; <whitespace> = #'\\s+'")
 
@@ -52,6 +64,8 @@
 
 (deftest defparser-test-auto-whitespace
   (is (parsers-similar? ws1 ws2 ws3 ws4 ws5 ws6)))
+
+
 
 (defparser e1 "S = 'a'+" :output-format :enlive)
 
