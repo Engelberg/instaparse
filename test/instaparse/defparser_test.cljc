@@ -45,8 +45,11 @@
 
 (def ws5 (insta/parser "S = 'a'+" :auto-whitespace :standard))
 
+(defparser ws6 "<whitespace> = #'\\s+'; S = (<whitespace?> 'a')+ <whitespace?>"
+  :start :S)
+
 (deftest defparser-test-auto-whitespace
-  (is (parsers-similar? ws1 ws2 ws3 ws4)))
+  (is (parsers-similar? ws1 ws2 ws3 ws4 ws5 ws6)))
 
 (defparser e1 "S = 'a'+" :output-format :enlive)
 
