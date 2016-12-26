@@ -287,21 +287,33 @@
        `(def ~name
           (map->Parser
            ~(binding [abnf/*case-insensitive* (:instaparse.abnf/case-insensitive opts false)]
-              (let [parser-map (into {} (apply parser grammar (apply concat opts)))]
-                (->> parser-map
-                     (walk/postwalk
-                       (fn [form]
-                         (cond
-                           ;; Lists cannot be evaluated verbatim
-                           (seq? form)
-                           (list* 'list form)
+              (let [macro-time-opts (select-keys opts [:input-format :string-ci :start])
+                    runtime-opts (dissoc opts :start)
+                    macro-time-parser (apply parser grammar (apply concat macro-time-opts))
+                    pre-processed-grammar (:grammar macro-time-parser)
 
-                           ;; Regexp terminals are handled differently in cljs
-                           (= :regexp (:tag form))
-                           `(merge (c/regexp ~(str (:regexp form))) ~(dissoc form :tag :regexp))
+                    grammar-producing-code
+                    (->> pre-processed-grammar
+                         (walk/postwalk
+                           (fn [form]
+                             (cond
+                               ;; Lists cannot be evaluated verbatim
+                               (seq? form)
+                               (list* 'list form)
 
-                           :else form))))))))
-       `(def ~name (parser ~grammar ~@opts)))))
+                               ;; Regexp terminals are handled differently in cljs
+                               (= :regexp (:tag form))
+                               `(merge (c/regexp ~(str (:regexp form)))
+                                       ~(dissoc form :tag :regexp))
+
+                               :else form))))
+
+                    start-production
+                    (:start-production macro-time-parser)]
+                `(parser ~grammar-producing-code
+                         :start ~start-production
+                         ~@(apply concat runtime-opts))))))
+       `(def ~name (parser ~grammar ~@(apply concat opts))))))
         
 (defn failure?
   "Tests whether a parse result is a failure."
