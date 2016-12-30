@@ -13,7 +13,8 @@
             [instaparse.repeat :as repeat]
             [instaparse.combinators-source :as c]
             [instaparse.line-col :as lc]
-            [instaparse.viz :as viz]))
+            [instaparse.viz :as viz]
+            [instaparse.util :refer [throw-illegal-argument-exception]]))
 
 (def ^:dynamic *default-output-format* :hiccup)
 (defn set-default-output-format!
@@ -247,7 +248,17 @@
                 (cfg/build-parser-from-combinators (apply hash-map grammar-specification)
                                                    output-format
                                                    start)]
-            (map->Parser parser)))]
+            (map->Parser parser))
+
+          :else
+          #?(:clj
+             (let [spec (slurp grammar-specification)
+                   parser (build-parser spec output-format)]
+               (map->Parser parser))
+             :cljs
+             (throw-illegal-argument-exception
+              "Expected string, map, or vector as grammar specification, got "
+              (pr-str grammar-specification))))]
 
     (let [auto-whitespace (get options :auto-whitespace)
           ; auto-whitespace is keyword, parser, or nil
@@ -263,8 +274,8 @@
 #?(:clj
    (defmacro defparser
      "Takes a string specification of a context-free grammar,
-  or a URI for a text file containing such a specification,
-  or a map of parser combinators and sets a variable to a parser for that grammar.
+  or a string URI for a text file containing such a specification,
+  or a map/vector of parser combinators, and sets a variable to a parser for that grammar.
 
   String specifications are processed at macro-time, not runtime, so this is an
   appealing alternative to (def _ (parser \"...\")) for ClojureScript users.
@@ -272,25 +283,48 @@
   Optional keyword arguments unique to `defparser`:
   - :instaparse.abnf/case-insensitive true"
      [name grammar & {:as opts}]
+     ;; For each of the macro-time opts, ensure that they are the data
+     ;; types we expect, not more complex quoted expressions.
+     {:pre [(or (nil? (:input-format opts))
+                (keyword? (:input-format opts)))
+            (or (nil? (:output-format opts))
+                (keyword? (:output-format opts)))
+            (contains? #{true false nil} (:string-ci opts))
+            (contains? #{true false nil} (:no-slurp opts))]}
      (if (string? grammar)
        `(def ~name
           (map->Parser
            ~(binding [abnf/*case-insensitive* (:instaparse.abnf/case-insensitive opts false)]
-              (let [parser-map (into {} (apply parser grammar (apply concat opts)))]
-                (->> parser-map
-                     (walk/postwalk
-                       (fn [form]
-                         (cond
-                           ;; Lists cannot be evaluated verbatim
-                           (seq? form)
-                           (list* 'list form)
+              (let [macro-time-opts (select-keys opts [:input-format
+                                                       :output-format
+                                                       :string-ci
+                                                       :no-slurp])
+                    runtime-opts (dissoc opts :start)
+                    macro-time-parser (apply parser grammar (apply concat macro-time-opts))
+                    pre-processed-grammar (:grammar macro-time-parser)
 
-                           ;; Regexp terminals are handled differently in cljs
-                           (= :regexp (:tag form))
-                           `(merge (c/regexp ~(str (:regexp form))) ~(dissoc form :tag :regexp))
+                    grammar-producing-code
+                    (->> pre-processed-grammar
+                         (walk/postwalk
+                           (fn [form]
+                             (cond
+                               ;; Lists cannot be evaluated verbatim
+                               (seq? form)
+                               (list* 'list form)
 
-                           :else form))))))))
-       `(def ~name (parser ~grammar ~@opts)))))
+                               ;; Regexp terminals are handled differently in cljs
+                               (= :regexp (:tag form))
+                               `(merge (c/regexp ~(str (:regexp form)))
+                                       ~(dissoc form :tag :regexp))
+
+                               :else form))))
+
+                    start-production
+                    (or (:start opts) (:start-production macro-time-parser))]
+                `(parser ~grammar-producing-code
+                         :start ~start-production
+                         ~@(apply concat runtime-opts))))))
+       `(def ~name (parser ~grammar ~@(apply concat opts))))))
         
 (defn failure?
   "Tests whether a parse result is a failure."

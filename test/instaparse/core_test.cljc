@@ -12,9 +12,26 @@
     [instaparse.combinators-source :refer [Epsilon opt plus star rep 
                                            alt ord cat string-ci string
                                            string-ci regexp nt look neg 
-                                           hide hide-tag]])
+                                           hide hide-tag]]
+    [clojure.walk :as walk])
   #?(:cljs (:require-macros
              [cljs.test :refer [is are deftest run-tests]])))
+
+(defn parsers-similar?
+  "Tests if parsers are equal."
+  [& parsers]
+  (->> parsers
+       ;; Ugh. Regexes have to be specially handled because
+       ;; (= #"a" #"a") => false
+       (map (partial
+              walk/postwalk
+              (fn [form]
+                (if (instance? #?(:clj java.util.regex.Pattern
+                                  :cljs js/RegExp)
+                               form)
+                  [::regex (str form)]
+                  form))))
+       (apply =)))
 
 (def as-and-bs
   (insta/parser
