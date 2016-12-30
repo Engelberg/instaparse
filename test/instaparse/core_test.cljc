@@ -24,12 +24,16 @@
        ;; Ugh. Regexes have to be specially handled because
        ;; (= #"a" #"a") => false
        (map (partial
-              walk/postwalk
+              walk/prewalk
               (fn [form]
-                (if (instance? #?(:clj java.util.regex.Pattern
+                (cond
+                  (instance? instaparse.core.Parser form)
+                  (into {} form)
+                  (instance? #?(:clj java.util.regex.Pattern
                                   :cljs js/RegExp)
                                form)
                   [::regex (str form)]
+                  :else
                   form))))
        (apply =)))
 

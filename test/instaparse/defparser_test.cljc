@@ -23,15 +23,15 @@
 
   #?(:clj
      (are [x y] (thrown? y (eval (quote x)))
-       (defparser p6 "test/data/parser_not_found.txt")
+       (instaparse.core/defparser p6 "test/data/parser_not_found.txt")
        Exception
 
-       (defparser p7 "test/data/defparser_grammar.txt" :no-slurp true)
+       (instaparse.core/defparser p7 "test/data/defparser_grammar.txt" :no-slurp true)
        Exception
 
        ;; We catch up front when someone tries to do something overly
        ;; complicated in the macro-time options
-       (defparser p8 "S = #'a' | 'b'" :input-format (do :ebnf))
+       (instaparse.core/defparser p8 "S = #'a' | 'b'" :input-format (do :ebnf))
        AssertionError)))
 
 

@@ -1,4 +1,4 @@
-# Instaparse 1.4.4
+# Instaparse 1.4.5
 
 *What if context-free grammars were as easy to use as regular expressions?*
 
@@ -22,7 +22,7 @@ Instaparse requires Clojure v1.5.1 or later, or ClojureScript v1.7.28 or later.
 
 Add the following line to your leiningen dependencies:
 
-	[instaparse "1.4.4"]
+	[instaparse "1.4.5"]
 
 Require instaparse in your namespace header:
 
@@ -147,6 +147,8 @@ parse that as a grammar up front and emit more performant code.
 => (defparser p "S = 1*'a'" :input-format :abnf :output-format :enlive) ; takes additional keyword arguments
 #'user/myparser
 ```
+
+`defparser` works in both Clojure and Clojurescript for cross-platform compatibility, but as a macro, there are some subtleties to its use; for example, any optional keyword arguments need to be present and available directly within the expression so they can be picked up at compile-time (as opposed to passed in as variables).  So we recommend using `defparser` primarily in Clojurescript, where it contributes a worthwhile performance benefit, and stick to the function `parser` if your primary target is Clojure.
 
 ### Escape characters
 
