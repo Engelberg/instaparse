@@ -6,8 +6,6 @@
 
 * Fixed regression in 1.4.4 involving parsers based off of URIs.
 
-### Enhancements
-
 * defparser now supports the full range of relevant parser options.
 
 ## 1.4.4

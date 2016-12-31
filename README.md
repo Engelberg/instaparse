@@ -148,7 +148,7 @@ parse that as a grammar up front and emit more performant code.
 #'user/myparser
 ```
 
-`defparser` works in both Clojure and Clojurescript for cross-platform compatibility, but as a macro, there are some subtleties to its use; for example, any optional keyword arguments need to be present and available directly within the expression so they can be picked up at compile-time (as opposed to passed in as variables).  So we recommend using `defparser` primarily in Clojurescript, where it contributes a worthwhile performance benefit, and stick to the function `parser` if your primary target is Clojure.
+`defparser` is primarily useful in Clojurescript, but works in both Clojure and Clojurescript for cross-platform compatibility.
 
 ### Escape characters
 
