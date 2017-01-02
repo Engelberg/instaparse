@@ -141,11 +141,11 @@ parse that as a grammar up front and emit more performant code.
 "Elapsed time: 0.091689 msecs"
 #'user/p
 => (defparser p "https://gist.github.com/Engelberg/5283346/raw/77e0b1d0cd7388a7ddf43e307804861f49082eb6/SingleA") ; works even in cljs!
-#'user/myparser
+#'user/p
 => (defparser p [:S (c/plus (c/string "a"))]) ; still works, but won't do any extra magic behind the scenes
-#'user/myparser
+#'user/p
 => (defparser p "S = 1*'a'" :input-format :abnf :output-format :enlive) ; takes additional keyword arguments
-#'user/myparser
+#'user/p
 ```
 
 `defparser` is primarily useful in Clojurescript, but works in both Clojure and Clojurescript for cross-platform compatibility.
