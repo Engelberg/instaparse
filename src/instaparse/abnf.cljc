@@ -9,7 +9,9 @@
             [instaparse.combinators-source :refer
              [Epsilon opt plus star rep alt ord cat string-ci string
               string-ci regexp nt look neg hide hide-tag unicode-char]]
-            #?(:cljs [goog.string.format])))
+            #?(:cljs [goog.string.format])
+            [clojure.walk :as walk])
+  #?(:cljs (:require-macros [instaparse.abnf :refer [precompile-cljs-grammar]])))
 
 (def ^:dynamic *case-insensitive*
   "This is normally set to false, in which case the non-terminals
@@ -42,8 +44,8 @@ you'll have to keep in mind when transforming)."
    :WSP (alt (string "\u0020")     ;SP
              (string "\u0009"))})  ;HTAB
 
-(def abnf-grammar
-  (str "
+(def abnf-grammar-common
+  "
 <rulelist> = <opt-whitespace> (rule | hide-tag-rule)+;
 rule = rulename-left <defined-as> alternation <opt-whitespace>;
 hide-tag-rule = hide-tag <defined-as> alternation <opt-whitespace>;
@@ -81,21 +83,53 @@ NUM = DIGIT+;
 
 (* extra entrypoint to be used by the abnf combinator *)
 <rules-or-parser> = rulelist | alternation;
+  ")
+
+(def abnf-grammar-clj-only
   "
-       #?(:clj "
 <rulename> = #'[a-zA-Z][-a-zA-Z0-9]*(?x) #identifier';
 opt-whitespace = #'\\s*(?:;.*?(?:\\u000D?\\u000A\\s*|$))*(?x) # optional whitespace or comments';
 whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*(?x) # whitespace or comments';
 regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'(?x) #Single-quoted regexp\"
        | #\"#\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"(?x) #Double-quoted regexp\"
-"
-          :cljs "
+")
+
+(def abnf-grammar-cljs-only
+  "
 <rulename> = #'[a-zA-Z][-a-zA-Z0-9]*';
 opt-whitespace = #'\\s*(?:;.*?(?:\\u000D?\\u000A\\s*|$))*';
 whitespace = #'\\s+(?:;.*?\\u000D?\\u000A\\s*)*';
 regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
        | #\"#\\\"[^\\\"\\\\]*(?:\\\\.[^\\\"\\\\]*)*\\\"\"
-")))
+")
+
+#?(:clj
+   (defmacro precompile-cljs-grammar
+     []
+     (let [combinators (red/apply-standard-reductions 
+                         :hiccup (cfg/ebnf (str abnf-grammar-common
+                                                abnf-grammar-cljs-only)))]
+       (walk/postwalk
+         (fn [form]
+           (cond
+             ;; Lists cannot be evaluated verbatim
+             (seq? form)
+             (list* 'list form)
+
+             ;; Regexp terminals are handled differently in cljs
+             (= :regexp (:tag form))
+             `(merge (regexp ~(str (:regexp form)))
+                     ~(dissoc form :tag :regexp))
+
+             :else form))
+         combinators))))
+
+#?(:clj
+   (def abnf-parser (red/apply-standard-reductions 
+                      :hiccup (cfg/ebnf (str abnf-grammar-common
+                                             abnf-grammar-clj-only))))
+   :cljs
+   (def abnf-parser (precompile-cljs-grammar)))
 
 (defn get-char-combinator
   [& nums]
@@ -199,9 +233,6 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
    :dec-val get-char-combinator
    :hex-val get-char-combinator
    :NUM #(parse-int (apply str %&))})
-
-(def abnf-parser (red/apply-standard-reductions 
-                   :hiccup (cfg/ebnf abnf-grammar)))
 
 (defn rules->grammar-map
   [rules]
