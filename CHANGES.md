@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.4.6
+
+### Performance improvements
+
+* Better performance for ABNF grammars in Clojurescript.
+
 ## 1.4.5
 
 ### Bugfixes

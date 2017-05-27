@@ -20,4 +20,7 @@ todo.txt
 *~
 *#*#
 .cljs_node_repl/
+.idea/
+*.iml
+*.asc
 .nrepl-history
