@@ -74,7 +74,10 @@
 (defn tree-viz
   "Creates a graphviz visualization of the parse tree.
    Optional keyword arguments:
+   :output-file :buffered-image (return a java.awt.image.BufferedImage object)
+   or
    :output-file output-file (will save the tree image to output-file)
+
    :options options (options passed along to rhizome)
 
 Important: This function will only work if you have added rhizome
@@ -84,7 +87,7 @@ See https://github.com/ztellman/rhizome for more information."
   {:pre [(not= (tree-type tree) :invalid)]}
   (let [ttype (tree-type tree)]
     (if (= ttype :rootless)
-      (tree-viz (fake-root tree) :options options)
+      (tree-viz (fake-root tree) :output-file output-file :options options)
       (let [image
             (try
               (case (tree-type tree)
@@ -94,6 +97,7 @@ See https://github.com/ztellman/rhizome for more information."
                 (throw (UnsupportedOperationException. 
                          "\n\nYou appear to have rhizome in your dependencies, but have not installed GraphViz on your system.
 \nSee https://github.com/ztellman/rhizome for more information.\n"))))]
-        (if output-file 
-          (r/save-image image output-file)
-          (r/view-image image))))))
+        (cond
+          (= output-file :buffered-image) image
+          output-file (r/save-image image output-file)
+          :else (r/view-image image))))))

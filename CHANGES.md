@@ -1,5 +1,15 @@
 # Instaparse Change Log
 
+## 1.4.7
+
+### Enhancements
+
+* `visualize` now supports `:output-file :buffered-image`, which returns a java.awt.image.BufferedImage object.
+
+### Bugfixes
+
+* Fixed problem where `visualize` with `:output-file` didn't work on rootless trees.
+
 ## 1.4.6
 
 ### Performance improvements
