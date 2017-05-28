@@ -1000,7 +1000,7 @@ Instaparse follows the respective behaviors of the two notations by default, but
 	Expected:
 	"a"
 
-On the other hand, if you want to mix and match case-sensitive and case-insensitive strings, you can convert strings to regexes, such as `#'I am case sensitive'` or `#'(?i)I am case in-sensitive'`.
+On the other hand, if you want to mix and match case-sensitive and case-insensitive strings within a grammar, you can convert strings to regexes, such as `#'I am case-sensitive'` or `#'(?i)I am case-insensitive'`.
 
 ### Serialization
 
