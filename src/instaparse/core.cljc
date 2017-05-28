@@ -206,13 +206,15 @@
                  (contains? ws-parser :grammar)
                  (contains? ws-parser :start-production))))]}
   (let [input-format (get options :input-format *default-input-format*)
-        build-parser (case input-format 
-                       :abnf abnf/build-parser
-                       :ebnf (if (get options :string-ci)
-                               (fn [spec output-format]
-                                 (binding [cfg/*case-insensitive-literals* true]
-                                   (cfg/build-parser spec output-format)))
-                               cfg/build-parser))
+        build-parser
+        (fn [spec output-format]
+          (case input-format
+            :abnf (binding [cfg/*case-insensitive-literals*
+                            (boolean (:string-ci options true))]
+                    (abnf/build-parser spec output-format))
+            :ebnf (binding [cfg/*case-insensitive-literals*
+                            (boolean (:string-ci options false))]
+                    (cfg/build-parser spec output-format))))
         output-format (get options :output-format *default-output-format*)
         start (get options :start nil)
 

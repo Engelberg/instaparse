@@ -221,8 +221,8 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
    :neg neg
    :regexp (comp regexp cfg/process-regexp)
    :char-val (fn [& cs]
-               ; case insensitive string
-               (string-ci (apply str cs)))
+               ((if cfg/*case-insensitive-literals* string-ci string)
+                (apply str cs)))
    :bin-char (fn [& cs]
                (parse-int (apply str cs) 2))
    :dec-char (fn [& cs]

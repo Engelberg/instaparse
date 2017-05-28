@@ -219,3 +219,25 @@ to test the lookahead"
       [:S "a" "a" "a" "a"]
       (p "=")
       [:S [:B "="]])))
+
+(defn output-matches?
+  [expected actual]
+  (if (= :fail expected)
+    (instance? instaparse.gll.Failure actual)
+    (= expected actual)))
+
+(deftest string-ci-test
+  (are [parser input expected] (output-matches? expected (parser input))
+    (parser "S = 'Hi'" :input-format :ebnf) "Hi" [:S "Hi"]
+    (parser "S = 'Hi'" :input-format :ebnf) "hi" :fail
+    (parser "S = 'Hi'" :input-format :ebnf :string-ci false) "Hi" [:S "Hi"]
+    (parser "S = 'Hi'" :input-format :ebnf :string-ci false) "hi" :fail
+    (parser "S = 'Hi'" :input-format :ebnf :string-ci true) "Hi" [:S "Hi"]
+    (parser "S = 'Hi'" :input-format :ebnf :string-ci true) "hi" [:S "Hi"]
+
+    (parser "S = 'Hi'" :input-format :abnf) "Hi" [:S "Hi"]
+    (parser "S = 'Hi'" :input-format :abnf) "hi" [:S "Hi"]
+    (parser "S = 'Hi'" :input-format :abnf :string-ci false) "Hi" [:S "Hi"]
+    (parser "S = 'Hi'" :input-format :abnf :string-ci false) "hi" :fail
+    (parser "S = 'Hi'" :input-format :abnf :string-ci true) "Hi" [:S "Hi"]
+    (parser "S = 'Hi'" :input-format :abnf :string-ci true) "hi" [:S "Hi"]))
