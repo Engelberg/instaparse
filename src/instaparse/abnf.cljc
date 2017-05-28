@@ -245,15 +245,16 @@ If you give it a series of rules, it will give you back a grammar map.
 Useful for combining with other combinators."
   [spec]
   (let [tree (gll/parse abnf-parser :rules-or-parser spec false)]
-    (cond
-      (instance? instaparse.gll.Failure tree)
-      (throw-runtime-exception
-        "Error parsing grammar specification:\n"
-        (with-out-str (println tree)))
-      (= :alternation (ffirst tree))
-      (t/transform abnf-transformer (first tree))
+    (binding [cfg/*case-insensitive-literals* true]
+      (cond
+        (instance? instaparse.gll.Failure tree)
+        (throw-runtime-exception
+          "Error parsing grammar specification:\n"
+          (with-out-str (println tree)))
+        (= :alternation (ffirst tree))
+        (t/transform abnf-transformer (first tree))
 
-      :else (rules->grammar-map (t/transform abnf-transformer tree)))))
+        :else (rules->grammar-map (t/transform abnf-transformer tree))))))
 
 (defn build-parser [spec output-format]
   (let [rule-tree (gll/parse abnf-parser :rulelist spec false)]
