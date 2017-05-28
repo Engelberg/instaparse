@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## Unreleased
+
+### Enhancements
+
+* ABNF parsers' string case-insensitivity can now be disabled by setting `:string-ci false`.
+
 ## 1.4.7
 
 ### Enhancements

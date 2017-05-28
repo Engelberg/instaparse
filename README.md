@@ -976,10 +976,11 @@ Instaparse's primary input format is based on EBNF syntax, but an alternative in
 
 ### String case sensitivity
 
-One interesting difference between EBNF and ABNF grammars is that in EBNF, string terminals are case-sensitive whereas in ABNF, all string terminals are case-*in*sensitive.  If you like ABNF's case-insensitive approach, but want to use Instaparse's somewhat richer EBNF syntax, there are a couple options available to you.
+One notable difference between EBNF and ABNF notations is that in EBNF, string terminals are case-sensitive, whereas in ABNF, string terminals are traditionally case-*in*sensitive.
 
-If you want *all* of the string terminals in your Instaparse EBNF grammar to be case-insensitive, the simplest solution is to use the `:string-ci true` keyword argument when calling `insta/parser` to make the strings case-insensitive:
+Instaparse follows the respective behaviors of the two notations by default, but in both cases, the case-sensitivity is overridable with the `:string-ci` flag, which states for sure whether all string terminals in the grammar are case-insensitive.
 
+	;; EBNF, case-sensitive
 	=> ((insta/parser "S = 'a'+") "AaaAaa")
 	Parse error at line 1, column 1:
 	AaaAaa
@@ -987,10 +988,19 @@ If you want *all* of the string terminals in your Instaparse EBNF grammar to be 
 	Expected:
 	"a"
 
+	;; EBNF, case-insensitive
 	=> ((insta/parser "S = 'a'+" :string-ci true) "AaaAaa")
 	[:S "a" "a" "a" "a" "a" "a"]
 
-On the other hand, if you want to cherry-pick certain string tokens to be case-insensitive, simply convert your string tokens into case-insensitive regexes, for example, replacing the string `'select'` with `#'(?i)select'`.
+	;; ABNF, case-sensitive (not the default!)
+	=> ((insta/parser "S = 'a'+" :input-format :abnf :string-ci false) "AaaAaa")
+	Parse error at line 1, column 1:
+	AaaAaa
+	^
+	Expected:
+	"a"
+
+On the other hand, if you want to mix and match case-sensitive and case-insensitive strings, you can convert strings to regexes, such as `#'I am case sensitive'` or `#'(?i)I am case in-sensitive'`.
 
 ### Serialization
 
