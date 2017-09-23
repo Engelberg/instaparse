@@ -9,7 +9,8 @@
             [instaparse.util :refer [throw-illegal-argument-exception
                                      throw-runtime-exception]]
             [clojure.string :as str]
-            #?(:cljs [cljs.reader :as reader])))
+            #?(:cljs [cljs.tools.reader :as reader])
+            #?(:cljs [cljs.tools.reader.reader-types :as readers])))
 
 (def ^:dynamic *case-insensitive-literals*
   "When true all string literal terminals in built grammar will be treated as case insensitive"
@@ -188,7 +189,7 @@
 
    :cljs
    (defn safe-read-string [s]
-     (reader/read-string* (reader/push-back-reader s) nil)))
+     (reader/read-string* (readers/string-push-back-reader s) nil nil nil)))
 
 ; I think re-pattern is sufficient, but here's how to do it without.
 ;(let [regexp-reader (clojure.lang.LispReader$RegexReader.)]
