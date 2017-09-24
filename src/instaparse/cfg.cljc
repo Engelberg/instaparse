@@ -13,8 +13,26 @@
             #?(:cljs [cljs.tools.reader.reader-types :as readers])))
 
 (def ^:dynamic *case-insensitive-literals*
-  "When true all string literal terminals in built grammar will be treated as case insensitive"
-  false)
+  "Sets whether all string literal terminals in a built grammar
+  will be treated as case insensitive.
+
+  `true`: case-insensitive
+  `false`: case-sensitive
+  `:default`: case-sensitive for EBNF, case-insensitive for ABNF"
+  :default)
+
+(defn string+
+  "Returns a string combinator that may be case-insensntive, based
+  on (in priority order):
+
+  1) the value of `*case-insensitive-literals*`, if it has been
+  overridden to a boolean
+  2) the supplied `ci-by-default?` parameter"
+  [s ci-by-default?]
+  (case *case-insensitive-literals*
+    true (string-ci s)
+    false (string s)
+    :default (if ci-by-default? (string-ci s) (string s))))
 
 (defn regex-doc
   "Adds a comment to a Clojure regex, or no-op in ClojureScript"
@@ -242,8 +260,7 @@
     :paren (recur (content tree))
     :hide (hide (build-rule (content tree)))
     :cat (apply cat (map build-rule (contents tree)))
-    :string ((if *case-insensitive-literals* string-ci string)
-              (process-string (content tree)))
+    :string (string+ (process-string (content tree)) false)
     :regexp (regexp (process-regexp (content tree)))
     :opt (opt (build-rule (content tree)))
     :star (star (build-rule (content tree)))
