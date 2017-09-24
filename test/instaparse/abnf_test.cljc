@@ -3,7 +3,7 @@
     #?(:clj  [instaparse.core :refer [parser parses defparser]]
        :cljs [instaparse.core :refer [parser parses] :refer-macros [defparser]])
     [instaparse.core-test :refer [parsers-similar?]]
-    [instaparse.combinators :refer [abnf]]
+    [instaparse.combinators :refer [ebnf abnf]]
     #?(:clj [clojure.test :refer [deftest are is]]
        :cljs [cljs.test])
     #?(:clj  [clojure.java.io :as io]))
@@ -235,9 +235,19 @@ to test the lookahead"
     (parser "S = 'Hi'" :input-format :ebnf :string-ci true) "Hi" [:S "Hi"]
     (parser "S = 'Hi'" :input-format :ebnf :string-ci true) "hi" [:S "Hi"]
 
+    (parser [:S (ebnf "'Hi'")]) "Hi" [:S "Hi"]
+    (parser [:S (ebnf "'Hi'")]) "hi" :fail
+    (parser [:S (ebnf "'Hi'" :string-ci true)]) "Hi" [:S "Hi"]
+    (parser [:S (ebnf "'Hi'" :string-ci true)]) "hi" [:S "Hi"]
+
     (parser "S = 'Hi'" :input-format :abnf) "Hi" [:S "Hi"]
     (parser "S = 'Hi'" :input-format :abnf) "hi" [:S "Hi"]
     (parser "S = 'Hi'" :input-format :abnf :string-ci false) "Hi" [:S "Hi"]
     (parser "S = 'Hi'" :input-format :abnf :string-ci false) "hi" :fail
     (parser "S = 'Hi'" :input-format :abnf :string-ci true) "Hi" [:S "Hi"]
-    (parser "S = 'Hi'" :input-format :abnf :string-ci true) "hi" [:S "Hi"]))
+    (parser "S = 'Hi'" :input-format :abnf :string-ci true) "hi" [:S "Hi"]
+
+    (parser [:S (abnf "'Hi'")]) "Hi" [:S "Hi"]
+    (parser [:S (abnf "'Hi'")]) "hi" [:S "Hi"]
+    (parser [:S (abnf "'Hi'" :string-ci false)]) "Hi" [:S "Hi"]
+    (parser [:S (abnf "'Hi'" :string-ci false)]) "hi" :fail))

@@ -316,14 +316,15 @@
 If you give it the right-hand side of a rule, it will return the combinator equivalent.
 If you give it a series of rules, it will give you back a grammar map.   
 Useful for combining with other combinators."
-  [spec]
-  (let [rules (parse cfg :rules-or-parser spec false)]
-    (cond
-      (instance? instaparse.gll.Failure rules)
-      (throw-runtime-exception
-        "Error parsing grammar specification:\n"
-        (with-out-str (println rules)))
-      (= :rule (ffirst rules))
-      (into {} (map build-rule rules))
+  [spec & {:as opts}]
+  (binding [*case-insensitive-literals* (:string-ci opts :default)]
+    (let [rules (parse cfg :rules-or-parser spec false)]
+      (cond
+        (instance? instaparse.gll.Failure rules)
+        (throw-runtime-exception
+          "Error parsing grammar specification:\n"
+          (with-out-str (println rules)))
+        (= :rule (ffirst rules))
+        (into {} (map build-rule rules))
 
-      :else (build-rule (first rules)))))
+        :else (build-rule (first rules))))))
