@@ -6,6 +6,12 @@
 
 * ABNF parsers' string case-insensitivity can now be disabled by setting `:string-ci false`.
 
+## 1.4.8
+
+### Updates
+
+* Update to support Clojurescript 1.9.854 and above, due to a breaking change in Clojurescript to use tools.reader.
+
 ## 1.4.7
 
 ### Enhancements
