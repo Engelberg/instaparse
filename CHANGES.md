@@ -5,6 +5,7 @@
 ### Enhancements
 
 * ABNF parsers' string case-insensitivity can now be disabled by setting `:string-ci false`.
+* `ebnf` and `abnf` combinators now support an optional `:string-ci` argument, which overrides the default case-insensitivity behavior for that input format.
 
 ## 1.4.8
 
