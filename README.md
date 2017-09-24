@@ -980,25 +980,31 @@ One notable difference between EBNF and ABNF notations is that in EBNF, string t
 
 Instaparse follows the respective behaviors of the two notations by default, but in both cases, the case-sensitivity is overridable with the `:string-ci` flag, which states for sure whether all string terminals in the grammar are case-insensitive.
 
-	;; EBNF, case-sensitive
-	=> ((insta/parser "S = 'a'+") "AaaAaa")
-	Parse error at line 1, column 1:
-	AaaAaa
-	^
-	Expected:
-	"a"
+```
+;; EBNF, case-sensitive
+=> ((insta/parser "S = 'a'+") "AaaAaa")
+Parse error at line 1, column 1:
+AaaAaa
+^
+Expected:
+"a"
 
-	;; EBNF, case-insensitive
-	=> ((insta/parser "S = 'a'+" :string-ci true) "AaaAaa")
-	[:S "a" "a" "a" "a" "a" "a"]
+;; EBNF, case-insensitive (override)
+=> ((insta/parser "S = 'a'+" :string-ci true) "AaaAaa")
+[:S "a" "a" "a" "a" "a" "a"]
 
-	;; ABNF, case-sensitive (not the default!)
-	=> ((insta/parser "S = 'a'+" :input-format :abnf :string-ci false) "AaaAaa")
-	Parse error at line 1, column 1:
-	AaaAaa
-	^
-	Expected:
-	"a"
+;; ABNF, case-insensitive
+=> ((insta/parser "S = 1*'a'" :input-format :abnf) "AaaAaa")
+[:S "a" "a" "a" "a" "a" "a"]
+
+;; ABNF, case-sensitive (override)
+=> ((insta/parser "S = 1*'a'" :input-format :abnf :string-ci false) "AaaAaa")
+Parse error at line 1, column 1:
+AaaAaa
+^
+Expected:
+"a"
+```
 
 On the other hand, if you want to mix and match case-sensitive and case-insensitive strings within a grammar, you can convert strings to regexes, such as `#'I am case-sensitive'` or `#'(?i)I am case-insensitive'`.
 
