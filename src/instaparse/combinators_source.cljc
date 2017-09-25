@@ -4,7 +4,7 @@
   (:require [instaparse.reduction :refer [singleton? red
                                           raw-non-terminal-reduction
                                           reduction-types]]
-            [instaparse.util :refer [throw-illegal-argument-exception regexp-flags]]))
+            [instaparse.util :refer [throw-illegal-argument-exception #?(:cljs regexp-flags)]]))
 
 ;; Ways to build parsers
 

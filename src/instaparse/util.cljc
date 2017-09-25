@@ -12,8 +12,9 @@
       #?(:clj IllegalArgumentException.)
       throw))
 
-(defn regexp-flags [re]
-  (cond-> ""
-    (.-ignoreCase re) (str "i")
-    (.-multiline re) (str "m")
-    (.-unicode re) (str "u")))
+#?(:cljs
+    (defn regexp-flags [re]
+      (cond-> ""
+        (.-ignoreCase re) (str "i")
+        (.-multiline re) (str "m")
+        (.-unicode re) (str "u"))))
