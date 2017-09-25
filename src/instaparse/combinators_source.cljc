@@ -4,7 +4,7 @@
   (:require [instaparse.reduction :refer [singleton? red
                                           raw-non-terminal-reduction
                                           reduction-types]]
-            [instaparse.util :refer [throw-illegal-argument-exception]]))
+            [instaparse.util :refer [throw-illegal-argument-exception regexp-flags]]))
 
 ;; Ways to build parsers
 
@@ -82,7 +82,7 @@
   add a '^' character to the front of the regex."
      [r]
      (if (regexp? r)
-       (re-pattern (str "^" (.-source r)))
+       (js/RegExp. (str "^" (.-source r)) (regexp-flags r))
        r)))
 
 (defn regexp "Create a regexp terminal out of regular expression r"
