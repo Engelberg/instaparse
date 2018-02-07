@@ -91,7 +91,7 @@ Occasionally, I receive a question about whether there's a *best* way to write i
 
 2. If your token is a string, use a string literal, not a regular epxression.  For example, prefer `'apple'` to `#'apple'`.
 
-3. When the greedy behavior of regular expressions is what you want, prefer using `*` nd `+` *inside* the regular expression rather than outside.  This comes up very commonly in processing whitespace.  In most applications, once you hit whitespace, you want to eat up all the whitespace to get to the next token.  So you'll get better performance with `#'\\s*'` than with `#'\\s'*`.  In my parsers, I routinely have a rule for optional whitespace that looks like `ows = #'\\s*'` and then I sprinkle `<ows>` liberally in my other rules wherever I want to potentially allow whitespace.
+3. When the greedy behavior of regular expressions is what you want, prefer using `*` and `+` *inside* the regular expression rather than outside.  This comes up very commonly in processing whitespace.  In most applications, once you hit whitespace, you want to eat up all the whitespace to get to the next token.  So you'll get better performance with `#'\\s*'` than with `#'\\s'*`.  In my parsers, I routinely have a rule for optional whitespace that looks like `ows = #'\\s*'` and then I sprinkle `<ows>` liberally in my other rules wherever I want to potentially allow whitespace.
 
 4. Related to the previous point, prefer using regular expressions to define tokens in their entirety rather than using instaparse to build up the tokens by analyzing the string character by character.  For example, if an identifer in your language is a letter followed by a series of letters or digits, you'll be better off with the rule
 
