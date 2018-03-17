@@ -55,18 +55,17 @@
     :hiccup    ; use the hiccup output format 
     {:rules (hide-tag (cat opt-whitespace
                            (plus (nt :rule))))
-     :comment (cat (string "(*") (nt :inside-comment) (string "*)"))
-     :inside-comment (cat (regexp inside-comment)
-                          (star (cat (nt :comment)
-                                     (regexp inside-comment))))
-     :opt-whitespace (cat (regexp ws)
-                          (star (cat (nt :comment)
-                                     (regexp ws))))
+     :comment (cat (hide (string "(*")) (regexp inside-comment) (hide (string "*)")))
+     :opt-whitespace (hide (regexp ws))
+     :opt-comment (cat (hide (regexp ws))
+                       (star (cat (nt :comment)
+                                  (hide (regexp ws)))))
      :rule-separator (alt (string ":")
                           (string ":=")
                           (string "::=")
                           (string "="))
-     :rule (cat (alt (nt :nt)
+     :rule (cat (nt :opt-comment)
+                (alt (nt :nt)
                      (nt :hide-nt))
                 opt-whitespace
                 (hide (nt :rule-separator))
@@ -109,9 +108,9 @@
                      opt-whitespace
                      (hide (string ">")))
           :cat (plus (cat
-                       opt-whitespace
+                       (nt :opt-comment)
                        (alt (nt :factor) (nt :look) (nt :neg))
-                       opt-whitespace))
+                       (nt :opt-comment)))
           :string (alt
                     (regexp single-quoted-string)
                     (regexp double-quoted-string))
@@ -247,34 +246,50 @@
 (defn build-rule
   "Convert one parsed rule from the grammar into combinators"
   [tree]
-  (case (tag tree)
-    :rule (let [[nt alt-or-ord] (contents tree)]
-            (if (= (tag nt) :hide-nt)
-              [(keyword (content (content nt)))
-               (hide-tag (build-rule alt-or-ord))]
-              [(keyword (content nt))
-               (build-rule alt-or-ord)]))
-    :nt (nt (keyword (content tree)))
-    :alt (apply alt (map build-rule (contents tree)))
-    :ord (apply ord (map build-rule (contents tree)))
-    :paren (recur (content tree))
-    :hide (hide (build-rule (content tree)))
-    :cat (apply cat (map build-rule (contents tree)))
-    :string (string+ (process-string (content tree)) false)
-    :regexp (regexp (process-regexp (content tree)))
-    :opt (opt (build-rule (content tree)))
-    :star (star (build-rule (content tree)))
-    :plus (plus (build-rule (content tree)))
-    :look (look (build-rule (content tree)))
-    :neg (neg (build-rule (content tree)))
-    :epsilon Epsilon))
+  ;(prn :build-rule :tag (tag tree) :content (content tree) :tree tree)
+  (let [cs (contents tree)
+        comments (seq (map #(second %)
+                           (mapcat #(contents %)
+                                   (filter #(= :opt-comment (first %)) cs))))
+        cs (remove #(= :opt-comment (first %)) cs)]
+    (if (= :rule (tag tree))
+      (let [[nt alt-or-ord] cs]
+        (if (= (tag nt) :hide-nt)
+          [(keyword (content (content nt)))
+           (merge
+             (hide-tag (build-rule alt-or-ord))
+             (when comments {:comments comments}))]
+          [(keyword (content nt))
+           (merge
+             (build-rule alt-or-ord)
+             (when comments {:comments comments}))]))
+      (merge
+        (case (tag tree)
+          :nt (nt (keyword (content tree)))
+          :alt (apply alt (map build-rule (contents tree)))
+          :ord (apply ord (map build-rule (contents tree)))
+          :paren (build-rule (content tree))
+          :hide (hide (build-rule (content tree)))
+          :cat (apply cat (map build-rule cs))
+          :string (string+ (process-string (content tree)) false)
+          ;:opt-comment (opt-comment cs)
+          :regexp (regexp (process-regexp (content tree)))
+          :opt (opt (build-rule (content tree)))
+          :star (star (build-rule (content tree)))
+          :plus (plus (build-rule (content tree)))
+          :look (look (build-rule (content tree)))
+          :neg (neg (build-rule (content tree)))
+          :epsilon Epsilon)
+        (when comments
+          {:comments comments})))))
 
 (defn seq-nt
   "Returns a sequence of all non-terminals in a parser built from combinators."
   [parser]
+  ;(prn :seq-nt :tag (:tag parser))
   (case (:tag parser)
     :nt [(:keyword parser)]
-    (:string :string-ci :char :regexp :epsilon) []
+    (:string :string-ci :char :regexp :comment :epsilon) []
     (:opt :plus :star :look :neg :rep) (recur (:parser parser))
     (:alt :cat) (mapcat seq-nt (:parsers parser))
     :ord (mapcat seq-nt 
@@ -293,6 +308,7 @@
           
 (defn build-parser [spec output-format]
   (let [rules (parse cfg :rules spec false)]
+    ;(clojure.pprint/pprint {:rules rules})
     (if (instance? instaparse.gll.Failure rules)
       (throw-runtime-exception
         "Error parsing grammar specification:\n"

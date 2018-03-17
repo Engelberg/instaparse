@@ -92,6 +92,11 @@
        :regexp (-> (re-pattern r)
                    #?(:cljs add-beginning-constraint))}))
 
+(defn opt-comment "Create a comment terminal out of s"
+  [s] 
+  (if (= s "") Epsilon
+    {:tag :comment :comment s}))
+
 (defn nt "Refers to a non-terminal defined by the grammar map"
   [s] 
   {:tag :nt :keyword s})
