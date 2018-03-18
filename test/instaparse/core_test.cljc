@@ -793,12 +793,12 @@
 
 (defn hiccup-line-col-spans [t]
   (if (sequential? t)
-    (cons (meta t) (map hiccup-line-col-spans (next t)))
+    (cons (dissoc (meta t) :path-log) (map hiccup-line-col-spans (next t)))
     t))
 
 (defn enlive-line-col-spans [t]
   (if (map? t)
-    (cons (meta t) (map enlive-line-col-spans (:content t)))
+    (cons (dissoc (meta t) :path-log) (map enlive-line-col-spans (:content t)))
     t))
 
 (deftest line-col-test
