@@ -1008,7 +1008,7 @@ I've also worked to remove "performance surprises".  For example, both left-recu
 
 One performance caveat: instaparse is fairly memory-hungry, relying on extensive caching of intermediate results to keep the computational costs reasonable.  This is not unusual -- caching is commonplace in many modern parsers, trading off space for time -- but it's worth bearing in mind.  Packrat/PEG parsers and many recursive descent parsers employ a similar memory-intensive strategy, but there are other alternatives out there if that kind of memory usage is unacceptable.  As one would expect, instaparse parsers do not hold onto the memory cache once the parse is complete; that memory is made available for garbage collection.
 
-The [performance notes document] (https://github.com/Engelberg/instaparse/blob/master/docs/Performance.md) contains a deeper discussion of performance and a few helpful hints for getting the best performance out of your parser.
+The [performance notes document](https://github.com/Engelberg/instaparse/blob/master/docs/Performance.md) contains a deeper discussion of performance and a few helpful hints for getting the best performance out of your parser.
 
 ## Reference
 
