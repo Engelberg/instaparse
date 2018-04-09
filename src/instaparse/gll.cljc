@@ -23,6 +23,10 @@
     ;; Need a way to convert parsers into strings for printing and error messages.
     [instaparse.print :as print]
 
+    ;; Utility to preserve RegExp flags
+    #?(:cljs
+       [instaparse.util :refer [regexp-flags]])
+
     ;; Unicode utilities for char-range
     #?(:cljs
        [goog.i18n.uChar :as u]))
@@ -745,7 +749,7 @@
          (.group matcher))))
    :cljs
    (defn re-match-at-front [regexp text]
-     (let [re (js/RegExp. (.-source regexp) "g")
+     (let [re (js/RegExp. (.-source regexp) (str "g" (regexp-flags regexp)))
            m (.exec re text)]
        (when (and m (zero? (.-index m)))
          (first m)))))

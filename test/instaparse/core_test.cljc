@@ -368,6 +368,10 @@
      Input = ConstExpr <ws> ConstExpr;"
      :start :Input))
 
+(def case-insensitive-regexp
+  (insta/parser
+    "S = #'(?i)a+'"))
+
 (deftest parsing-tutorial
   (are [x y] (= x y)
     (as-and-bs "aaaaabbbaaaabb")
@@ -674,6 +678,15 @@
     
     (insta/transform {:ADD +} [:ADD 10 5])
     15
+
+    (case-insensitive-regexp "aaa")
+    [:S "aaa"]
+
+    (case-insensitive-regexp "AAA")
+    [:S "AAA"]
+
+    (case-insensitive-regexp "aAa")
+    [:S "aAa"]
 
     (->> "a"
          ((insta/parser "<S> = 'a'"))
