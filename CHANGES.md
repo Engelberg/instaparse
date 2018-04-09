@@ -1,11 +1,15 @@
 # Instaparse Change Log
 
-## Unreleased
+## 1.4.9
 
 ### Enhancements
 
 * ABNF parsers' string case-insensitivity can now be disabled by setting `:string-ci false`.
 * `ebnf` and `abnf` combinators now support an optional `:string-ci` argument, which overrides the default case-insensitivity behavior for that input format.
+
+### Bugfixes
+
+* Case-insensitive regexp flag on Clojurescript
 
 ## 1.4.8
 
