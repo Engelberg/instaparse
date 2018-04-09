@@ -227,7 +227,7 @@ to test the lookahead"
     (= expected actual)))
 
 (deftest string-ci-test
-  (are [parser input expected] (output-matches? expected (parser input))
+  (are [p input expected] (output-matches? expected (p input))
     (parser "S = 'Hi'" :input-format :ebnf) "Hi" [:S "Hi"]
     (parser "S = 'Hi'" :input-format :ebnf) "hi" :fail
     (parser "S = 'Hi'" :input-format :ebnf :string-ci false) "Hi" [:S "Hi"]
