@@ -5,11 +5,14 @@
 ### Enhancements
 
 * ABNF parsers' string case-insensitivity can now be disabled by setting `:string-ci false`.
+
 * `ebnf` and `abnf` combinators now support an optional `:string-ci` argument, which overrides the default case-insensitivity behavior for that input format.
 
 ### Bugfixes
 
 * Case-insensitive regexp flag on Clojurescript
+
+* Better handling for when rhizome is present in compilation environment, but not at runtime.
 
 ## 1.4.8
 
