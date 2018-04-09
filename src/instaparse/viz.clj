@@ -1,10 +1,5 @@
 (ns instaparse.viz
-  (:import java.io.IOException))   
-
-(try 
-  (require '[rhizome.viz :as r])
-  (catch Exception e
-    (require '[instaparse.viz-not-found :as r])))
+  (:import java.io.IOException))
 
 (defn span
   "Takes a subtree of the parse tree and returns a [start-index end-index] pair
@@ -29,27 +24,29 @@
 
 
 (defn- hiccup-tree-viz
-    "visualize instaparse hiccup output as a rhizome graph. Requires rhizome: https://github.com/ztellman/rhizome"
-    [mytree options]         
-    (r/tree->image sequential? rest mytree 
-                 :node->descriptor (fn [n] {:label (if (sequential? n) 
+  "visualize instaparse hiccup output as a rhizome graph. Requires rhizome: https://github.com/ztellman/rhizome"
+  [mytree options]
+  (let [tree->image (resolve 'rhizome.viz/tree->image)]
+    (tree->image sequential? rest mytree
+                 :node->descriptor (fn [n] {:label (if (sequential? n)
                                                      (apply str (first n)
                                                             (when (span n)
                                                               [rhizome-newline (span n)]))
                                                      (with-out-str (pr n)))})
-                 :options options))
-      
+                 :options options)))
+
 (defn- enlive-tree-viz
   "visualize enlive trees"
   [mytree options]
-  (r/tree->image (comp seq :content) :content mytree 
-             :node->descriptor (fn [n] 
-                                 {:label (if (and (map? n) (:tag n))
-                                           (apply str (:tag n)
-                                                  (when (span n)
-                                                    [rhizome-newline (span n)]))
-                                           (with-out-str (pr n)))})
-             :options options))
+  (let [tree->image (resolve 'rhizome.viz/tree->image)]
+    (tree->image (comp seq :content) :content mytree
+                 :node->descriptor (fn [n]
+                                     {:label (if (and (map? n) (:tag n))
+                                               (apply str (:tag n)
+                                                      (when (span n)
+                                                        [rhizome-newline (span n)]))
+                                               (with-out-str (pr n)))})
+                 :options options)))
 
 (defn tree-type
   [tree]
@@ -88,16 +85,25 @@ See https://github.com/ztellman/rhizome for more information."
   (let [ttype (tree-type tree)]
     (if (= ttype :rootless)
       (tree-viz (fake-root tree) :output-file output-file :options options)
-      (let [image
-            (try
-              (case (tree-type tree)
-                :enlive (enlive-tree-viz tree options)
-                (:hiccup :nil) (hiccup-tree-viz tree options))
-              (catch IOException e
-                (throw (UnsupportedOperationException. 
-                         "\n\nYou appear to have rhizome in your dependencies, but have not installed GraphViz on your system.
-\nSee https://github.com/ztellman/rhizome for more information.\n"))))]
-        (cond
-          (= output-file :buffered-image) image
-          output-file (r/save-image image output-file)
-          :else (r/view-image image))))))
+      (do
+        (try
+          (require 'rhizome.viz)
+          (catch Exception e
+            (throw (UnsupportedOperationException.
+                     "\n\nVisualization of parse trees is only supported if you have rhizome among your project dependencies and graphviz installed on your computer.\n
+          Visit https://github.com/ztellman/rhizome to find out the version info to put in your project.clj file and for links to the graphviz installer."))))
+        (let [image
+              (try
+                (case (tree-type tree)
+                  :enlive (enlive-tree-viz tree options)
+                  (:hiccup :nil) (hiccup-tree-viz tree options))
+                (catch IOException e
+                  (throw (UnsupportedOperationException.
+                           "\n\nYou appear to have rhizome in your dependencies, but have not installed GraphViz on your system.
+  \nSee https://github.com/ztellman/rhizome for more information.\n"))))
+              save-image (resolve 'rhizome.viz/save-image)
+              view-image (resolve 'rhizome.viz/view-image)]
+          (cond
+            (= output-file :buffered-image) image
+            output-file (save-image image output-file)
+            :else (view-image image)))))))
