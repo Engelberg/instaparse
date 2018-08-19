@@ -17,10 +17,15 @@
                                   [org.clojure/clojurescript "1.8.34"]]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]
                                   [org.clojure/clojurescript "1.10.238"]
-                                  [org.clojure/tools.reader "1.2.1"]]}}
+                                  [org.clojure/tools.reader "1.2.1"]]}
+             :cloverage {:cljsee ^:replace
+                         {:builds [{:source-paths ["src/"]
+                                    :output-path "target/generated/src/clj"
+                                    :rules :clj}]}}}
   :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7:+1.8:+1.9" "test"]
             "test-cljs" ["cljsbuild" "test" "unit-tests"]
-            "test-cljs-all" ["with-profile" "+1.7:+1.8:+1.9" "do" "clean," "test-cljs"]}
+            "test-cljs-all" ["with-profile" "+1.7:+1.8:+1.9" "do" "clean," "test-cljs"]
+            "coverage" ["with-profile" "+cloverage" "do" "clean," "cljsee," "cloverage"]}
   :test-paths ["test/" "target/generated/test/clj"]
   :source-paths ["src/" "target/generated/src/clj"]
   :cljsee {:builds [{:source-paths ["src/"]
@@ -30,7 +35,8 @@
                      :output-path "target/generated/test/clj"
                      :rules :clj}]}
   :plugins [[lein-cljsbuild "1.1.7"]
-            [cljsee "0.1.0"]]
+            [cljsee "0.1.0"]
+            [lein-cloverage "1.0.13"]]
   ;:hooks [leiningen.cljsbuild]
   :target-path "target"
   :scm {:name "git"
