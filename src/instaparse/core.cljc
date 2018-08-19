@@ -1,6 +1,7 @@
 (ns instaparse.core)
-  
 
-(defmacro defparser
-  [name grammar & {:as opts}]
-  nil)
+
+#?(:clj
+   (defmacro defparser
+     [name grammar & {:as opts}]
+     nil))
