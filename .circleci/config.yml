@@ -17,7 +17,8 @@ jobs:
             - ~/.m2
           key: v1-{{ checksum "project.clj" }}
       - run: lein check
-      - run: lein test
+      - run: lein test-all
+      - run: lein test-cljs-all
       - save_cache:
           paths:
             - ~/.m2
