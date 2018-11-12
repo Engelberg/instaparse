@@ -9,7 +9,6 @@
             [instaparse.combinators-source :refer
              [Epsilon opt plus star rep alt ord cat string-ci string
               string-ci regexp nt look neg hide hide-tag unicode-char]]
-            #?(:cljs [goog.string.format])
             [clojure.walk :as walk])
   #?(:cljs (:require-macros [instaparse.abnf :refer [precompile-cljs-grammar]])))
 

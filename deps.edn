@@ -1,0 +1,5 @@
+{:paths ["src"]
+ :deps
+ {org.clojure/clojure {:mvn/version "1.9.0"},
+  org.clojure/clojurescript {:mvn/version "1.10.312"},
+  org.clojure/tools.reader {:mvn/version "1.2.2"}}}

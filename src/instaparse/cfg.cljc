@@ -207,7 +207,7 @@
 
    :cljs
    (defn safe-read-string [s]
-     (reader/read-string* (readers/string-push-back-reader s) nil nil nil)))
+     (#'reader/read-string* (readers/string-push-back-reader s) nil nil nil)))
 
 ; I think re-pattern is sufficient, but here's how to do it without.
 ;(let [regexp-reader (clojure.lang.LispReader$RegexReader.)]
