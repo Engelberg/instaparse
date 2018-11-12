@@ -276,7 +276,7 @@
        (-pr-writer (seq afs) writer opts))))
 
 (defn auto-flatten-seq [v]
-  (let [v (vec v)]
+  (let [v (into [] v)]
     (AutoFlattenSeq. v
                      (hash-ordered-coll-without-mix v)
                      (hash v) (count v)
