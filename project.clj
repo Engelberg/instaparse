@@ -17,10 +17,13 @@
                                   [org.clojure/clojurescript "1.8.34"]]}
              :1.9 {:dependencies [[org.clojure/clojure "1.9.0"]
                                   [org.clojure/clojurescript "1.10.238"]
-                                  [org.clojure/tools.reader "1.2.1"]]}}
-  :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7:+1.8:+1.9" "test"]
+                                  [org.clojure/tools.reader "1.2.1"]]}
+             :1.10 {:dependencies [[org.clojure/clojure "1.10.0"]
+                                   [org.clojure/clojurescript "1.10.439"]
+                                   [org.clojure/tools.reader "1.3.2"]]}}
+  :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7:+1.8:+1.9:+1.10" "test"]
             "test-cljs" ["cljsbuild" "test" "unit-tests"]
-            "test-cljs-all" ["with-profile" "+1.7:+1.8:+1.9" "do" "clean," "test-cljs"]}
+            "test-cljs-all" ["with-profile" "+1.7:+1.8:+1.9:+1.10" "do" "clean," "test-cljs"]}
   :test-paths ["test/" "target/generated/test/clj"]
   :source-paths ["src/" "target/generated/src/clj"]
   :cljsee {:builds [{:source-paths ["src/"]
