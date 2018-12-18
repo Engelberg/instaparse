@@ -199,15 +199,16 @@
 
 #?(:clj
    (let [string-reader (wrap-reader
-                         (clojure.lang.LispReader$StringReader.))]
+                        (clojure.lang.LispReader$StringReader.))]
      (defn safe-read-string
        "Expects a double-quote at the end of the string"
        [s]
        (with-in-str s (string-reader *in* nil))))
 
    :cljs
-   (defn safe-read-string [s]
-     (reader/read-string* (readers/string-push-back-reader s) nil nil nil)))
+   (let [read-string* @#'reader/read-string*] ;; since read-string* is private
+     (defn safe-read-string [s]
+       (read-string* (readers/string-push-back-reader s) nil nil nil))))
 
 ; I think re-pattern is sufficient, but here's how to do it without.
 ;(let [regexp-reader (clojure.lang.LispReader$RegexReader.)]

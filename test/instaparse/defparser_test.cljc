@@ -27,12 +27,15 @@
        Exception
 
        (instaparse.core/defparser p7 "test/data/defparser_grammar.txt" :no-slurp true)
-       Exception
+       Exception)))
 
        ;; We catch up front when someone tries to do something overly
        ;; complicated in the macro-time options
-       (instaparse.core/defparser p8 "S = #'a' | 'b'" :input-format (do :ebnf))
-       AssertionError)))
+       ;; [test removed due to a bug in Clojure 1.10 which prevents capture of
+       ;; errors triggered during macroexpansion]
+       ;; (instaparse.core/defparser p8 "S = #'a' | 'b'" :input-format (do :ebnf))
+       ;; AssertionError
+
 
 
 

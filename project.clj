@@ -1,11 +1,11 @@
-(defproject instaparse "1.4.9"
+(defproject instaparse "1.4.10"
   :description "Instaparse: No grammar left behind"
   :url "https://github.com/Engelberg/instaparse"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.8.0"]]
+  :dependencies [[org.clojure/clojure "1.10.0"]]
   :profiles {:dev {:dependencies
-                   [[org.clojure/clojurescript "1.8.40"]
+                   [[org.clojure/clojurescript "1.10.439"]
                     [org.clojure/tools.trace "0.7.9"]
                     [criterium "0.4.4"]
                     [rhizome "0.2.9"]]}
