@@ -106,7 +106,7 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
 #?(:clj
    (defmacro precompile-cljs-grammar
      []
-     (let [combinators (red/apply-standard-reductions 
+     (let [combinators (red/apply-standard-reductions
                          :hiccup (cfg/ebnf (str abnf-grammar-common
                                                 abnf-grammar-cljs-only)))]
        (walk/postwalk
@@ -125,7 +125,7 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
          combinators))))
 
 #?(:clj
-   (def abnf-parser (red/apply-standard-reductions 
+   (def abnf-parser (red/apply-standard-reductions
                       :hiccup (cfg/ebnf (str abnf-grammar-common
                                              abnf-grammar-clj-only))))
    :cljs
@@ -146,7 +146,7 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
         (for [k ks
               :when (contains? m k)]
           [k (m k)])))
-          
+
 (defn merge-core
   "Merges abnf-core map in with parsed grammar map"
   [grammar-map]
@@ -178,9 +178,9 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
      ([string radix] (Integer/parseInt string radix)))
    :cljs
    (def parse-int js/parseInt))
-        
+
 (def abnf-transformer
-  {   
+  {
    :rule hash-map
    :hide-tag-rule (fn [tag rule] {tag (hide-tag rule)})
    :rulename-left #(if *case-insensitive*
@@ -201,8 +201,8 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
                    (= (first items) "*") {:high (second items)}     ; *x
                    :else {:low (first items)})                      ; x*
                3 {:low (first items), :high (nth items 2)}))        ; x*y
-                 
-   :repetition (fn 
+
+   :repetition (fn
                  ([repeat element]
                    (cond
                      (empty? repeat) (star element)
@@ -240,7 +240,7 @@ regexp = #\"#'[^'\\\\]*(?:\\\\.[^'\\\\]*)*'\"
 (defn abnf
   "Takes an ABNF grammar specification string and returns the combinator version.
 If you give it the right-hand side of a rule, it will return the combinator equivalent.
-If you give it a series of rules, it will give you back a grammar map.   
+If you give it a series of rules, it will give you back a grammar map.
 Useful for combining with other combinators."
   [spec & {:as opts}]
   (binding [cfg/*case-insensitive-literals* (:string-ci opts :default)]
@@ -263,7 +263,7 @@ Useful for combining with other combinators."
         (with-out-str (println rule-tree)))
       (let [rules (t/transform abnf-transformer rule-tree)
             grammar-map (rules->grammar-map rules)
-            start-production (first (first (first rules)))] 
+            start-production (first (first (first rules)))]
         {:grammar (cfg/check-grammar (red/apply-standard-reductions output-format grammar-map))
          :start-production start-production
          :output-format output-format}))))

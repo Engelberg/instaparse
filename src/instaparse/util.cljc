@@ -1,16 +1,20 @@
 (ns instaparse.util)
 
+;; Both appear to be called with several strings as separate
+;; arguments:
 (defn throw-runtime-exception
   [& message]
-  (-> (apply str message)
-      #?(:clj RuntimeException.)
-      throw))
+  (let [^String text (apply str message)]
+    (-> text
+        #?(:clj RuntimeException.)
+        throw)))
 
 (defn throw-illegal-argument-exception
   [& message]
-  (-> (apply str message)
-      #?(:clj IllegalArgumentException.)
-      throw))
+  (let [^String text (apply str message)]
+    (-> text
+        #?(:clj IllegalArgumentException.)
+        throw)))
 
 #?(:cljs
     (defn regexp-flags [re]
