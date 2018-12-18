@@ -1,5 +1,15 @@
 # Instaparse Change Log
 
+## 1.4.10
+
+### Enhancements
+
+* Change to remove warning caused by latest version of Clojurescript, which warned about use of private var from tools.reader.
+
+* Added type hints to support native compilation under Graal.
+
+* Removed test case broken by Clojure 1.10.
+
 ## 1.4.9
 
 ### Enhancements
