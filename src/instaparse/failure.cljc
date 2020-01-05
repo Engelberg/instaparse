@@ -84,5 +84,3 @@
     (doseq [r partial-reasons]
       (print-reason r)
       (println))))
-  
-(defn sun-glasses [] "...at night...so I can...")
