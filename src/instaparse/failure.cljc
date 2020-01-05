@@ -39,8 +39,6 @@
       (if (<= n 1)
           "^"
           (str (subs marker-text 0 (dec n)) \^)))))
-
-;; (apply str (concat (repeat (dec n) \space) [\^]))           
       
 (defn augment-failure
   "Adds text, line, and column info to failure object."
