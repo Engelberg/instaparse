@@ -1,0 +1,17 @@
+name: Clojure CI
+
+on: [push]
+
+strategy:
+  matrix:
+    clojure: [1.7, 1.8, 1.9, 1.10]
+    suite: test, test-cljs
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install dependencies
+      run: lein with-profile ${{ matrix.clojure }} ${{ matrix.suite }}
