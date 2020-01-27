@@ -3,13 +3,26 @@ name: Clojure CI
 on: [push]
 
 jobs:
-  build:
+  build-clj:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        clojure: [1.7, 1.8, 1.9, 1.10]
-        suite: [test, test-cljs]
+        version: [1.5, 1.6, 1.7, 1.8, 1.9, 1.10]
     steps:
     - uses: actions/checkout@v1
     - name: Install dependencies
-      run: lein with-profile ${{ matrix.clojure }} ${{ matrix.suite }}
+      run: lein with-profile ${{ matrix.version }} deps
+    - name: Run tests
+      run: lein with-profile ${{ matrix.version }} test
+  build-cljs:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        version: [1.7, 1.8, 1.9, 1.10]
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-node@v1
+    - name: Install dependencies
+      run: lein with-profile ${{ matrix.version }} deps
+    - name: Run tests
+      run: lein with-profile ${{ matrix.version }} test-cljs
