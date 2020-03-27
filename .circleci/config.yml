@@ -32,4 +32,11 @@ jobs:
       - image: circleci/clojure:lein-2.8.1-node
     steps:
       - checkout
+      - restore_cache:
+          key: v1-cljs-<< parameters.cljs-version >>-
       - run: lein with-profile +<< parameters.cljs-version >> test-cljs
+      - save_cache:
+          key: v1-cljs-<< parameters.cljs-version >>-{{ epoch }}
+          paths:
+            - ~/.m2
+          when: always
