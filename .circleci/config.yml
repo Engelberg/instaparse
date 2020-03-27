@@ -1,25 +1,35 @@
-version: 2
+version: 2.1
 
 workflows:
   version: 2
   build:
     jobs:
-      - test-clj
-      - test-cljs
+      - test-clj:
+          matrix:
+            parameters:
+              clj-version: ["1.5", "1.6", "1.7", "1.8", "1.9", "1.10"]
+      - test-cljs:
+          matrix:
+            parameters:
+              cljs-version: ["1.7", "1.8", "1.9", "1.10"]
 
 jobs:
   test-clj:
-    working_directory: ~/project
+    parameters:
+      clj-version:
+        type: string
     docker:
       - image: circleci/clojure:lein-2.8.1
     steps:
       - checkout
       - run: lein check
-      - run: lein test-all
+      - run: lein with-profile +<< parameters.clj-version >> test
   test-cljs:
-    working_directory: ~/project
+    parameters:
+      cljs-version:
+        type: string
     docker:
       - image: circleci/clojure:lein-2.8.1-node
     steps:
       - checkout
-      - run: lein test-cljs-all
+      - run: lein with-profile +<< parameters.cljs-version >> test-cljs
