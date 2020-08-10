@@ -1,7 +1,6 @@
 (ns instaparse.failure-test
   (:require
-    #?(:clj  [instaparse.failure :refer [marker pprint-failure]]
-       :cljs [instaparse.failure :refer [marker pprint-failure]])
+    [instaparse.failure :refer [marker pprint-failure]]
     #?(:clj [clojure.test :refer [deftest are is]]
        :cljs [cljs.test]))
   #?(:cljs (:require-macros
