@@ -17,13 +17,14 @@
           marker-tabs (count (filter #{"\t"} marker))]
       (is (= text-tabs marker-tabs)))))
 
-;; No assertions but should print marker line with caret under 'e' in error.
 (deftest pprint-failure-test
   (let [request {:line 3
                  :column 16
                  :text "\t\ti'm a sample error line with tabs."
-                 :reason "for testing"}]
-    (println "Test passes if '^' appears under the 'e' in 'error':")
-    (pprint-failure request)
-    ;; Just testing for no exceptions here.
-    (is (= 1 1))))
+                 :reason [{:tag :string :expecting "A"}]}]
+    (is (= (with-out-str (pprint-failure request))
+           (str "Parse error at line 3, column 16:\n"
+                (:text request) "\n"
+                "\t\t             ^\n"
+                "Expected:\n"
+                "\"A\"\n")))))
