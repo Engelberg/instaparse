@@ -12,13 +12,9 @@
 (deftest marker-test
   (let [text           "\t\ti'm a sample error line with tabs."
         n              16
-        marker         (marker text n)
-        text-matcher   (re-matcher #"\t" text)
-        marker-matcher (re-matcher #"\t" marker)]
-    (re-find text-matcher)
-    (re-find marker-matcher)
-    (let [text-tabs   (count (re-groups text-matcher))
-          marker-tabs (count (re-groups marker-matcher))]
+        marker         (marker text n)]
+    (let [text-tabs   (count (filter #{"\t"} text))
+          marker-tabs (count (filter #{"\t"} marker))]
       (is (= text-tabs marker-tabs)))))
 
 ;; No assertions but should print marker line with caret under 'e' in error.

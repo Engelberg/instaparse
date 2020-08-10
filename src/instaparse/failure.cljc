@@ -35,7 +35,7 @@
    the alignment of the '^' to the error location."
   [text n]
   (when (and text (integer? n))
-    (let [marker-text (clojure.string/replace text #"[.[^\s]]" " ")]
+    (let [marker-text (clojure.string/replace text #"[^\s]" " ")]
       (if (<= n 1)
           "^"
           (str (subs marker-text 0 (dec n)) \^)))))

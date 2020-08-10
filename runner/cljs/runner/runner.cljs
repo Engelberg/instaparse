@@ -4,6 +4,7 @@
             [instaparse.auto-flatten-seq-test]
             [instaparse.core-test]
             [instaparse.defparser-test]
+            [instaparse.failure-test]
             [instaparse.grammars]
             [instaparse.repeat-test]
             [instaparse.specs]
@@ -23,6 +24,7 @@
              'instaparse.auto-flatten-seq-test
              'instaparse.core-test
              'instaparse.defparser-test
+             'instaparse.failure-test
              'instaparse.grammars
              'instaparse.repeat-test
              'instaparse.specs))
