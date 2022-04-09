@@ -211,7 +211,7 @@
           (binding [cfg/*case-insensitive-literals* (:string-ci options :default)]
             (case input-format
               :abnf (abnf/build-parser spec output-format)
-              :ebnf (cfg/build-parser spec output-format))))
+              :ebnf (cfg/build-parser spec output-format options))))
         output-format (get options :output-format *default-output-format*)
         start (get options :start nil)
 

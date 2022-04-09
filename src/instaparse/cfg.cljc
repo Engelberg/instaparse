@@ -50,7 +50,14 @@
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
 
-(def cfg
+(def non-terminal-namespace-allowed
+  (let [no-slash "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;/.]"
+        with-slash "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;]"]
+    (regex-doc (str no-slash with-slash "*") "Non-terminal")))
+(def non-terminal
+  (regex-doc "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+" "Non-terminal"))
+
+(defn cfg [{:keys [allow-namespaced-nts?]}]
   (apply-standard-reductions
     :hiccup    ; use the hiccup output format
     {:rules (hide-tag (cat opt-whitespace
@@ -77,7 +84,9 @@
      :nt (cat
            (neg (nt :epsilon))
            (regexp
-             (regex-doc "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+" "Non-terminal")))
+             (if allow-namespaced-nts?
+               non-terminal-namespace-allowed
+               non-terminal)))
      :hide-nt (cat (hide (string "<"))
                    opt-whitespace
                    (nt :nt)
@@ -292,8 +301,8 @@
           " occurs on the right-hand side of your grammar, but not on the left"))))
   grammar-map)
 
-(defn build-parser [spec output-format]
-  (let [rules (parse cfg :rules spec false)]
+(defn build-parser [spec output-format & {:as opts}]
+  (let [rules (parse (cfg opts) :rules spec false)]
     (if (instance? instaparse.gll.Failure rules)
       (throw-runtime-exception
         "Error parsing grammar specification:\n"
@@ -319,7 +328,7 @@ If you give it a series of rules, it will give you back a grammar map.
 Useful for combining with other combinators."
   [spec & {:as opts}]
   (binding [*case-insensitive-literals* (:string-ci opts :default)]
-    (let [rules (parse cfg :rules-or-parser spec false)]
+    (let [rules (parse (cfg opts) :rules-or-parser spec false)]
       (cond
         (instance? instaparse.gll.Failure rules)
         (throw-runtime-exception

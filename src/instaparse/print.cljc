@@ -79,6 +79,11 @@
         :look (str "&" (paren-for-compound hidden? parser))
         :neg (str "!" (paren-for-compound hidden? parser))))))
 
+(defn non-terminal->str [non-terminal]
+  (if-let  [ns (namespace non-terminal)]
+    (str ns "/" (name non-terminal))
+    (name non-terminal)))
+
 (defn rule->str
   "Takes a non-terminal symbol and a parser built from combinators,
    and returns a string for the rule."
@@ -87,7 +92,7 @@
     (str \< (name non-terminal) \>
          " = "
          (combinators->str parser))
-    (str (name non-terminal)
+    (str (non-terminal->str non-terminal)
          " = "
          (combinators->str parser))))
 
