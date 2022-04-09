@@ -78,87 +78,87 @@
            (neg (nt :epsilon))
            (regexp
              (regex-doc "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+" "Non-terminal")))
-          :hide-nt (cat (hide (string "<"))
-                        opt-whitespace
-                        (nt :nt)
-                        opt-whitespace
-                        (hide (string ">")))
-          :alt-or-ord (hide-tag (alt (nt :alt) (nt :ord)))
-          :alt (cat (nt :cat)
-                    (star
-                      (cat
-                        opt-whitespace
-                        (hide (string "|"))
-                        opt-whitespace
-                        (nt :cat))))
-          :ord (cat (nt :cat)
-                    (plus
-                      (cat
-                        opt-whitespace
-                        (hide (string "/"))
-                        opt-whitespace
-                        (nt :cat))))
-          :paren (cat (hide (string "("))
-                      opt-whitespace
-                      (nt :alt-or-ord)
-                      opt-whitespace
-                      (hide (string ")")))
-          :hide (cat (hide (string "<"))
-                     opt-whitespace
-                     (nt :alt-or-ord)
-                     opt-whitespace
-                     (hide (string ">")))
-          :cat (plus (cat
-                       opt-whitespace
-                       (alt (nt :factor) (nt :look) (nt :neg))
-                       opt-whitespace))
-          :string (alt
-                    (regexp single-quoted-string)
-                    (regexp double-quoted-string))
-          :regexp (alt
-                    (regexp single-quoted-regexp)
-                    (regexp double-quoted-regexp))
-          :opt (alt
-                 (cat (hide (string "["))
-                      opt-whitespace
-                      (nt :alt-or-ord)
-                      opt-whitespace
-                      (hide (string "]")))
-                 (cat (nt :factor)
-                      opt-whitespace
-                      (hide (string "?"))))
-          :star (alt
-                  (cat (hide (string "{"))
-                       opt-whitespace
-                       (nt :alt-or-ord)
-                       opt-whitespace
-                       (hide (string "}")))
-                  (cat (nt :factor)
-                       opt-whitespace
-                       (hide (string "*"))))
-          :plus (cat (nt :factor)
-                     opt-whitespace
-                     (hide (string "+")))
-          :look (cat (hide (string "&"))
-                     opt-whitespace
-                     (nt :factor))
-          :neg (cat (hide (string "!"))
-                    opt-whitespace
-                    (nt :factor))
-          :epsilon (alt (string "Epsilon")
-                        (string "epsilon")
-                        (string "EPSILON")
-                        (string "eps")
-                        (string "\u03b5"))
-          :factor (hide-tag (alt (nt :nt)
-                                 (nt :string)
-                                 (nt :regexp)
-                                 (nt :opt)
-                                 (nt :star)
-                                 (nt :plus)
-                                 (nt :paren)
-                                 (nt :hide)
-                                 (nt :epsilon)))
+     :hide-nt (cat (hide (string "<"))
+                   opt-whitespace
+                   (nt :nt)
+                   opt-whitespace
+                   (hide (string ">")))
+     :alt-or-ord (hide-tag (alt (nt :alt) (nt :ord)))
+     :alt (cat (nt :cat)
+               (star
+                (cat
+                  opt-whitespace
+                  (hide (string "|"))
+                  opt-whitespace
+                  (nt :cat))))
+     :ord (cat (nt :cat)
+               (plus
+                (cat
+                  opt-whitespace
+                  (hide (string "/"))
+                  opt-whitespace
+                  (nt :cat))))
+     :paren (cat (hide (string "("))
+                 opt-whitespace
+                 (nt :alt-or-ord)
+                 opt-whitespace
+                 (hide (string ")")))
+     :hide (cat (hide (string "<"))
+                opt-whitespace
+                (nt :alt-or-ord)
+                opt-whitespace
+                (hide (string ">")))
+     :cat (plus (cat
+                  opt-whitespace
+                  (alt (nt :factor) (nt :look) (nt :neg))
+                  opt-whitespace))
+     :string (alt
+              (regexp single-quoted-string)
+              (regexp double-quoted-string))
+     :regexp (alt
+              (regexp single-quoted-regexp)
+              (regexp double-quoted-regexp))
+     :opt (alt
+           (cat (hide (string "["))
+                opt-whitespace
+                (nt :alt-or-ord)
+                opt-whitespace
+                (hide (string "]")))
+           (cat (nt :factor)
+                opt-whitespace
+                (hide (string "?"))))
+     :star (alt
+            (cat (hide (string "{"))
+                 opt-whitespace
+                 (nt :alt-or-ord)
+                 opt-whitespace
+                 (hide (string "}")))
+            (cat (nt :factor)
+                 opt-whitespace
+                 (hide (string "*"))))
+     :plus (cat (nt :factor)
+                opt-whitespace
+                (hide (string "+")))
+     :look (cat (hide (string "&"))
+                opt-whitespace
+                (nt :factor))
+     :neg (cat (hide (string "!"))
+               opt-whitespace
+               (nt :factor))
+     :epsilon (alt (string "Epsilon")
+                   (string "epsilon")
+                   (string "EPSILON")
+                   (string "eps")
+                   (string "\u03b5"))
+     :factor (hide-tag (alt (nt :nt)
+                            (nt :string)
+                            (nt :regexp)
+                            (nt :opt)
+                            (nt :star)
+                            (nt :plus)
+                            (nt :paren)
+                            (nt :hide)
+                            (nt :epsilon)))
      ;; extra entrypoint to be used by the ebnf combinator
      :rules-or-parser (hide-tag (alt (nt :rules) (nt :alt-or-ord)))}))
 
