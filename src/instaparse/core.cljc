@@ -253,7 +253,8 @@
           #?(:clj
              (let [spec (slurp grammar-specification)
                    parser (build-parser spec output-format)]
-               (map->Parser parser))
+               (if start (map->Parser (assoc parser :start-production start))
+                 (map->Parser parser)))
              :cljs
              (throw-illegal-argument-exception
               "Expected string, map, or vector as grammar specification, got "
