@@ -10,11 +10,11 @@
     (str "(" (combinators->str parser false) ")")
     (combinators->str parser false)))
 
-(def paren-for-compound 
+(def paren-for-compound
   (partial paren-for-tags #{:alt :ord :cat}))
 
 (defn regexp-replace
-  "Replaces whitespace characters with escape sequences for better printing" 
+  "Replaces whitespace characters with escape sequences for better printing"
   [s]
   (case s
     "\n" "\\n"
@@ -22,10 +22,10 @@
     "\f" "\\f"
     "\r" "\\r"
     "\t" "\\t"
-    s)) 
+    s))
 
 (defn regexp->str [r]
-  (str/replace 
+  (str/replace
     (str "#\""
          #?(:clj (str r)
             :cljs (subs (.-source r) 1))
@@ -62,10 +62,10 @@
         :plus (str (paren-for-compound hidden? parser) "+")
         :star (str (paren-for-compound hidden? parser) "*")
         :rep (if (not= (:min p) (:max p))
-               (str (paren-for-compound hidden? parser) \{ 
+               (str (paren-for-compound hidden? parser) \{
                     (:min p) \, (:max p) \})
-               (str (paren-for-compound hidden? parser) \{ 
-                    (:min p)\}))
+               (str (paren-for-compound hidden? parser) \{
+                    (:min p) \}))
         :alt (str/join " | " (map (partial paren-for-tags #{:ord} hidden?) parsers))
         :ord (str (paren-for-tags #{:alt} hidden? parser1)
                   " / "
@@ -78,22 +78,22 @@
         :nt (subs (str (:keyword p)) 1)
         :look (str "&" (paren-for-compound hidden? parser))
         :neg (str "!" (paren-for-compound hidden? parser))))))
-  
+
 (defn rule->str
   "Takes a non-terminal symbol and a parser built from combinators,
    and returns a string for the rule."
   [non-terminal parser]
   (if (= (-> parser :red :reduction-type) :raw)
-    (str \< (name non-terminal) \> 
-         " = " 
+    (str \< (name non-terminal) \>
+         " = "
          (combinators->str parser))
     (str (name non-terminal)
-         " = " 
+         " = "
          (combinators->str parser))))
 
 (defn Parser->str
-  "Takes a Parser object, i.e., something with a grammar map and a start 
-   production keyword, and stringifies it." 
+  "Takes a Parser object, i.e., something with a grammar map and a start
+   production keyword, and stringifies it."
   [{grammar :grammar start :start-production}]
   (str/join \newline
             (cons

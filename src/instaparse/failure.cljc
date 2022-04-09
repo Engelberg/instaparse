@@ -37,14 +37,14 @@
   (when (and text (integer? n))
     (let [marker-text (clojure.string/replace text #"[^\s]" " ")]
       (if (<= n 1)
-          "^"
-          (str (subs marker-text 0 (dec n)) \^)))))
-      
+        "^"
+        (str (subs marker-text 0 (dec n)) \^)))))
+
 (defn augment-failure
   "Adds text, line, and column info to failure object."
-  [failure text]  
+  [failure text]
   (let [lc (index->line-column (:index failure) text)]
-    (merge failure 
+    (merge failure
            lc
            {:text (get-line (:line lc) text)})))
 
@@ -74,7 +74,7 @@
                                     (filter :full reason)))
         partial-reasons (distinct (map :expecting
                                        (filter (complement :full) reason)))
-        total (+ (count full-reasons) (count partial-reasons))]        
+        total (+ (count full-reasons) (count partial-reasons))]
     (cond (zero? total) nil
           (= 1 total) (println "Expected:")
           :else (println "Expected one of:"))

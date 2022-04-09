@@ -35,20 +35,20 @@
 (defn- unhide-parser [parser unhide]
   (case unhide
     nil parser
-    :content 
+    :content
     (assoc parser :grammar (c/unhide-all-content (:grammar parser)))
-    :tags 
-    (assoc parser :grammar (c/unhide-tags (:output-format parser) 
+    :tags
+    (assoc parser :grammar (c/unhide-tags (:output-format parser)
                                           (:grammar parser)))
     :all
     (assoc parser :grammar (c/unhide-all (:output-format parser)
                                          (:grammar parser)))))
-  
-(defn parse 
+
+(defn parse
   "Use parser to parse the text.  Returns first parse tree found
    that completely parses the text.  If no parse tree is possible, returns
    a Failure object.
-   
+
    Optional keyword arguments:
    :start :keyword  (where :keyword is name of starting production rule)
    :partial true    (parses that don't consume the whole string are okay)
@@ -58,30 +58,30 @@
 
    Clj only:
    :trace true      (print diagnostic trace while parsing)"
-  [parser text &{:as options}]
+  [parser text & {:as options}]
   {:pre [(contains? #{:tags :content :all nil} (get options :unhide))
          (contains? #{:memory nil} (get options :optimize))]}
-  (let [start-production 
+  (let [start-production
         (get options :start (:start-production parser)),
-        
+
         partial?
         (get options :partial false)
-        
+
         optimize?
         (get options :optimize false)
-        
+
         unhide
         (get options :unhide)
-        
+
         trace?
         (get options :trace false)
-        
+
         #?@(:clj [_ (when (and trace? (not gll/TRACE)) (enable-tracing!))])
-        
+
         parser (unhide-parser parser unhide)]
     (->> (cond
            (:total options)
-           (gll/parse-total (:grammar parser) start-production text 
+           (gll/parse-total (:grammar parser) start-production text
                             partial? (red/node-builders (:output-format parser)))
 
            (and optimize? (not partial?))
@@ -94,12 +94,12 @@
            (gll/parse (:grammar parser) start-production text partial?))
 
          #?(:clj (gll/bind-trace trace?)))))
-  
-(defn parses 
+
+(defn parses
   "Use parser to parse the text.  Returns lazy seq of all parse trees
    that completely parse the text.  If no parse tree is possible, returns
    () with a Failure object attached as metadata.
-   
+
    Optional keyword arguments:
    :start :keyword  (where :keyword is name of starting production rule)
    :partial true    (parses that don't consume the whole string are okay)
@@ -108,33 +108,33 @@
 
    Clj only:
    :trace true      (print diagnostic trace while parsing)"
-  [parser text &{:as options}]
+  [parser text & {:as options}]
   {:pre [(contains? #{:tags :content :all nil} (get options :unhide))]}
-  (let [start-production 
+  (let [start-production
         (get options :start (:start-production parser)),
-        
+
         partial?
         (get options :partial false)
-        
+
         unhide
         (get options :unhide)
-        
+
         trace?
         (get options :trace false)
-        
+
         #?@(:clj [_ (when (and trace? (not gll/TRACE)) (enable-tracing!))])
-        
+
         parser (unhide-parser parser unhide)]
     (->> (cond
            (:total options)
-           (gll/parses-total (:grammar parser) start-production text 
+           (gll/parses-total (:grammar parser) start-production text
                              partial? (red/node-builders (:output-format parser)))
-        
+
            :else
            (gll/parses (:grammar parser) start-production text partial?))
 
          #?(:clj (gll/bind-trace trace?)))))
-  
+
 (defrecord Parser [grammar start-production output-format]
 #?@(:clj
     [clojure.lang.IFn
@@ -195,7 +195,7 @@
                   input is a URI.  When using this option, input
                   must be a grammar string or grammar map.  Useful
                   for platforms where slurp is slow or not available.)"
-  [grammar-specification &{:as options}]
+  [grammar-specification & {:as options}]
   {:pre [(contains? #{:abnf :ebnf nil} (get options :input-format))
          (contains? #{:enlive :hiccup nil} (get options :output-format))
          (let [ws-parser (get options :auto-whitespace)]
@@ -222,12 +222,12 @@
                 #?(:clj
                    (if (get options :no-slurp)
                      ;; if :no-slurp is set to true, string is a grammar spec
-                     (build-parser grammar-specification output-format)                  
+                     (build-parser grammar-specification output-format)
                      ;; otherwise, grammar-specification might be a URI,
                      ;; let's slurp to see
                      (try (let [spec (slurp grammar-specification)]
                             (build-parser spec output-format))
-                          (catch java.io.FileNotFoundException e 
+                          (catch java.io.FileNotFoundException e
                             (build-parser grammar-specification output-format))))
                    :cljs
                    (build-parser grammar-specification output-format))]
@@ -325,7 +325,7 @@
                          :start ~start-production
                          ~@(apply concat runtime-opts))))))
        `(def ~name (parser ~grammar ~@(apply concat opts))))))
-        
+
 (defn failure?
   "Tests whether a parse result is a failure."
   [result]
@@ -367,7 +367,7 @@
      (alter-var-root #'gll/TRACE (constantly false))
      (alter-var-root #'gll/PROFILE (constantly false))
      (require 'instaparse.gll :reload)))
-   
+
 (defclone transform t/transform)
 
 (defclone add-line-and-column-info-to-metadata lc/add-line-col-spans)

@@ -11,7 +11,7 @@
 (def Epsilon {:tag :epsilon})
 
 (defn opt "Optional, i.e., parser?"
-  [parser] 
+  [parser]
   (if (= parser Epsilon) Epsilon
     {:tag :opt :parser parser}))
 
@@ -21,7 +21,7 @@
     {:tag :plus :parser parser}))
 
 (defn star "Zero or more, i.e., parser*"
-  [parser] 
+  [parser]
   (if (= parser Epsilon) Epsilon
     {:tag :star :parser parser}))
 
@@ -32,7 +32,7 @@
     {:tag :rep :parser parser :min m :max n}))
 
 (defn alt "Alternation, i.e., parser1 | parser2 | parser3 | ..."
-  [& parsers] 
+  [& parsers]
   (cond
     (every? (partial = Epsilon) parsers) Epsilon
     (singleton? parsers) (first parsers)
@@ -58,13 +58,13 @@
       (if (singleton? parsers) (first parsers) ; apply vector reduction
         {:tag :cat :parsers parsers}))))
 
-(defn string "Create a string terminal out of s" 
-  [s] 
+(defn string "Create a string terminal out of s"
+  [s]
   (if (= s "") Epsilon
     {:tag :string :string s}))
 
-(defn string-ci "Create a case-insensitive string terminal out of s" 
-  [s] 
+(defn string-ci "Create a case-insensitive string terminal out of s"
+  [s]
   (if (= s "") Epsilon
       {:tag :string-ci :string s}))
 
@@ -93,23 +93,23 @@
                    #?(:cljs add-beginning-constraint))}))
 
 (defn nt "Refers to a non-terminal defined by the grammar map"
-  [s] 
+  [s]
   {:tag :nt :keyword s})
 
-(defn look "Lookahead, i.e., &parser" 
-  [parser] 
-  {:tag :look :parser parser}) 
+(defn look "Lookahead, i.e., &parser"
+  [parser]
+  {:tag :look :parser parser})
 
 (defn neg "Negative lookahead, i.e., !parser"
-  [parser] 
+  [parser]
   {:tag :neg :parser parser})
 
 (defn hide "Hide the result of parser, i.e., <parser>"
-  [parser] 
+  [parser]
   (assoc parser :hide true))
 
-(defn hide-tag "Hide the tag associated with this rule.  
-  Wrap this combinator around the entire right-hand side."  
+(defn hide-tag "Hide the tag associated with this rule.
+  Wrap this combinator around the entire right-hand side."
   [parser]
   (red parser raw-non-terminal-reduction))
 
@@ -127,7 +127,7 @@
     (cond
       (:parser parser) (assoc parser :parser (unhide-content (:parser parser)))
       (:parsers parser) (assoc parser :parsers (map unhide-content (:parsers parser)))
-      (= (:tag parser) :ord) (assoc parser 
+      (= (:tag parser) :ord) (assoc parser
                                     :parser1 (unhide-content (:parser1 parser))
                                     :parser2 (unhide-content (:parser2 parser)))
       :else parser)))
@@ -138,7 +138,7 @@
   (into {} (for [[k v] grammar]
              [k (unhide-content v)])))
 
-(defn unhide-tags 
+(defn unhide-tags
   "Recursively undoes the effect of hide-tag"
   [reduction-type grammar]
   (if-let [reduction (reduction-types reduction-type)]
@@ -161,14 +161,14 @@
 
 (defn auto-whitespace-parser [parser ws-parser]
   (case (:tag parser)
-    (:nt :epsilon) parser  
+    (:nt :epsilon) parser
     (:opt :plus :star :rep :look :neg) (update-in parser [:parser] auto-whitespace-parser ws-parser)
-    (:alt :cat) (assoc parser :parsers  
+    (:alt :cat) (assoc parser :parsers
                        (map #(auto-whitespace-parser % ws-parser) (:parsers parser)))
-    :ord (assoc parser 
+    :ord (assoc parser
                 :parser1 (auto-whitespace-parser (:parser1 parser) ws-parser)
                 :parser2 (auto-whitespace-parser (:parser2 parser) ws-parser))
-    (:string :string-ci :regexp) 
+    (:string :string-ci :regexp)
     ; If the string/regexp has a reduction associated with it,
     ; we need to "lift" that reduction out to the (cat whitespace string)
     ; parser that is being created.
@@ -179,11 +179,11 @@
 (defn auto-whitespace [grammar start grammar-ws start-ws]
   (let [ws-parser (hide (opt (nt start-ws)))
         grammar-ws (assoc grammar-ws start-ws (hide-tag (grammar-ws start-ws)))
-        modified-grammar (into {} 
-                               (for [[nt parser] grammar] 
+        modified-grammar (into {}
+                               (for [[nt parser] grammar]
                                  [nt (auto-whitespace-parser parser ws-parser)]))
-        final-grammar (assoc modified-grammar start 
-                             (assoc (cat (dissoc (modified-grammar start) :red) 
+        final-grammar (assoc modified-grammar start
+                             (assoc (cat (dissoc (modified-grammar start) :red)
                                          ws-parser)
                                     :red (:red (modified-grammar start))))]
     (merge final-grammar grammar-ws)))

@@ -1,4 +1,4 @@
-(ns instaparse.viz)   
+(ns instaparse.viz)
 
 (defn span
   "Takes a subtree of the parse tree and returns a [start-index end-index] pair

@@ -20,7 +20,7 @@ something that can have a metamap attached."
   (let [transform (transform-map (:tag parse-tree))]
     (cond
       transform
-      (merge-meta 
+      (merge-meta
         (apply transform (map (partial enlive-transform transform-map)
                               (:content parse-tree)))
         (meta parse-tree))
@@ -38,16 +38,16 @@ something that can have a metamap attached."
         (apply transform (map (partial hiccup-transform transform-map)
                               (next parse-tree)))
         (meta parse-tree))
-      (with-meta 
+      (with-meta
         (into [(first parse-tree)]
-              (map (partial hiccup-transform transform-map) 
+              (map (partial hiccup-transform transform-map)
                    (next parse-tree)))
         (meta parse-tree)))
     parse-tree))
 
 (defn transform
   "Takes a transform map and a parse tree (or seq of parse-trees).
-   A transform map is a mapping from tags to 
+   A transform map is a mapping from tags to
    functions that take a node's contents and return
    a replacement for the node, i.e.,
    {:node-tag (fn [child1 child2 ...] node-replacement),
@@ -62,20 +62,20 @@ something that can have a metamap attached."
     (and (map? parse-tree) (:tag parse-tree))
     ; This is an enlive tree-seq
     (enlive-transform transform-map parse-tree)
-    
+
     (and (vector? parse-tree) (keyword? (first parse-tree)))
     ; This is a hiccup tree-seq
     (hiccup-transform transform-map parse-tree)
-    
+
     (sequential? parse-tree)
     ; This is either a sequence of parse results, or a tree
     ; with a hidden root tag.
     (map-preserving-meta (partial transform transform-map) parse-tree)
-    
+
     (instance? instaparse.gll.Failure parse-tree)
     ; pass failures through unchanged
     parse-tree
-    
+
     :else
     (throw-illegal-argument-exception
       "Invalid parse-tree, not recognized as either enlive or hiccup format.")))

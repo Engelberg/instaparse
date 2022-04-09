@@ -67,7 +67,7 @@
                   children)
     :nil nil
     :invalid))
-    
+
 (defn tree-viz
   "Creates a graphviz visualization of the parse tree.
    Optional keyword arguments:
@@ -78,7 +78,7 @@
    :options options (options passed along to rhizome)
 
 Important: This function will only work if you have added rhizome
-to your dependencies, and installed graphviz on your system.  
+to your dependencies, and installed graphviz on your system.
 See https://github.com/ztellman/rhizome for more information."
   [tree & {output-file :output-file options :options}]
   {:pre [(not= (tree-type tree) :invalid)]}

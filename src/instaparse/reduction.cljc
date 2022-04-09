@@ -21,13 +21,13 @@
 (defn HiccupNonTerminalReduction [key]
   {:reduction-type :hiccup :key key})
 
-(defn EnliveNonTerminalReduction [key] 
+(defn EnliveNonTerminalReduction [key]
   {:reduction-type :enlive, :key key})
 
-(def ^:constant reduction-types 
+(def ^:constant reduction-types
   {:hiccup HiccupNonTerminalReduction
    :enlive EnliveNonTerminalReduction})
-                    
+
 (def ^:constant node-builders
   ; A map of functions for building a node that only has one item
   ; These functions are used in total-parse mode to build failure nodes
@@ -38,14 +38,14 @@
 
 (defn apply-reduction [f result]
   (case (:reduction-type f)
-    :raw (afs/conj-flat afs/EMPTY result)               
+    :raw (afs/conj-flat afs/EMPTY result)
     :hiccup (afs/convert-afs-to-vec (afs/conj-flat (afs/auto-flatten-seq [(:key f)]) result))
-    :enlive 
+    :enlive
     (let [content (afs/conj-flat afs/EMPTY result)]
       {:tag (:key f), :content (if (zero? (count content)) nil content)})
     (f result)))
-    
-(defn apply-standard-reductions 
+
+(defn apply-standard-reductions
   ([grammar] (apply-standard-reductions standard-non-terminal-reduction grammar))
   ([reduction-type grammar]
     (if-let [reduction (reduction-types reduction-type)]
