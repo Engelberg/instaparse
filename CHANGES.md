@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.4.11
+
+### Bugfixes
+
+* Fixed problem where `:start` option wasn't being respected when grammar was provided as a file.
+
 ## 1.4.10
 
 ### Enhancements

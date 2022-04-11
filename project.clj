@@ -1,13 +1,13 @@
-(defproject instaparse "1.4.10"
+(defproject instaparse "1.4.11"
   :description "Instaparse: No grammar left behind"
   :url "https://github.com/Engelberg/instaparse"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.10.0"]]
+  :dependencies [[org.clojure/clojure "1.11.1"]]
   :profiles {:dev {:dependencies
-                   [[org.clojure/clojurescript "1.10.439"]
-                    [org.clojure/tools.trace "0.7.9"]
-                    [criterium "0.4.4"]
+                   [[org.clojure/clojurescript "1.11.4"]
+                    [org.clojure/tools.trace "0.7.11"]
+                    [criterium "0.4.6"]
                     [rhizome "0.2.9"]]}
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}
@@ -20,10 +20,13 @@
                                   [org.clojure/tools.reader "1.2.1"]]}
              :1.10 {:dependencies [[org.clojure/clojure "1.10.0"]
                                    [org.clojure/clojurescript "1.10.439"]
-                                   [org.clojure/tools.reader "1.3.2"]]}}
-  :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7:+1.8:+1.9:+1.10" "test"]
+                                   [org.clojure/tools.reader "1.3.2"]]}
+             :1.11 {:dependencies [[org.clojure/clojure "1.11.1"]
+                                   [org.clojure/clojurescript "1.11.4"]
+                                   [org.clojure/tools.reader "1.3.6"]]}}
+  :aliases {"test-all" ["with-profile" "+1.5:+1.6:+1.7:+1.8:+1.9:+1.10:+1.11" "test"]
             "test-cljs" ["cljsbuild" "test" "unit-tests"]
-            "test-cljs-all" ["with-profile" "+1.7:+1.8:+1.9:+1.10" "do" "clean," "test-cljs"]}
+            "test-cljs-all" ["with-profile" "+1.7:+1.8:+1.9:+1.10+1.11" "do" "clean," "test-cljs"]}
   :test-paths ["test/" "target/generated/test/clj"]
   :source-paths ["src/" "target/generated/src/clj"]
   :cljsee {:builds [{:source-paths ["src/"]
