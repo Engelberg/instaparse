@@ -30,11 +30,15 @@
          :else (recur (next chars) n)))))
 
 (defn marker
-  "Creates string with caret at nth position, 1-based"
-  [n]
-  (when (integer? n)
-    (if (<= n 1) "^"
-      (apply str (concat (repeat (dec n) \space) [\^]))))) 
+  "Creates string with caret at nth position, 1-based
+   and accounts for horizontal tabs which might change
+   the alignment of the '^' to the error location."
+  [text n]
+  (when (and text (integer? n))
+    (let [marker-text (clojure.string/replace text #"[^\s]" " ")]
+      (if (<= n 1)
+          "^"
+          (str (subs marker-text 0 (dec n)) \^)))))
       
 (defn augment-failure
   "Adds text, line, and column info to failure object."
@@ -65,7 +69,7 @@
   [{:keys [line column text reason]}]
   (println (str "Parse error at line " line ", column " column ":"))
   (println text)
-  (println (marker column))
+  (println (marker text column))
   (let [full-reasons (distinct (map :expecting
                                     (filter :full reason)))
         partial-reasons (distinct (map :expecting
@@ -80,4 +84,3 @@
     (doseq [r partial-reasons]
       (print-reason r)
       (println))))
-  
