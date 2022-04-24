@@ -20,10 +20,11 @@
   (let [request {:line 3
                  :column 16
                  :text "\t\ti'm a sample error line with tabs."
-                 :reason [{:tag :string :expecting "A"}]}]
+                 :reason [{:tag :string :expecting "A"}]}
+        nl (println-str)]
     (is (= (with-out-str (pprint-failure request))
-           (str "Parse error at line 3, column 16:\n"
-                (:text request) "\n"
-                "\t\t             ^\n"
-                "Expected:\n"
-                "\"A\"\n")))))
+           (str "Parse error at line 3, column 16:" nl
+                (:text request) nl
+                "\t\t             ^" nl
+                "Expected:" nl
+                "\"A\"" nl)))))
