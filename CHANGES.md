@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.4.12
+
+### Bugfixes
+
+* Instaparse error messages weren't pointing the caret at the right character when the text had tab characters. Thanks to ema-fox and seltzer1717 for the pull request.
+
 ## 1.4.11
 
 ### Bugfixes
