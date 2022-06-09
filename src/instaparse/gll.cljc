@@ -108,7 +108,7 @@
 ; In diagnostic messages, how many characters ahead do we want to show.
 (def ^:dynamic *diagnostic-char-lookahead* 10)
 
-(declare sub-sequence string-context)
+(declare sub-sequence string-context merge-meta)
 
 #?(:clj
    (defn string-context [^CharSequence text index]
@@ -218,6 +218,22 @@
    :cljs
    (def sub-sequence subs))
 
+(defn with-path-meta
+  [g]
+  (let [gfn (fn gfn [root path]
+	      (vary-meta
+		(if (:parser root)
+		  (assoc root
+		   :parser (gfn (:parser root) (conj path (:tag root))))
+		  (if (:parsers root)
+		    (assoc root
+		     :parsers (map-indexed #(gfn %2 (conj path (:tag root) %1))
+						 (:parsers root)))
+		    root))
+		assoc :path path))]
+    (into {} (for [[nt exp] g]
+               [nt (gfn exp [nt])]))))
+
 ; The trampoline structure contains the grammar, text to parse, a stack and a nodes
 ; Also contains an atom to hold successes and one to hold index of failure point.
 ; grammar is a map from non-terminals to parsers
@@ -229,16 +245,18 @@
 
 (defrecord Tramp [grammar text segment fail-index node-builder
                   stack next-stack generation negative-listeners 
-                  msg-cache nodes success failure trace?])
+                  msg-cache nodes success failure trace?
+                  path-log])
 (defn make-tramp 
   ([grammar text] (make-tramp grammar text (text->segment text) -1 nil))
   ([grammar text segment] (make-tramp grammar text segment -1 nil))
   ([grammar text fail-index node-builder] (make-tramp grammar text (text->segment text) fail-index node-builder))
   ([grammar text segment fail-index node-builder]
-    (Tramp. grammar text segment
+    (Tramp. (with-path-meta grammar) text segment
             fail-index node-builder
             (atom []) (atom []) (atom 0) (atom (sorted-map-by >)) 
-            (atom {}) (atom {}) (atom nil) (atom (Failure. 0 [])) (trace-or-false))))
+            (atom {}) (atom {}) (atom nil) (atom (Failure. 0 [])) (trace-or-false)
+            (atom []))))
   
 ; A Success record contains the result and the index to continue from
 (defn make-success [result index] {:result result :index index})
@@ -360,6 +378,8 @@
         total? (total-success? tramp result)
         results (if total? (:full-results node) (:results node))]
     (when (not (@results result))  ; when result is not already in @results
+      (when-let [path (:path (meta parser))]
+        (swap! (:path-log tramp) conj path))
       (profile (add! :push-result))
       (swap! results conj result)
       (doseq [listener @(:listeners node)]
@@ -457,7 +477,10 @@
       (cond
         @(:success tramp)
         (do (log tramp "Successful parse.\nProfile: " @stats)
-          (cons (:result @(:success tramp))
+          (cons (let [obj (:result @(:success tramp))]
+                  (if (coll? obj)
+                    (merge-meta obj {:path-log @(:path-log tramp)})
+                    obj))
                 (lazy-seq
                   (do (reset! (:success tramp) nil)
                     (run tramp true)))))
