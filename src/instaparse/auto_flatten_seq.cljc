@@ -66,22 +66,22 @@
     (= (count index) 1)
     (when (< (peek index) (dec (true-count v)))
       (delve v [(inc (peek index))]))
-    
+
     (< (peek index) (dec (true-count (get-in v (pop index)))))
     (delve v (conj (pop index) (inc (peek index))))
-    
+
     :else
     (recur v (pop index))))
 
 (defn flat-seq
-  ([v] (if (pos? (count v)) 
+  ([v] (if (pos? (count v))
          (flat-seq v (delve v [0]))
          nil))
   ([v index]
     (lazy-seq
-      (cons (get-in v index) 
-            (when-let [next-index (advance v index)] 
-              (flat-seq v next-index))))))  
+      (cons (get-in v index)
+            (when-let [next-index (advance v index)]
+              (flat-seq v next-index))))))
 
 #?(:clj
 (deftype AutoFlattenSeq [^PersistentVector v ^int premix-hashcode ^int hashcode
@@ -116,7 +116,7 @@
          (== cnt (count other))
          (or (== cnt 0)
              (= (seq self) other))))
-  (empty [self] (with-meta EMPTY (meta self))) 
+  (empty [self] (with-meta EMPTY (meta self)))
   (first [self] (first (seq self)))
   (next [self] (next (seq self)))
   (more [self] (rest (seq self)))
@@ -139,7 +139,7 @@
               new-cnt (+ cnt (count obj))]
           (AutoFlattenSeq. (conj v obj) phc (mix-collection-hash-bc phc new-cnt) new-cnt
                            true nil)))
-      :else 
+      :else
       (let [phc (hash-conj premix-hashcode obj)
             new-cnt (inc cnt)]
         (AutoFlattenSeq. (conj v obj) phc (mix-collection-hash-bc phc new-cnt) new-cnt dirty nil))))
@@ -147,7 +147,7 @@
   clojure.lang.Counted
   (count [self] cnt)
   clojure.lang.ILookup
-  (valAt [self key]    
+  (valAt [self key]
     (.valAt v key))
   (valAt [self key not-found]
     (.valAt v key not-found))
@@ -184,7 +184,7 @@
   ICollection
   (-conj [self o] (cons o self))
   IEmptyableCollection
-  (-empty [self] (with-meta EMPTY (meta self))) 
+  (-empty [self] (with-meta EMPTY (meta self)))
   INext
   (-next [self] (next (seq self)))
   ConjFlat
@@ -265,7 +265,7 @@
       (loop [unmixed-hash existing-unmixed-hash
              coll (seq coll)]
         (if-not (nil? coll)
-          (recur (bit-or (+ (imul 31 unmixed-hash) (hash (first coll))) 0) 
+          (recur (bit-or (+ (imul 31 unmixed-hash) (hash (first coll))) 0)
                  (next coll))
           unmixed-hash)))))
 
@@ -297,7 +297,7 @@
 (defn flat-vec-helper [acc v]
   (if-let [s (seq v)]
     (let [fst (first v)]
-      (if (afs? fst) 
+      (if (afs? fst)
         (recur (flat-vec-helper acc fst) (next v))
         (recur (conj! acc fst) (next v))))
     acc))
@@ -311,19 +311,19 @@
   (^PersistentVector get-vec [self]))
 
 #?(:clj
-(deftype FlattenOnDemandVector [v   ; ref containing PersistentVector or nil 
+(deftype FlattenOnDemandVector [v   ; ref containing PersistentVector or nil
                                 ^int hashcode
                                 ^int cnt
-                                flat] ; ref containing PersistentVector or nil                                
+                                flat] ; ref containing PersistentVector or nil
   GetVec
-  (get-vec [self] 
-           (when (not @flat)             
+  (get-vec [self]
+           (when (not @flat)
              (dosync
                (when (not @flat)
-                 (ref-set flat (with-meta (flat-vec @v) (meta @v))) 
+                 (ref-set flat (with-meta (flat-vec @v) (meta @v)))
                  (ref-set v nil)))) ; clear out v so it can be garbage collected
            @flat)
-                    
+
   Object
   (toString [self] (.toString (get-vec self)))
   (hashCode [self] hashcode)
@@ -344,11 +344,11 @@
     (.toArray (get-vec self)))
   clojure.lang.IPersistentCollection
   (equiv [self other]
-    (or 
+    (or
       (and (== hashcode (hash other))
            (== cnt (count other))
            (= (get-vec self) other))))
-  (empty [self] (with-meta [] (meta self))) 
+  (empty [self] (with-meta [] (meta self)))
   clojure.lang.Counted
   (count [self] cnt)
   clojure.lang.IPersistentVector
@@ -361,7 +361,7 @@
   (cons [self obj]
     (conj (get-vec self) obj))
   clojure.lang.IObj
-  (withMeta [self metamap]    
+  (withMeta [self metamap]
     (if @flat
       (FlattenOnDemandVector. (ref @v) hashcode cnt (ref (with-meta @flat metamap)))
       (FlattenOnDemandVector. (ref (with-meta @v metamap)) hashcode cnt (ref @flat))))
@@ -392,9 +392,9 @@
       (rseq (get-vec self))
       nil))
   clojure.lang.IPersistentStack
-  (peek [self] 
+  (peek [self]
     (peek (get-vec self)))
-  (pop [self] 
+  (pop [self]
     (pop (get-vec self)))
   clojure.lang.Associative
   (containsKey [self k]
@@ -419,17 +419,17 @@
     (.subList (get-vec self) a z))
   )
 :cljs
-(deftype FlattenOnDemandVector [v   ; atom containing PersistentVector or nil 
+(deftype FlattenOnDemandVector [v   ; atom containing PersistentVector or nil
                                 ^number hashcode
                                 ^number cnt
                                 flat] ; atom containing PersistentVector or nil
   GetVec
-  (get-vec [self] 
-    (when (not @flat)             
+  (get-vec [self]
+    (when (not @flat)
       (swap! flat (fn [_] (with-meta (flat-vec @v) (meta @v))))
-      (swap! v (fn [_] nil))) ; clear out v so it can be garbage collected 
+      (swap! v (fn [_] nil))) ; clear out v so it can be garbage collected
     @flat)
-  
+
   Object
   (toString [self]
     (pr-str* (get-vec self)))
@@ -437,12 +437,12 @@
   (-hash [self] hashcode)
   IEquiv
   (-equiv [self other]
-    (or 
+    (or
      (and (= hashcode (hash other))
           (= cnt (count other))
           (= (get-vec self) other))))
   IEmptyableCollection
-  (-empty [self] (with-meta [] (meta self))) 
+  (-empty [self] (with-meta [] (meta self)))
   ICounted
   (-count [self] cnt)
   IVector
@@ -452,7 +452,7 @@
   (-conj [self obj]
     (conj (get-vec self) obj))
   IWithMeta
-  (-with-meta [self metamap]    
+  (-with-meta [self metamap]
     (if @flat
       (FlattenOnDemandVector. (atom @v) hashcode cnt (atom (with-meta @flat metamap)))
       (FlattenOnDemandVector. (atom (with-meta @v metamap)) hashcode cnt (atom @flat))))
@@ -484,9 +484,9 @@
       (rseq (get-vec self))
       nil))
   IStack
-  (-peek [self] 
+  (-peek [self]
     (-peek (get-vec self)))
-  (-pop [self] 
+  (-pop [self]
     (-pop (get-vec self)))
   IAssociative
   (-assoc [self i val]

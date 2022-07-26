@@ -5,7 +5,7 @@
     ;; cljs
     `(def ~here ~there)
     ;; clj
-    `(do 
+    `(do
        (def ~here ~there)
        (alter-meta! (var ~here) assoc
                     :doc (:doc (meta (var ~there)))

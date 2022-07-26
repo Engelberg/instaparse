@@ -50,7 +50,14 @@
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
 
-(def cfg
+(def non-terminal-namespace-allowed
+  (let [no-slash "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;/.]"
+        with-slash "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;]"]
+    (regex-doc (str no-slash with-slash "*") "Non-terminal")))
+(def non-terminal
+  (regex-doc "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+" "Non-terminal"))
+
+(defn cfg [{:keys [allow-namespaced-nts?]}]
   (apply-standard-reductions
     :hiccup    ; use the hiccup output format
     {:rules (hide-tag (cat opt-whitespace
@@ -77,88 +84,90 @@
      :nt (cat
            (neg (nt :epsilon))
            (regexp
-             (regex-doc "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+" "Non-terminal")))
-          :hide-nt (cat (hide (string "<"))
-                        opt-whitespace
-                        (nt :nt)
-                        opt-whitespace
-                        (hide (string ">")))
-          :alt-or-ord (hide-tag (alt (nt :alt) (nt :ord)))
-          :alt (cat (nt :cat)
-                    (star
-                      (cat
-                        opt-whitespace
-                        (hide (string "|"))
-                        opt-whitespace
-                        (nt :cat))))
-          :ord (cat (nt :cat)
-                    (plus
-                      (cat
-                        opt-whitespace
-                        (hide (string "/"))
-                        opt-whitespace
-                        (nt :cat))))
-          :paren (cat (hide (string "("))
-                      opt-whitespace
-                      (nt :alt-or-ord)
-                      opt-whitespace
-                      (hide (string ")")))
-          :hide (cat (hide (string "<"))
-                     opt-whitespace
-                     (nt :alt-or-ord)
-                     opt-whitespace
-                     (hide (string ">")))
-          :cat (plus (cat
-                       opt-whitespace
-                       (alt (nt :factor) (nt :look) (nt :neg))
-                       opt-whitespace))
-          :string (alt
-                    (regexp single-quoted-string)
-                    (regexp double-quoted-string))
-          :regexp (alt
-                    (regexp single-quoted-regexp)
-                    (regexp double-quoted-regexp))
-          :opt (alt
-                 (cat (hide (string "["))
-                      opt-whitespace
-                      (nt :alt-or-ord)
-                      opt-whitespace
-                      (hide (string "]")))
-                 (cat (nt :factor)
-                      opt-whitespace
-                      (hide (string "?"))))
-          :star (alt
-                  (cat (hide (string "{"))
-                       opt-whitespace
-                       (nt :alt-or-ord)
-                       opt-whitespace
-                       (hide (string "}")))
-                  (cat (nt :factor)
-                       opt-whitespace
-                       (hide (string "*"))))
-          :plus (cat (nt :factor)
-                     opt-whitespace
-                     (hide (string "+")))
-          :look (cat (hide (string "&"))
-                     opt-whitespace
-                     (nt :factor))
-          :neg (cat (hide (string "!"))
-                    opt-whitespace
-                    (nt :factor))
-          :epsilon (alt (string "Epsilon")
-                        (string "epsilon")
-                        (string "EPSILON")
-                        (string "eps")
-                        (string "\u03b5"))
-          :factor (hide-tag (alt (nt :nt)
-                                 (nt :string)
-                                 (nt :regexp)
-                                 (nt :opt)
-                                 (nt :star)
-                                 (nt :plus)
-                                 (nt :paren)
-                                 (nt :hide)
-                                 (nt :epsilon)))
+             (if allow-namespaced-nts?
+               non-terminal-namespace-allowed
+               non-terminal)))
+     :hide-nt (cat (hide (string "<"))
+                   opt-whitespace
+                   (nt :nt)
+                   opt-whitespace
+                   (hide (string ">")))
+     :alt-or-ord (hide-tag (alt (nt :alt) (nt :ord)))
+     :alt (cat (nt :cat)
+               (star
+                (cat
+                  opt-whitespace
+                  (hide (string "|"))
+                  opt-whitespace
+                  (nt :cat))))
+     :ord (cat (nt :cat)
+               (plus
+                (cat
+                  opt-whitespace
+                  (hide (string "/"))
+                  opt-whitespace
+                  (nt :cat))))
+     :paren (cat (hide (string "("))
+                 opt-whitespace
+                 (nt :alt-or-ord)
+                 opt-whitespace
+                 (hide (string ")")))
+     :hide (cat (hide (string "<"))
+                opt-whitespace
+                (nt :alt-or-ord)
+                opt-whitespace
+                (hide (string ">")))
+     :cat (plus (cat
+                  opt-whitespace
+                  (alt (nt :factor) (nt :look) (nt :neg))
+                  opt-whitespace))
+     :string (alt
+              (regexp single-quoted-string)
+              (regexp double-quoted-string))
+     :regexp (alt
+              (regexp single-quoted-regexp)
+              (regexp double-quoted-regexp))
+     :opt (alt
+           (cat (hide (string "["))
+                opt-whitespace
+                (nt :alt-or-ord)
+                opt-whitespace
+                (hide (string "]")))
+           (cat (nt :factor)
+                opt-whitespace
+                (hide (string "?"))))
+     :star (alt
+            (cat (hide (string "{"))
+                 opt-whitespace
+                 (nt :alt-or-ord)
+                 opt-whitespace
+                 (hide (string "}")))
+            (cat (nt :factor)
+                 opt-whitespace
+                 (hide (string "*"))))
+     :plus (cat (nt :factor)
+                opt-whitespace
+                (hide (string "+")))
+     :look (cat (hide (string "&"))
+                opt-whitespace
+                (nt :factor))
+     :neg (cat (hide (string "!"))
+               opt-whitespace
+               (nt :factor))
+     :epsilon (alt (string "Epsilon")
+                   (string "epsilon")
+                   (string "EPSILON")
+                   (string "eps")
+                   (string "\u03b5"))
+     :factor (hide-tag (alt (nt :nt)
+                            (nt :string)
+                            (nt :regexp)
+                            (nt :opt)
+                            (nt :star)
+                            (nt :plus)
+                            (nt :paren)
+                            (nt :hide)
+                            (nt :epsilon)))
      ;; extra entrypoint to be used by the ebnf combinator
      :rules-or-parser (hide-tag (alt (nt :rules) (nt :alt-or-ord)))}))
 
@@ -292,8 +301,8 @@
           " occurs on the right-hand side of your grammar, but not on the left"))))
   grammar-map)
 
-(defn build-parser [spec output-format]
-  (let [rules (parse cfg :rules spec false)]
+(defn build-parser [spec output-format & {:as opts}]
+  (let [rules (parse (cfg opts) :rules spec false)]
     (if (instance? instaparse.gll.Failure rules)
       (throw-runtime-exception
         "Error parsing grammar specification:\n"
@@ -319,7 +328,7 @@ If you give it a series of rules, it will give you back a grammar map.
 Useful for combining with other combinators."
   [spec & {:as opts}]
   (binding [*case-insensitive-literals* (:string-ci opts :default)]
-    (let [rules (parse cfg :rules-or-parser spec false)]
+    (let [rules (parse (cfg opts) :rules-or-parser spec false)]
       (cond
         (instance? instaparse.gll.Failure rules)
         (throw-runtime-exception

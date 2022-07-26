@@ -12,11 +12,11 @@
 (defn empty-result? [result]
   (or (and (vector? result) (= (count result) 1))
       (and (map? result) (contains? result :tag) (empty? (get result :content)))
-      (empty? result)))       
+      (empty? result)))
 
 (def ^:constant failure-signal (gll/->Failure nil nil))
 
-(defn get-end 
+(defn get-end
   (#?(:clj ^long [parse]
       :cljs ^number [parse])
     (let [[start end] (viz/span parse)]
@@ -46,12 +46,12 @@
               end (if end end (+ index (count parse)))]
           (cond
             (= end length) [parse end nil]
-            :else 
+            :else
             (if-let [follow-ups (seq (parse-from-index grammar initial-parser text segment end))]
               [parse end follow-ups]
               (recur (next parses)))))))))
-                                 
-(defn repeat-parse-hiccup 
+
+(defn repeat-parse-hiccup
   ([grammar initial-parser root-tag text segment]
     (repeat-parse-hiccup grammar initial-parser root-tag text segment 0))
   ([grammar initial-parser root-tag text segment index]
@@ -59,14 +59,14 @@
           first-result (parse-from-index grammar initial-parser text segment index)]
       (loop [index (long index)
              parses (afs/auto-flatten-seq [root-tag])
-             
+
              [parse end follow-ups :as selection]
              (select-parse grammar initial-parser text segment index first-result)]
         (cond
           (nil? selection) failure-signal
           (= index end) failure-signal
           (nil? follow-ups) (gll/safe-with-meta
-                              (afs/convert-afs-to-vec 
+                              (afs/convert-afs-to-vec
                                 (afs/conj-flat parses parse))
                               {:optimize :memory
                                :instaparse.gll/start-index 0
@@ -83,14 +83,14 @@
           first-result (parse-from-index grammar initial-parser text segment index)]
       (loop [index (long index)
              parses afs/EMPTY
-             
+
              [parse end follow-ups :as selection]
              (select-parse grammar initial-parser text segment index first-result)]
         (cond
           (nil? selection) failure-signal
-          (= index end) failure-signal          
+          (= index end) failure-signal
           (nil? follow-ups) (gll/safe-with-meta
-                              {:tag root-tag 
+                              {:tag root-tag
                                :content (seq (afs/conj-flat parses parse))}
                               {:optimize :memory
                                :instaparse.gll/start-index 0
@@ -99,7 +99,7 @@
                        (afs/conj-flat parses parse)
                        (select-parse grammar initial-parser text segment end follow-ups)))))))
 
-(defn repeat-parse-no-tag 
+(defn repeat-parse-no-tag
   ([grammar initial-parser text segment]
     (repeat-parse-no-tag grammar initial-parser text segment 0))
   ([grammar initial-parser text segment index]
@@ -107,12 +107,12 @@
           first-result (parse-from-index grammar initial-parser text segment index)]
       (loop [index (long index)
              parses afs/EMPTY
-             
+
              [parse end follow-ups :as selection]
              (select-parse grammar initial-parser text segment index first-result)]
         (cond
           (nil? selection) failure-signal
-          (= index end) failure-signal          
+          (= index end) failure-signal
           (nil? follow-ups) (gll/safe-with-meta
                               (afs/conj-flat parses parse)
                               {:optimize :memory
@@ -122,10 +122,10 @@
                        (afs/conj-flat parses parse)
                        (select-parse grammar initial-parser text segment end follow-ups)))))))
 
-(defn repeat-parse 
+(defn repeat-parse
   ([grammar initial-parser output-format text] (repeat-parse-no-tag grammar initial-parser text (gll/text->segment text)))
   ([grammar initial-parser output-format root-tag text]
-    {:pre [(#{:hiccup :enlive} output-format)]} 
+    {:pre [(#{:hiccup :enlive} output-format)]}
     (cond
       (= output-format :hiccup)
       (repeat-parse-hiccup grammar initial-parser root-tag text (gll/text->segment text))
@@ -153,21 +153,21 @@
             (case output-format
               :enlive
               (gll/safe-with-meta
-                {:tag root-tag 
+                {:tag root-tag
                  :content
                  (afs/conj-flat (afs/conj-flat afs/EMPTY header-result) repeat-result)}
                 span-meta)
               :hiccup
               (gll/safe-with-meta
-                (afs/convert-afs-to-vec 
+                (afs/convert-afs-to-vec
                   (afs/conj-flat (afs/conj-flat (afs/auto-flatten-seq [root-tag])
-                                                header-result) 
+                                                header-result)
                                  repeat-result))
                 span-meta)
-              (gll/safe-with-meta 
+              (gll/safe-with-meta
                 (afs/conj-flat (afs/conj-flat afs/EMPTY header-result) repeat-result)
                 span-meta))))))))
-    
+
 (defn try-repeating-parse-strategy-with-header
   [grammar text start-production start-rule output-format]
   (gll/profile (gll/clear!))
@@ -183,7 +183,7 @@
         (if (= (:red start-rule) red/raw-non-terminal-reduction)
           (repeat-parse-with-header grammar header-parser repeating-parser nil start-production text)
           (repeat-parse-with-header grammar header-parser repeating-parser output-format start-production text))))))
-  
+
 (defn try-repeating-parse-strategy
   [parser text start-production]
   (let [grammar (:grammar parser)
@@ -201,18 +201,18 @@
           (if (empty-result? result)
             failure-signal
             result))
-        :else (try-repeating-parse-strategy-with-header 
+        :else (try-repeating-parse-strategy-with-header
                 grammar text start-production start-rule output-format))
-              
+
       (= (:tag start-rule) :star)
       (repeat-parse grammar (:parser start-rule) output-format start-production text)
-      (= (:tag start-rule) :plus)      
+      (= (:tag start-rule) :plus)
       (let [result (repeat-parse grammar (:parser start-rule) output-format start-production text)]
         (if (empty-result? result)
           failure-signal
           result))
-      
-      :else (try-repeating-parse-strategy-with-header 
+
+      :else (try-repeating-parse-strategy-with-header
                 grammar text start-production start-rule output-format))))
 
 (defn used-memory-optimization? [tree]

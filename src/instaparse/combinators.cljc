@@ -16,7 +16,7 @@
 (defclone plus c/plus)
 (defclone star c/star)
 (defclone rep c/rep)
-(defclone alt c/alt) 
+(defclone alt c/alt)
 (defclone ord c/ord)
 (defclone cat c/cat)
 (defclone string c/string)
@@ -31,4 +31,4 @@
 
 (defclone ebnf cfg/ebnf)
 (defclone abnf abnf/abnf)
-       
+
