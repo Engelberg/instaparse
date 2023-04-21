@@ -129,9 +129,9 @@ provided that, if given a string for a grammar specification, will
 parse that as a grammar up front and emit more performant code.
 
 ```clojure
-;; Clojure
+;; Clojure (all versions) and ClojureScript (1.9.198 and above)
 (:require [instaparse.core :as insta :refer [defparser]])
-;; ClojureScript
+;; ClojureScript (prior to 1.9.198)
 (:require [instaparse.core :as insta :refer-macros [defparser]])
 
 => (time (def p (insta/parser "S = A B; A = 'a'+; B = 'b'+")))
