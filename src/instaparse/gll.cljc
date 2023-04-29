@@ -68,7 +68,13 @@
 (defmacro dpprint [& body]  
   (when PRINT `(clojure.pprint/pprint ~@body)))
 
-(defonce PROFILE false)
+(defonce NATIVE-IMAGE-TRACE
+  #_(try
+    (boolean (read-string (slurp "resources/NATIVE_IMAGE_TRACE")))
+    (catch Exception _ false))
+  true)
+
+(defonce PROFILE true)
 (defmacro profile [& body]
   (when PROFILE
     `(do ~@body)))
@@ -87,21 +93,32 @@
 ;; whether TRACE is true inside the expansion, we can at least avoid 
 ;; the performance hit of binding every time.
 
-(defonce TRACE false)
+(defonce TRACE true)
 (def ^:dynamic *trace* false)
 (defmacro log [tramp & body]
-  (when TRACE
-    `(when (:trace? ~tramp) (println ~@body))))
+  (if NATIVE-IMAGE-TRACE
+    `(when TRACE
+       (when (:trace? ~tramp) (println ~@body)))
+    (when TRACE
+      `(when (:trace? ~tramp) (println ~@body)))))
 (defmacro attach-diagnostic-meta [f metadata]
-  (if TRACE
-    `(with-meta ~f ~metadata)
-    f))
+  (if NATIVE-IMAGE-TRACE
+    `(if TRACE
+       (with-meta ~f ~metadata)
+       ~f)
+    (if TRACE
+      `(with-meta ~f ~metadata)
+      f)))
 (defmacro bind-trace [trace? body]
-  `(if TRACE
-     (binding [*trace* ~trace?] ~body)
-          ~body))
+  (if NATIVE-IMAGE-TRACE
+    `(binding [*trace* ~trace?] ~body)
+    `(if TRACE
+       (binding [*trace* ~trace?] ~body)
+       ~body)))
 (defmacro trace-or-false []
-  (if TRACE '*trace* false))
+  (if NATIVE-IMAGE-TRACE
+    `(if TRACE *trace* false)
+    (if TRACE '*trace* false)))
 
 ))
 
