@@ -93,7 +93,7 @@
 ;; whether TRACE is true inside the expansion, we can at least avoid 
 ;; the performance hit of binding every time.
 
-(defonce TRACE true)
+(defonce TRACE false)
 (def ^:dynamic *trace* false)
 (defmacro log [tramp & body]
   (if NATIVE-IMAGE-TRACE
