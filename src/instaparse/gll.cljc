@@ -68,16 +68,16 @@
 (defmacro dpprint [& body]  
   (when PRINT `(clojure.pprint/pprint ~@body)))
 
-(defonce NATIVE-IMAGE-TRACE
-  #_(try
-    (boolean (read-string (slurp "resources/NATIVE_IMAGE_TRACE")))
-    (catch Exception _ false))
-  true)
+;; Set true to enable tracing in Graal native images.
 
-(defonce PROFILE true)
+(defonce NATIVE-IMAGE-TRACE false)
+
+(defonce PROFILE false)
 (defmacro profile [& body]
-  (when PROFILE
-    `(do ~@body)))
+  (if NATIVE-IMAGE-TRACE
+    `(do ~@body)
+    (when PROFILE
+      `(do ~@body))))
 
 ;; By default TRACE is set to false, and all these macros are used
 ;; throughout the code to ensure there is absolutely no performance
@@ -92,6 +92,11 @@
 ;; recompiled.  Still, binding is a relatively slow operation, so by testing
 ;; whether TRACE is true inside the expansion, we can at least avoid 
 ;; the performance hit of binding every time.
+;;
+;; Graal native images can't dynamically reload namespaces so there is a
+;; the flag NATIVE-IMAGE-TRACE which can be set to true before building
+;; to enable tracing in Graal. Unfortunately tracing code can't be compiled away
+;; in this mode. The peformance penalty is around the 30% mark.
 
 (defonce TRACE false)
 (def ^:dynamic *trace* false)
