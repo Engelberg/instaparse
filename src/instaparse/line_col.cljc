@@ -20,8 +20,8 @@
   "Given a string `text`, returns a function that takes an index into the string,
 and returns a cursor, including line and column information.  For efficiency,
 inputs must be fed into the function in increasing order."
-  [^String text]
-  (let [cursor-state (atom (Cursor. 0 1 1))]
+  [^String text start-line start-column]
+  (let [cursor-state (atom (Cursor. 0 start-line start-column))]
     (fn line-col [i]
       (swap! cursor-state advance-cursor text i)
       @cursor-state)))                        
@@ -71,33 +71,34 @@ then be found in the metadata map under the keywords:
 :instaparse.gll/end-line, :instaparse.gll/end-column
 
 The start is inclusive, the end is exclusive. Lines and columns are 1-based."
-  [text parse-tree]
-  (let [line-col-fn (make-line-col-fn text)]
-    (cond
-      (nil? parse-tree) nil
-      
-      (and (map? parse-tree) (:tag parse-tree))
-      ; This is an enlive tree-seq
-      (enlive-add-line-col-spans line-col-fn parse-tree)     
-      
-      (and (vector? parse-tree) (keyword? (first parse-tree)))
-      ; This is a hiccup tree-seq
-      (hiccup-add-line-col-spans line-col-fn parse-tree)
-      
-      (and (sequential? parse-tree) (map? (first parse-tree)) (:tag (first parse-tree)))
-      ; This is an enlive tree with hidden root tag
-      (instaparse.transform/map-preserving-meta 
-        (partial enlive-add-line-col-spans line-col-fn) parse-tree)
-      
-      (and (sequential? parse-tree) (vector? (first parse-tree)) (keyword? (first (first parse-tree))))
-      ; This is a hiccup tree with hidden root tag
-      (instaparse.transform/map-preserving-meta 
-        (partial hiccup-add-line-col-spans line-col-fn) parse-tree)
+  ([text parse-tree] (add-line-col-spans text 1 1 parse-tree))
+  ([text start-line start-column parse-tree]
+   (let [line-col-fn (make-line-col-fn text start-line start-column)]
+     (cond
+       (nil? parse-tree) nil
 
-      (instance? instaparse.gll.Failure parse-tree)
-      ; pass failures through unchanged
-      parse-tree
-    
-      :else
-      (throw-illegal-argument-exception
-        "Invalid parse-tree, not recognized as either enlive or hiccup format."))))
+       (and (map? parse-tree) (:tag parse-tree))
+       ; This is an enlive tree-seq
+       (enlive-add-line-col-spans line-col-fn parse-tree)
+
+       (and (vector? parse-tree) (keyword? (first parse-tree)))
+       ; This is a hiccup tree-seq
+       (hiccup-add-line-col-spans line-col-fn parse-tree)
+
+       (and (sequential? parse-tree) (map? (first parse-tree)) (:tag (first parse-tree)))
+       ; This is an enlive tree with hidden root tag
+       (instaparse.transform/map-preserving-meta
+         (partial enlive-add-line-col-spans line-col-fn) parse-tree)
+
+       (and (sequential? parse-tree) (vector? (first parse-tree)) (keyword? (first (first parse-tree))))
+       ; This is a hiccup tree with hidden root tag
+       (instaparse.transform/map-preserving-meta
+         (partial hiccup-add-line-col-spans line-col-fn) parse-tree)
+
+       (instance? instaparse.gll.Failure parse-tree)
+       ; pass failures through unchanged
+       parse-tree
+
+       :else
+       (throw-illegal-argument-exception
+         "Invalid parse-tree, not recognized as either enlive or hiccup format.")))))

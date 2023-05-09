@@ -810,7 +810,22 @@
     (is (= (enlive-line-col-spans elc)
            '({:instaparse.gll/end-column 2, :instaparse.gll/end-line 5, :instaparse.gll/start-column 1, :instaparse.gll/start-line 1, :instaparse.gll/start-index 0, :instaparse.gll/end-index 13} ({:instaparse.gll/end-column 4, :instaparse.gll/end-line 1, :instaparse.gll/start-column 1, :instaparse.gll/start-line 1, :instaparse.gll/start-index 0, :instaparse.gll/end-index 3} "a" "b" "c") ({:instaparse.gll/end-column 4, :instaparse.gll/end-line 2, :instaparse.gll/start-column 1, :instaparse.gll/start-line 2, :instaparse.gll/start-index 4, :instaparse.gll/end-index 7} "d" "e" "f") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 3, :instaparse.gll/start-column 1, :instaparse.gll/start-line 3, :instaparse.gll/start-index 8, :instaparse.gll/end-index 9} "g") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 4, :instaparse.gll/start-column 1, :instaparse.gll/start-line 4, :instaparse.gll/start-index 10, :instaparse.gll/end-index 11} "h") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 5, :instaparse.gll/start-column 1, :instaparse.gll/start-line 5, :instaparse.gll/start-index 12, :instaparse.gll/end-index 13} "i"))))           
     (is (= (hiccup-line-col-spans hlc)
-           '({:instaparse.gll/end-column 2, :instaparse.gll/end-line 5, :instaparse.gll/start-column 1, :instaparse.gll/start-line 1, :instaparse.gll/start-index 0, :instaparse.gll/end-index 13} ({:instaparse.gll/end-column 4, :instaparse.gll/end-line 1, :instaparse.gll/start-column 1, :instaparse.gll/start-line 1, :instaparse.gll/start-index 0, :instaparse.gll/end-index 3} "abc") ({:instaparse.gll/end-column 4, :instaparse.gll/end-line 2, :instaparse.gll/start-column 1, :instaparse.gll/start-line 2, :instaparse.gll/start-index 4, :instaparse.gll/end-index 7} "def") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 3, :instaparse.gll/start-column 1, :instaparse.gll/start-line 3, :instaparse.gll/start-index 8, :instaparse.gll/end-index 9} "g") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 4, :instaparse.gll/start-column 1, :instaparse.gll/start-line 4, :instaparse.gll/start-index 10, :instaparse.gll/end-index 11} "h") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 5, :instaparse.gll/start-column 1, :instaparse.gll/start-line 5, :instaparse.gll/start-index 12, :instaparse.gll/end-index 13} "i"))))))
+           '({:instaparse.gll/end-column 2, :instaparse.gll/end-line 5, :instaparse.gll/start-column 1, :instaparse.gll/start-line 1, :instaparse.gll/start-index 0, :instaparse.gll/end-index 13} ({:instaparse.gll/end-column 4, :instaparse.gll/end-line 1, :instaparse.gll/start-column 1, :instaparse.gll/start-line 1, :instaparse.gll/start-index 0, :instaparse.gll/end-index 3} "abc") ({:instaparse.gll/end-column 4, :instaparse.gll/end-line 2, :instaparse.gll/start-column 1, :instaparse.gll/start-line 2, :instaparse.gll/start-index 4, :instaparse.gll/end-index 7} "def") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 3, :instaparse.gll/start-column 1, :instaparse.gll/start-line 3, :instaparse.gll/start-index 8, :instaparse.gll/end-index 9} "g") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 4, :instaparse.gll/start-column 1, :instaparse.gll/start-line 4, :instaparse.gll/start-index 10, :instaparse.gll/end-index 11} "h") ({:instaparse.gll/end-column 2, :instaparse.gll/end-line 5, :instaparse.gll/start-column 1, :instaparse.gll/start-line 5, :instaparse.gll/start-index 12, :instaparse.gll/end-index 13} "i")))))
+  ;; If abc\ndef\ng\nh\ni is split into two chunks, can the original line
+  ;; numbering be preserved?
+  (let [chunks [{:text "abc\ndef" :start-line 1}
+                {:text "g\nh\ni"  :start-line 3}]
+        ts (map words-and-numbers (map :text chunks))
+        tlcs (map (fn [{:keys [text start-line]} parse-tree]
+                    (lc/add-line-col-spans text start-line 1 parse-tree))
+                  chunks
+                  ts)]
+    (is (= (map (fn start-lines [t]
+                  (if (sequential? t)
+                    (cons (:instaparse.gll/start-line (meta t)) (map start-lines (next t)))
+                    t))
+                tlcs)
+           '[(1 (1 "abc") (2 "def")) (3 (3 "g") (4 "h") (5 "i"))]))))
 
 (deftest print-test
   ;; In scenarios when AutoFlattenSeq or FlattenOnDemandVector is
