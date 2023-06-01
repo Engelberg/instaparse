@@ -164,7 +164,7 @@
     (:nt :epsilon) parser  
     (:opt :plus :star :rep :look :neg) (update-in parser [:parser] auto-whitespace-parser ws-parser)
     (:alt :cat) (assoc parser :parsers  
-                       (map #(auto-whitespace-parser % ws-parser) (:parsers parser)))
+                       (interleave (repeat ws-parser) (:parsers parser)))
     :ord (assoc parser 
                 :parser1 (auto-whitespace-parser (:parser1 parser) ws-parser)
                 :parser2 (auto-whitespace-parser (:parser2 parser) ws-parser))

@@ -44,6 +44,22 @@
      A = 'a'+
      B = 'b'+"))
 
+(def as-and-bs-auto-ws-standard
+  (insta/parser
+    "S = AB*
+     AB = A B
+     A = 'a'+
+     B = 'b'+"
+    :auto-whitespace :standard))
+
+(def as-and-bs-auto-ws-comma
+  (insta/parser
+    "S = AB*
+     AB = A B
+     A = 'a'+
+     B = 'b'+"
+    :auto-whitespace :comma))
+
 (def as-and-bs-regex
   (insta/parser
     "S = AB*
@@ -387,6 +403,12 @@
     (as-and-bs "aaaaabbbaaaabb")
     (as-and-bs "aaaaabbbaaaabb" :optimize :memory)
     
+    (as-and-bs "aaaabbbaabbab")
+    (as-and-bs-auto-ws-standard " aaaa  bbba abbab ")
+
+    (as-and-bs "aaaabbbaabbab")
+    (as-and-bs-auto-ws-comma ",aaaa,  bbbaa,bbab,")
+
     (as-and-bs-enlive "aaaaabbbaaaabb")
     '{:tag :S,
      :content
