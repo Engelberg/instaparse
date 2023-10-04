@@ -160,8 +160,10 @@
 
 #?(:clj
    (defmethod clojure.core/print-method Parser [x writer]
-     (binding [*out* writer]
-       (println (print/Parser->str x))))
+     (if *print-readably*
+       (print-method (print/Parser->str x) writer)
+       (binding [*out* writer]
+         (println (print/Parser->str x)))))
    :cljs
    (extend-protocol IPrintWithWriter
      instaparse.core/Parser
