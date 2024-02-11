@@ -28,3 +28,5 @@ todo.txt
 *.iml
 *.asc
 .nrepl-history
+/.clj-kondo
+!/.clj-kondo/config.edn
