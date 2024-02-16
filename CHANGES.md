@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.4.13
+
+### Enhancements
+
+* Added clj-kondo resource file. Thanks to toniz4 for the pull request!
+
 ## 1.4.12
 
 ### Bugfixes
