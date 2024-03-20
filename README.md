@@ -817,7 +817,7 @@ Sometimes, when the input string contains newline characters, it is useful to ha
          (insta/add-line-and-column-info-to-metadata
             multiline-text
             (words-and-numbers multiline-text)))
-            
+
 The additional information is in the metadata, so the tree itself is not visibly changed:
 
     => parsed-multiline-text-with-line-and-column-metadata
@@ -839,6 +839,14 @@ And let's take a look at the metadata for the word "is" on the second line of th
      :instaparse.gll/start-index 20, :instaparse.gll/end-index 22}]
 
 start-line and start-column point to the same character as start-index, and end-line and end-column point to the same character as end-index.  So just like the regular span metadata, the line/column start point is inclusive and the end point is exclusive.  However, line and column numbers are 1-based counts, rather than 0-based.  So, for example, index number 0 of the string corresponds to line 1, column 1.
+
+If your parse tree represents some fragment of a larger document, there is another arity of the `add-line-and-column-info-to-metadata` function that lets you set the starting line and column numbers. So, for example, to annotate the above text as if it begins at line 5, column 10:
+
+    => (insta/add-line-and-column-info-to-metadata
+          multiline-text
+          5   ;; starting line number
+          10  ;; starting column number
+          (words-and-numbers multiline-text)))
 
 #### Visualizing the tree
 
