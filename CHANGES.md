@@ -5,6 +5,7 @@
 ### Enhancements
 
 * Added clj-kondo resource file. Thanks to toniz4 for the pull request!
+* Added new arity to add-line-and-column-info-to-metadata that supports starting-line and starting-column. Thanks to mainej for the pull request!
 
 ## 1.4.12
 
