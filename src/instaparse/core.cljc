@@ -1,7 +1,7 @@
 (ns instaparse.core
-  (#?(:clj :require :cljs :require-macros)
-    [instaparse.macros :refer [defclone
-                               set-global-var!]])
+  #?(:cljs
+     (:require-macros [instaparse.core]
+                      [instaparse.macros :refer [defclone set-global-var!]]))
   (:require [clojure.walk :as walk]
             [instaparse.gll :as gll]
             [instaparse.cfg :as cfg]
@@ -14,7 +14,8 @@
             [instaparse.combinators-source :as c]
             [instaparse.line-col :as lc]
             [instaparse.viz :as viz]
-            [instaparse.util :refer [throw-illegal-argument-exception]]))
+            [instaparse.util :refer [throw-illegal-argument-exception]]
+            #?(:clj [instaparse.macros :refer [defclone set-global-var!]])))
 
 (def ^:dynamic *default-output-format* :hiccup)
 (defn set-default-output-format!
