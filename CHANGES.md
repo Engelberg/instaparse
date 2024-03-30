@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.4.14
+
+### Enhancements
+
+* Now leverages clojurescript's implicit sugar for :require-macros, :include-macros, and :refer-macros in namespace declaration.  Thanks to sumbach for the pull request!
+
 ## 1.4.13
 
 ### Enhancements
