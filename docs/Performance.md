@@ -133,6 +133,10 @@ Occasionally, I receive a question about whether there's a *best* way to write i
 	I've added a new, experimental `:optimize :memory` flag that attempts to automate this kind of preprocessing, chopping the text into smaller independent chunks in order to use less memory. This only works on grammars that describe these sorts of repeated data records (possibly with a header at the beginning of the file).  If instaparse can't find the pattern or runs into any sort of failure, it will fall back to its usual parsing strategy in order to make sure it has considered all possibilities.  Using this flag will likely slow down your parser, but if your data lends itself to this alternative strategy, you'll use much less memory.
 
 	I consider the `:optimize :memory` flag to be an *alpha* feature, subject to change.  If you try it and find it useful, or try it on something where you'd expect it to help and it doesn't, please send me your feedback.
+
+	If you need to annotate your chunks of text with line and column information, recall that `add-line-and-column-info-to-metadata` can take a starting line and column number for its annotation process:
+
+		(insta/add-line-and-column-info-to-metadata text starting-line starting-column parse-tree)
 	
 11. As of version 1.2, the enlive output format is slightly faster than hiccup.  This may change in the future, so I don't recommend that you base your choice of output format on this slight differential.  However, if you're trying to eke out the best possible performance, you might find it useful to experiment with both output formats to see whether one performs better for you than the other.
 
