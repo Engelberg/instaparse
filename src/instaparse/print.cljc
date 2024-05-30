@@ -54,31 +54,36 @@
   "Stringifies a parser built from combinators"
   ([p] (combinators->str p false))
   ([{:keys [parser parser1 parser2 parsers tag] :as p} hidden?]
-    (if (and (not hidden?) (:hide p))
-      (str \< (combinators->str p true) \>)
-      (case tag
-        :epsilon "\u03b5"
-        :opt (str (paren-for-compound hidden? parser) "?")
-        :plus (str (paren-for-compound hidden? parser) "+")
-        :star (str (paren-for-compound hidden? parser) "*")
-        :rep (if (not= (:min p) (:max p))
-               (str (paren-for-compound hidden? parser) \{ 
-                    (:min p) \, (:max p) \})
-               (str (paren-for-compound hidden? parser) \{ 
-                    (:min p)\}))
-        :alt (str/join " | " (map (partial paren-for-tags #{:ord} hidden?) parsers))
-        :ord (str (paren-for-tags #{:alt} hidden? parser1)
-                  " / "
-                  (paren-for-tags #{:alt} hidden? parser2))
-        :cat (str/join " " (map (partial paren-for-tags #{:alt :ord} hidden?) parsers))
-        :string (with-out-str (pr (:string p)))
-        :string-ci (with-out-str (pr (:string p)))
-        :char (char-range->str p)
-        :regexp (regexp->str (:regexp p))
-        :nt (subs (str (:keyword p)) 1)
-        :look (str "&" (paren-for-compound hidden? parser))
-        :neg (str "!" (paren-for-compound hidden? parser))))))
-  
+   (if (and (not hidden?) (:hide p))
+     (str \< (combinators->str p true) \>)
+     (case tag
+       :epsilon "\u03b5"
+       :opt (str (paren-for-compound hidden? parser) "?")
+       :plus (str (paren-for-compound hidden? parser) "+")
+       :star (str (paren-for-compound hidden? parser) "*")
+       :rep (if (not= (:min p) (:max p))
+              (str (paren-for-compound hidden? parser) \{ 
+                   (:min p) \, (:max p) \})
+              (str (paren-for-compound hidden? parser) \{ 
+                   (:min p)\}))
+       :alt (str/join " | " (map (partial paren-for-tags #{:ord} hidden?) parsers))
+       :ord (str (paren-for-tags #{:alt} hidden? parser1)
+                 " / "
+                 (paren-for-tags #{:alt} hidden? parser2))
+       :cat (str/join " " (map (partial paren-for-tags #{:alt :ord} hidden?) parsers))
+       :string (with-out-str (pr (:string p)))
+       :string-ci (with-out-str (pr (:string p)))
+       :char (char-range->str p)
+       :regexp (regexp->str (:regexp p))
+       :nt (subs (str (:keyword p)) 1)
+       :look (str "&" (paren-for-compound hidden? parser))
+       :neg (str "!" (paren-for-compound hidden? parser))))))
+
+(defn non-terminal->str [non-terminal]
+  (if-let  [ns (namespace non-terminal)]
+    (str ns "/" (name non-terminal))
+    (name non-terminal)))
+
 (defn rule->str
   "Takes a non-terminal symbol and a parser built from combinators,
    and returns a string for the rule."
@@ -87,7 +92,7 @@
     (str \< (name non-terminal) \> 
          " = " 
          (combinators->str parser))
-    (str (name non-terminal)
+    (str (non-terminal->str non-terminal)
          " = " 
          (combinators->str parser))))
 

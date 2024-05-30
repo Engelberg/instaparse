@@ -50,120 +50,133 @@
 
 (def opt-whitespace (hide (nt :opt-whitespace)))
 
-(def cfg
+(def non-terminal
+  (regex-doc "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+" "Non-terminal"))
+
+(def non-terminal-namespace-allowed
+  (let [no-slash "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;/.]"
+        with-slash "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;]"]
+    (regex-doc (str no-slash with-slash "*") "Non-terminal-namespace-allowed")))
+
+(defn make-cfg [allow-namespaced-nts?]
   (apply-standard-reductions
-    :hiccup    ; use the hiccup output format
-    {:rules (hide-tag (cat opt-whitespace
-                           (plus (nt :rule))))
-     :comment (cat (string "(*") (nt :inside-comment) (string "*)"))
-     :inside-comment (cat (regexp inside-comment)
-                          (star (cat (nt :comment)
-                                     (regexp inside-comment))))
-     :opt-whitespace (cat (regexp ws)
-                          (star (cat (nt :comment)
-                                     (regexp ws))))
-     :rule-separator (alt (string ":")
-                          (string ":=")
-                          (string "::=")
-                          (string "="))
-     :rule (cat (alt (nt :nt)
-                     (nt :hide-nt))
+   :hiccup    ; use the hiccup output format
+   {:rules (hide-tag (cat opt-whitespace
+                          (plus (nt :rule))))
+    :comment (cat (string "(*") (nt :inside-comment) (string "*)"))
+    :inside-comment (cat (regexp inside-comment)
+                         (star (cat (nt :comment)
+                                    (regexp inside-comment))))
+    :opt-whitespace (cat (regexp ws)
+                         (star (cat (nt :comment)
+                                    (regexp ws))))
+    :rule-separator (alt (string ":")
+                         (string ":=")
+                         (string "::=")
+                         (string "="))
+    :rule (cat (alt (nt :nt)
+                    (nt :hide-nt))
+               opt-whitespace
+               (hide (nt :rule-separator))
+               opt-whitespace
+               (nt :alt-or-ord)
+               (hide (alt (nt :opt-whitespace)
+                          (cat (nt :opt-whitespace) (alt (string ";") (string ".")) (nt :opt-whitespace)))))
+    :nt (cat
+         (neg (nt :epsilon))
+         (regexp
+          (if allow-namespaced-nts?
+            non-terminal-namespace-allowed
+            non-terminal)))
+    :hide-nt (cat (hide (string "<"))
+                  opt-whitespace
+                  (nt :nt)
+                  opt-whitespace
+                  (hide (string ">")))
+    :alt-or-ord (hide-tag (alt (nt :alt) (nt :ord)))
+    :alt (cat (nt :cat)
+              (star
+               (cat
                 opt-whitespace
-                (hide (nt :rule-separator))
+                (hide (string "|"))
+                opt-whitespace
+                (nt :cat))))
+    :ord (cat (nt :cat)
+              (plus
+               (cat
+                opt-whitespace
+                (hide (string "/"))
+                opt-whitespace
+                (nt :cat))))
+    :paren (cat (hide (string "("))
                 opt-whitespace
                 (nt :alt-or-ord)
-                (hide (alt (nt :opt-whitespace)
-                           (cat (nt :opt-whitespace) (alt (string ";") (string ".")) (nt :opt-whitespace)))))
-     :nt (cat
-           (neg (nt :epsilon))
-           (regexp
-             (regex-doc "[^, \\r\\t\\n<>(){}\\[\\]+*?:=|'\"#&!;./]+" "Non-terminal")))
-          :hide-nt (cat (hide (string "<"))
-                        opt-whitespace
-                        (nt :nt)
-                        opt-whitespace
-                        (hide (string ">")))
-          :alt-or-ord (hide-tag (alt (nt :alt) (nt :ord)))
-          :alt (cat (nt :cat)
-                    (star
-                      (cat
-                        opt-whitespace
-                        (hide (string "|"))
-                        opt-whitespace
-                        (nt :cat))))
-          :ord (cat (nt :cat)
-                    (plus
-                      (cat
-                        opt-whitespace
-                        (hide (string "/"))
-                        opt-whitespace
-                        (nt :cat))))
-          :paren (cat (hide (string "("))
-                      opt-whitespace
-                      (nt :alt-or-ord)
-                      opt-whitespace
-                      (hide (string ")")))
-          :hide (cat (hide (string "<"))
-                     opt-whitespace
-                     (nt :alt-or-ord)
-                     opt-whitespace
-                     (hide (string ">")))
-          :cat (plus (cat
-                       opt-whitespace
-                       (alt (nt :factor) (nt :look) (nt :neg))
-                       opt-whitespace))
-          :string (alt
-                    (regexp single-quoted-string)
-                    (regexp double-quoted-string))
-          :regexp (alt
-                    (regexp single-quoted-regexp)
-                    (regexp double-quoted-regexp))
-          :opt (alt
-                 (cat (hide (string "["))
-                      opt-whitespace
-                      (nt :alt-or-ord)
-                      opt-whitespace
-                      (hide (string "]")))
-                 (cat (nt :factor)
-                      opt-whitespace
-                      (hide (string "?"))))
-          :star (alt
-                  (cat (hide (string "{"))
-                       opt-whitespace
-                       (nt :alt-or-ord)
-                       opt-whitespace
-                       (hide (string "}")))
-                  (cat (nt :factor)
-                       opt-whitespace
-                       (hide (string "*"))))
-          :plus (cat (nt :factor)
-                     opt-whitespace
-                     (hide (string "+")))
-          :look (cat (hide (string "&"))
-                     opt-whitespace
-                     (nt :factor))
-          :neg (cat (hide (string "!"))
-                    opt-whitespace
-                    (nt :factor))
-          :epsilon (alt (string "Epsilon")
-                        (string "epsilon")
-                        (string "EPSILON")
-                        (string "eps")
-                        (string "\u03b5"))
-          :factor (hide-tag (alt (nt :nt)
-                                 (nt :string)
-                                 (nt :regexp)
-                                 (nt :opt)
-                                 (nt :star)
-                                 (nt :plus)
-                                 (nt :paren)
-                                 (nt :hide)
-                                 (nt :epsilon)))
-     ;; extra entrypoint to be used by the ebnf combinator
-     :rules-or-parser (hide-tag (alt (nt :rules) (nt :alt-or-ord)))}))
+                opt-whitespace
+                (hide (string ")")))
+    :hide (cat (hide (string "<"))
+               opt-whitespace
+               (nt :alt-or-ord)
+               opt-whitespace
+               (hide (string ">")))
+    :cat (plus (cat
+                opt-whitespace
+                (alt (nt :factor) (nt :look) (nt :neg))
+                opt-whitespace))
+    :string (alt
+             (regexp single-quoted-string)
+             (regexp double-quoted-string))
+    :regexp (alt
+             (regexp single-quoted-regexp)
+             (regexp double-quoted-regexp))
+    :opt (alt
+          (cat (hide (string "["))
+               opt-whitespace
+               (nt :alt-or-ord)
+               opt-whitespace
+               (hide (string "]")))
+          (cat (nt :factor)
+               opt-whitespace
+               (hide (string "?"))))
+    :star (alt
+           (cat (hide (string "{"))
+                opt-whitespace
+                (nt :alt-or-ord)
+                opt-whitespace
+                (hide (string "}")))
+           (cat (nt :factor)
+                opt-whitespace
+                (hide (string "*"))))
+    :plus (cat (nt :factor)
+               opt-whitespace
+               (hide (string "+")))
+    :look (cat (hide (string "&"))
+               opt-whitespace
+               (nt :factor))
+    :neg (cat (hide (string "!"))
+              opt-whitespace
+              (nt :factor))
+    :epsilon (alt (string "Epsilon")
+                  (string "epsilon")
+                  (string "EPSILON")
+                  (string "eps")
+                  (string "\u03b5"))
+    :factor (hide-tag (alt (nt :nt)
+                           (nt :string)
+                           (nt :regexp)
+                           (nt :opt)
+                           (nt :star)
+                           (nt :plus)
+                           (nt :paren)
+                           (nt :hide)
+                           (nt :epsilon)))
+    ;; extra entrypoint to be used by the ebnf combinator
+    :rules-or-parser (hide-tag (alt (nt :rules) (nt :alt-or-ord)))}))
 
-; Internally, we're converting the grammar into a hiccup parse tree
-; Here's how you extract the relevant information
+(def cfg (make-cfg false)) ;; the original parser for instaparse's ebnf notation flavor of context-free grammars
+(def cfg-allow-namespaced-nts (make-cfg true))  ;; new version recognizes namespaced non-terminals
+
+;; Internally, we're converting the grammar into a hiccup parse tree
+;; Here's how you extract the relevant information
 (def tag first)
 (def contents next)
 (def content fnext)
@@ -292,17 +305,19 @@
           " occurs on the right-hand side of your grammar, but not on the left"))))
   grammar-map)
 
-(defn build-parser [spec output-format]
-  (let [rules (parse cfg :rules spec false)]
-    (if (instance? instaparse.gll.Failure rules)
-      (throw-runtime-exception
+(defn build-parser
+  ([spec output-format] (build-parser spec output-format false))
+  ([spec output-format allow-namespaced-nts?]
+   (let [rules (parse (if allow-namespaced-nts? cfg-allow-namespaced-nts cfg) :rules spec false)]
+     (if (instance? instaparse.gll.Failure rules)
+       (throw-runtime-exception
         "Error parsing grammar specification:\n"
         (with-out-str (println rules)))
-      (let [productions (map build-rule rules)
-            start-production (first (first productions))]
-        {:grammar (check-grammar (apply-standard-reductions output-format (into {} productions)))
-         :start-production start-production
-         :output-format output-format}))))
+       (let [productions (map build-rule rules)
+             start-production (first (first productions))]
+         {:grammar (check-grammar (apply-standard-reductions output-format (into {} productions)))
+          :start-production start-production
+          :output-format output-format})))))
 
 (defn build-parser-from-combinators [grammar-map output-format start-production]
   (if (nil? start-production)

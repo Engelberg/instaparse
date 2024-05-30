@@ -1,4 +1,4 @@
-# Instaparse 1.4.14
+# Instaparse 1.5.0
 
 *What if context-free grammars were as easy to use as regular expressions?*
 
@@ -22,7 +22,7 @@ Instaparse requires Clojure v1.5.1 or later, or ClojureScript v1.7.28 or later.
 
 Add the following line to your leiningen dependencies:
 
-	[instaparse "1.4.14"]
+	[instaparse "1.5.0"]
 
 Require instaparse in your namespace header:
 
@@ -977,6 +977,35 @@ This opens up the possibility of building a grammar from a mixture of combinator
 	      (ebnf "A = 'a'*")
 	      {:B (ebnf "'b'+")})
 	    :start :S))
+
+### Namespaced Keywords
+
+*New feature in version 1.5.0*
+
+The left-hand side labels for your grammar rules are called "non-terminals" in context-free grammar lingo, and as you've seen in this tutorial, the output of your parser is tagged with keywords derived from your grammar's non-terminals. In the time since instaparse was first released, namespaced keywords have become much more important in Clojure programming, in large part due to their heavy use in datomic and spec. It has always been possible to use instaparse's output transformation tools to convert the keyword tags to namespaced keywords, but now in version 1.5.0, there is direct support for namespaced non-terminals, which will be rendered as the corresponding namespaced keywords in your parser's output. 
+
+For backwards compatibility, if you want to use namespaces, this feature needs to be explicitly activated when creating the parser, with the optional keyword argument `:allow-namespaced-nts true`. Both segmented namespaces (separated by `.`) and non-segmented namespaces are supported, and you can mix and match with non-terminals that have no namespaces if you like. If you use a namespace for a non-terminal on the left-hand side of a rule, you must be consistent and use that namespace whenever referring to that particular non-terminal on the right-hand side of a rule.
+
+Let's revisit the very first as-and-bs parser from the beginning of the tutorial, with this new feature in mind, giving namespaces to most of the non-terminals:
+
+```
+(def as-and-bs
+  (insta/parser
+    "S = segmented.namespace/AB*
+     segmented.namespace/AB = ns1/A ns2/B
+     ns1/A = 'a'+
+     ns2/B = 'b'+"
+    :allow-namespaced-nts true))
+
+=> (as-and-bs "aaaaabbbaaaabb")
+[:S
+ [:segmented.namespace/AB
+  [:ns1/A "a" "a" "a" "a" "a"]
+  [:ns2/B "b" "b" "b"]]
+ [:segmented.namespace/AB [:ns1/A "a" "a" "a" "a"] [:ns2/B "b" "b"]]]
+```
+
+Effectively, enabling this feature means you can include `/` and `.` characters in your non-terminals. However, there's a potential issue to keep in mind: instaparse's grammar notation already assigns meaning to `/` and `.`. Therefore, when allowing namespaced non-terminals, you need to be cautious and ensure adequate spacing when using those characters as operators rather than as namespace separators. Instaparse is usually super-lenient with spacing in grammar specifications, so by default `A / B` and `A/B` are interpreted the same -- ordered choice of A then B. But when namespaced non-terminals are allowed, `A / B` is ordered choice whereas `A/B` is a single namespaced non-terminal. This is precisely why namespaces are an opt-in feature, so that previously written grammars continue to behave as they did in prior versions of instaparse, with no modification needed.
 
 ### ABNF
 

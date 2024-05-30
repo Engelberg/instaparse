@@ -1,5 +1,11 @@
 # Instaparse Change Log
 
+## 1.5.0
+
+### Enhancements
+
+* instaparse.core/parser now accepts an optional keyword argument `:allow-namespaced-nts true` which accepts namespaced non-terminals in the parser's grammar, thus building a parser that will tag the output with the corresponding namespaced keywords.
+
 ## 1.4.14
 
 ### Enhancements

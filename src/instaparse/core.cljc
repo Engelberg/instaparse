@@ -187,6 +187,9 @@
 
   :string-ci true (treat all string literals as case insensitive)
 
+  :allow-namespaced-nts true (allow namespaced non-terminals in parser specification;
+                              parser's output will use corresponding namespaced keywords)
+
   :auto-whitespace (:standard or :comma)
   or
   :auto-whitespace custom-whitespace-parser
@@ -203,16 +206,16 @@
            (or (nil? ws-parser)
                (contains? standard-whitespace-parsers ws-parser)
                (and
-                 (map? ws-parser)
-                 (contains? ws-parser :grammar)
-                 (contains? ws-parser :start-production))))]}
+                (map? ws-parser)
+                (contains? ws-parser :grammar)
+                (contains? ws-parser :start-production))))]}
   (let [input-format (get options :input-format *default-input-format*)
         build-parser
         (fn [spec output-format]
           (binding [cfg/*case-insensitive-literals* (:string-ci options :default)]
             (case input-format
               :abnf (abnf/build-parser spec output-format)
-              :ebnf (cfg/build-parser spec output-format))))
+              :ebnf (cfg/build-parser spec output-format (:allow-namespaced-nts options false)))))
         output-format (get options :output-format *default-output-format*)
         start (get options :start nil)
 
@@ -233,7 +236,7 @@
                    :cljs
                    (build-parser grammar-specification output-format))]
             (if start (map->Parser (assoc parser :start-production start))
-              (map->Parser parser)))
+                (map->Parser parser)))
 
           (map? grammar-specification)
           (let [parser
@@ -255,14 +258,14 @@
              (let [spec (slurp grammar-specification)
                    parser (build-parser spec output-format)]
                (if start (map->Parser (assoc parser :start-production start))
-                 (map->Parser parser)))
+                   (map->Parser parser)))
              :cljs
              (throw-illegal-argument-exception
               "Expected string, map, or vector as grammar specification, got "
               (pr-str grammar-specification))))]
 
     (let [auto-whitespace (get options :auto-whitespace)
-          ; auto-whitespace is keyword, parser, or nil
+                                        ; auto-whitespace is keyword, parser, or nil
           whitespace-parser (if (keyword? auto-whitespace)
                               (get standard-whitespace-parsers auto-whitespace)
                               auto-whitespace)]
