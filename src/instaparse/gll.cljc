@@ -181,8 +181,13 @@
 
 #?(:clj
    (defmethod clojure.core/print-method Failure [x writer]
-     (binding [*out* writer]
-       (fail/pprint-failure x)))
+     (if *print-readably*
+       (print-method
+         (with-out-str
+           (fail/pprint-failure x))
+         writer)
+       (binding [*out* writer]
+         (fail/pprint-failure x))))
    :cljs
    (extend-protocol IPrintWithWriter
      instaparse.gll/Failure
