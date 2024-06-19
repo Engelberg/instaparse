@@ -40,6 +40,9 @@
             [cljsee "0.1.0"]]
   ;:hooks [leiningen.cljsbuild]
   :target-path "target"
+  ;; Instaparse sources  are reflection  free as  of 1.4.10,  the only
+  ;; reflection warnings seen so far come from the CLJS compiler:
+  :global-vars {*warn-on-reflection* true}
   :scm {:name "git"
         :url "https://github.com/Engelberg/instaparse"}
   :prep-tasks [["cljsee" "once"]]
